@@ -1,11 +1,11 @@
 ---
-title: 阶段 8：上线与现场兜底
+title: 阶段 9：上线与现场兜底
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 阶段 8：上线与现场兜底
+# 阶段 9：上线与现场兜底
 
 ## 1. 目标与范围
 
@@ -14,16 +14,16 @@ updated: 2026-09-24
 做：
 
 1. API 镜像与发布脚本
-2. PostgreSQL 备份与恢复步骤
+2. PostgreSQL 与对象存储的备份与恢复步骤
 3. Nginx 反向代理、HTTPS 与 SSE 配置
 4. Web 静态文件发布
 5. 不依赖服务端的大屏兜底页与兜底数据导出
-6. 坐标保留与定期清理
+6. 坐标保留与定期清理（含未引用素材回收）
 7. 签到压测
 
 不做：
 
-- 多机水平扩展、Redis、消息队列
+- 多机水平扩展、消息队列
 - 在线支付、发票、短信
 - 每组织独立数据库
 - 自动扩容
@@ -33,6 +33,7 @@ updated: 2026-09-24
 | 项 | 现状 |
 | --- | --- |
 | API | 单进程 Go 二进制，默认 `127.0.0.1:5568` |
+| 对象存储 | S3 兼容存储，存放品牌素材（[阶段 8](phase-8-branding.md)） |
 | Web | Vite 静态产物 |
 | 数据 | 一台 PostgreSQL |
 | 实时 | SSE 长连接 |
@@ -53,25 +54,26 @@ updated: 2026-09-24
 
 - API 使用现有 Dockerfile 构建镜像，版本取 `golottery-api/VERSION`
 - Web 构建 `dist`，以时间戳加提交号保存版本目录，当前版本用软链接切换
-- 生产配置只通过环境变量注入。`SESSION_SECRET`、数据库口令和微信密钥不进镜像；容器工作目录不放 `.env`（`.env` 会覆盖环境变量）
+- 生产配置只通过环境变量注入。`SESSION_SECRET`、数据库口令、微信密钥和 `S3_SECRET_KEY` 不进镜像；容器工作目录不放 `.env`（`.env` 会覆盖环境变量）
 - Nginx 将 `/api`、`/healthz`、`/readyz`、`/openapi.json` 反代到 API；其余路径回落 `index.html`
 - Nginx 设置 `X-Forwarded-For`，API 的 `TRUSTED_PROXIES` 只列 Nginx 所在地址
 - SSE 路径关闭代理缓冲，读超时大于心跳间隔
 
-发布文档写明顺序：备份、迁移、启动 API、检查 `/readyz`、切换 Web、回滚。
+发布文档写明顺序：备份、迁移、启动 API、检查 `/readyz`、切换 Web、回滚。首次部署在启动 API 前执行 `golottery storage init` 建桶。生产对象存储的管理端口只在内网或本机可达。
 
 ### 4.2 数据保护
 
 - 每天逻辑备份 PostgreSQL，至少保留 7 份；每场活动开始前额外手工备份一次
 - 恢复演练用独立库，不覆盖生产库
+- 对象存储每天增量镜像到独立位置。素材对象写入后不再修改，增量镜像即可覆盖；镜像不同步删除，保留 30 天后再清
 - 活动结束时间取 `closed` 时间与 `checkin_end + 3 天` 中较早者；管理员忘记结束活动时仍会清理，并把活动置为 `closed`
 - `checkin_attempts.lat` 与 `lng` 在活动结束 30 天后清空；不删除尝试记录
-- 同一命令删除过期的 `api_tokens`、`guest_sessions` 与超出限速窗口的 `login_attempts`
+- 同一命令删除过期的 `api_tokens`、`guest_sessions` 与超出限速窗口的 `login_attempts`，并回收未被引用且创建超过 7 天的素材（[阶段 8 §4.4](phase-8-branding.md#44-对象存储)）
 - 清理是子命令 `golottery purge`，由宿主机定时器每日调用，结果写入运行日志。API 进程内不跑定时任务
 
 ### 4.3 现场兜底
 
-组织管理员或主持人在抽奖开始前调用 `GET /api/organization/events/:id/exports/offline`（主持人为 `GET /api/host/offline`），得到一份 JSON：已签到名单、奖项与剩余名额、已有有效中奖记录。兜底页是一个单文件静态 HTML，随 Web 产物发布并可在控制台下载：
+组织管理员或主持人在抽奖开始前调用 `GET /api/organization/events/:id/exports/offline`（主持人为 `GET /api/host/offline`），得到一份 JSON：已签到名单、奖项与剩余名额、已有有效中奖记录，以及活动显示名与主题色。兜底页是一个单文件静态 HTML，随 Web 产物发布并可在控制台下载：
 
 - 本地打开，不访问网络
 - 导入上述 JSON，按其中的已中奖记录与兼中规则排除人选
@@ -85,7 +87,7 @@ updated: 2026-09-24
 | 项目 | 标准 |
 | --- | --- |
 | 回滚 | 切换回上一版本后 `/readyz` 为 200 |
-| 恢复 | 备份可恢复到独立库 |
+| 恢复 | 备份可恢复到独立库；对象存储镜像可恢复到独立桶，恢复后大屏素材可正常加载 |
 | SSE | Nginx 后心跳不断开 |
 | 清理 | 坐标清空后签到状态仍可导出；未手动结束的活动在 `checkin_end + 3 天` 后被置为 `closed` |
 | 压测 | 生产同规格环境，签到接口 100 请求/秒持续 10 分钟，服务端 P95 ≤ 1 秒且无 5xx（PRD §9） |

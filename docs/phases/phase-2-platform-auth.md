@@ -66,7 +66,7 @@ updated: 2026-09-24
 
 启动时若表为空，用 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH` 插入一行；表为空且两键缺任一时拒绝启动。表非空时不再改已有口令，避免重启覆盖人工改密。
 
-`auth.LoginLimiter` 放在 `internal/auth`：按 `platform:<username>` 计数，窗口与阈值取配置。达到阈值返回 `429 E_TOO_MANY_ATTEMPTS`，分钟数向上取整且至少为 1。成功登录删除该键的失败记录。超出窗口的失败记录与过期令牌由 [阶段 8](phase-8-launch.md) 的清理命令删除。
+`auth.LoginLimiter` 放在 `internal/auth`：按 `platform:<username>` 计数，窗口与阈值取配置。达到阈值返回 `429 E_TOO_MANY_ATTEMPTS`，分钟数向上取整且至少为 1。成功登录删除该键的失败记录。超出窗口的失败记录与过期令牌由 [阶段 9](phase-9-launch.md) 的清理命令删除。
 
 限速键用用户名原文，达到阈值后正确口令也返回 `429`。这会让他人故意输错来锁住运营账号；运营账号只有一个且入口不对外公布，首发接受这个风险。
 

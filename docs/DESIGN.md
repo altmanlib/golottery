@@ -24,7 +24,6 @@ updated: 2026-09-24
 - 按组织分库分实例
 - 会务套件（票务、议程、直播）
 - 自动计费与开票
-- 对象存储、封面、Redis
 
 工程基线的交付范围见 [phases/phase-1-baseline.md](phases/phase-1-baseline.md)。业务表与业务接口不在基线内。
 
@@ -55,19 +54,21 @@ updated: 2026-09-24
               \                 /
                \   HTTPS       /
                 ▼             ▼
-              Nginx（生产，阶段 8）
+              Nginx（生产，阶段 9）
                      │
                      ▼
         golottery-api (Go, echo)  127.0.0.1:5568
           ├── /healthz /readyz          httpapi
           ├── /openapi.json /openapi.yaml
           └── /api/*                    OpenAPI strict handler
-                     │ gorm (pgx)
-                     ▼
-               PostgreSQL 18
+                │ gorm (pgx)       │ S3 协议
+                ▼                  ▼
+          PostgreSQL 18    对象存储（RustFS）
 ```
 
-没有进程内异步任务，没有对象存储。签到与抽奖都是短事务。大屏推送用 SSE，在业务阶段挂到同一进程。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
+对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。它不可用时只影响素材上传与读取，不影响签到与抽奖。
+
+没有进程内异步任务。签到与抽奖都是短事务。大屏推送用 SSE，在业务阶段挂到同一进程。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
 
 **单实例前提**：SSE 广播与按 openid 限流都在进程内实现，只在单个 API 实例下成立。改为多实例是触发条件后的事，届时再引入共享状态。
 
@@ -80,6 +81,7 @@ updated: 2026-09-24
 | 契约 | `api/openapi.yaml` + `oapi-codegen` | `models.yaml` / `server.yaml` 生成 `api/*.gen.go`；`go generate ./...` |
 | 持久化 | `gorm.io/gorm` + `gorm.io/driver/postgres`（pgx） | 显式 SQL 迁移（`internal/store/migrations` + `schema_migrations`） |
 | 数据库 | PostgreSQL 18（`postgres:18-alpine`） | 本机 Compose；生产与 api 同机 |
+| 对象存储 | RustFS（`rustfs/rustfs:1.0.0`）+ `github.com/minio/minio-go/v7` | 只用 S3 协议；封装在 `internal/objectstore`，阶段 8 引入 |
 | 令牌 | Bearer API Token，库内只存 SHA-256 | 标准库 `crypto/sha256`；明文只在签发时返回一次 |
 | 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §10 |
 | 口令 | `golang.org/x/crypto/argon2` | argon2id，PHC 字符串 |
@@ -138,6 +140,9 @@ bizerr ──→ 标准库
 | --- | --- |
 | API | `127.0.0.1:5568` |
 | PostgreSQL | `127.0.0.1:15436`，开发库 `golottery`、测试库 `golottery_test`，账号 `postgres/secret` |
+| Adminer | `127.0.0.1:58033`，数据库管理页，默认连接 `postgres` 服务 |
+| RustFS | S3 接口 `127.0.0.1:57800`，控制台 `127.0.0.1:57801`，账号 `rustfsadmin/rustfsadmin` |
+| Redis | `127.0.0.1:57379`。业务尚未使用，用途见 [ROADMAP](ROADMAP.md) P-21 |
 | Web dev（Vite） | `localhost:3000`，`/api`、`/healthz`、`/readyz`、`/openapi.json`、`/openapi.yaml` 代理到 `5568` |
 
 本机依赖用 `golottery-api/compose.yml` 启动。测试代码不负责 `CREATE DATABASE`（`init-db.sql` 建 `golottery_test`）。
@@ -336,4 +341,4 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 - 指定中奖人、调整中奖概率
 - 持续定位追踪与轨迹存储
 - 首发在线支付、发票、合同电子签
-- Redis / MQ / 对象存储
+- MQ

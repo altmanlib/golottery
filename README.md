@@ -25,7 +25,12 @@ cd golottery-api
 docker compose up -d
 ```
 
-PostgreSQL：`127.0.0.1:15436`，库 `golottery` / `golottery_test`，账号 `postgres/secret`。
+| 服务 | 地址 |
+| --- | --- |
+| PostgreSQL | `127.0.0.1:15436`，库 `golottery` / `golottery_test`，账号 `postgres/secret` |
+| Adminer | http://127.0.0.1:58033 |
+| RustFS（S3） | 接口 `127.0.0.1:57800`，控制台 http://127.0.0.1:57801，账号 `rustfsadmin/rustfsadmin` |
+| Redis | `127.0.0.1:57379` |
 
 ## 后端
 

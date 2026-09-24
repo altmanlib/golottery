@@ -39,7 +39,7 @@ updated: 2026-09-24
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 8 上线 |
+| P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 9 上线 |
 
 ## 5. 之后
 
@@ -50,9 +50,11 @@ updated: 2026-09-24
 | P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md) |
 | P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
-| P-4 | ops | 阶段 8 上线与现场兜底。见 [phases/phase-8-launch.md](phases/phase-8-launch.md) |
+| P-20 | api, web, mp | 阶段 8 品牌装修。见 [phases/phase-8-branding.md](phases/phase-8-branding.md) |
+| P-21 | api | 确定 Redis 用途。本机 Compose 已提供 Redis，业务尚未使用；候选用途是签到限流与 SSE 广播，用于解除[单实例前提](DESIGN.md#4-系统架构)。阶段 6 开工前定；确认不用则从 Compose 移除 |
+| P-4 | ops | 阶段 9 上线与现场兜底。见 [phases/phase-9-launch.md](phases/phase-9-launch.md) |
 | P-15 | mp, api | 宾客端中奖结果展示（PRD G6，P1）。依赖阶段 7 |
-| P-16 | api | 多场并行时按活动限流（PRD §9）。依赖阶段 8 压测结果；单场达标且无并行活动冲突时转暂缓 |
+| P-16 | api | 多场并行时按活动限流（PRD §9）。依赖阶段 9 压测结果；单场达标且无并行活动冲突时转暂缓 |
 | P-18 | api, web | 活动短链（PRD O8，P1）。依赖阶段 5；实施前先核实微信官方链接能力的有效期与调用额度 |
 
 ## 6. 暂缓

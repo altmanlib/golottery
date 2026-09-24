@@ -1,7 +1,13 @@
 volumes:
   postgres_data:
+  rustfs:
 
 services:
+  adminer:
+    image: adminer:6-standalone
+    ports: ["127.0.0.1:58033:8080"]
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
@@ -26,3 +32,33 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    ports:
+      - "127.0.0.1:57800:9000"
+      - "127.0.0.1:57801:9001"
+    environment:
+      RUSTFS_ADDRESS: "0.0.0.0:9000"
+      RUSTFS_CONSOLE_ADDRESS: "0.0.0.0:9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+    volumes:
+      - rustfs:/data
+    mem_limit: 256m
+  redis:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - 48mb
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - "127.0.0.1:57379:6379"
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
