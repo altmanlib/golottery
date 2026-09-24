@@ -32,7 +32,7 @@ updated: 2026-09-24
 | 约束 | 影响 |
 | --- | --- |
 | 微信正式版小程序需备案域名与定位权限 | 平台主体一次性申请，所有租户共用 |
-| 年会峰值约单场 800 人、签到设计目标 100 req/s | 首发用单体 + PostgreSQL 足够；用租户限流保护共享资源 |
+| 年会峰值约单场 800 人、签到设计目标 100 req/s | 首发部署一个实例足够；所有设计按多实例成立，容量不足时横向加实例；用限流保护共享资源 |
 | 季节性售卖、按场次收费 | 配额表比完整计费系统优先 |
 | 位置与名单属个人信息 | 导出权限、保留策略、审计必须按组织隔离 |
 | 前后端契约已用 OpenAPI 生成 | 业务接口只改 `openapi.yaml`，禁止手写重复描述 |
@@ -46,6 +46,7 @@ updated: 2026-09-24
 5. **默认共享库行级隔离**：所有业务 SQL 经强制条件注入 `org_id` / `event_id`；分库是触发条件后的事。
 6. **安全边界在接口**：前端隐藏入口不算鉴权。
 7. **契约优先**：HTTP 业务面以 `api/openapi.yaml` 为唯一来源；生成代码禁止手改。
+8. **实例无状态**：进程内不保存跨请求共享的状态，任意实例可处理任意请求。共享状态放 PostgreSQL 或 Redis，归属见 §4.5。
 
 ## 4. 系统架构
 
@@ -61,16 +62,16 @@ updated: 2026-09-24
           ├── /healthz /readyz          httpapi
           ├── /openapi.json /openapi.yaml
           └── /api/*                    OpenAPI strict handler
-                │ gorm (pgx)       │ S3 协议
-                ▼                  ▼
-          PostgreSQL 18    对象存储（RustFS）
+                │ gorm (pgx)       │ go-redis        │ S3 协议
+                ▼                  ▼                 ▼
+          PostgreSQL 18         Redis 7        对象存储（RustFS）
 ```
+
+Nginx 后可以挂多个 API 实例，不需要会话保持。
 
 对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。它不可用时只影响素材上传与读取，不影响签到与抽奖。
 
-没有进程内异步任务。签到与抽奖都是短事务。大屏推送用 SSE，在业务阶段挂到同一进程。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
-
-**单实例前提**：SSE 广播与按 openid 限流都在进程内实现，只在单个 API 实例下成立。改为多实例是触发条件后的事，届时再引入共享状态。
+没有进程内异步任务。签到与抽奖都是短事务。大屏推送用 SSE，跨实例广播走 Redis。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
 
 ### 4.1 技术选型
 
@@ -81,6 +82,7 @@ updated: 2026-09-24
 | 契约 | `api/openapi.yaml` + `oapi-codegen` | `models.yaml` / `server.yaml` 生成 `api/*.gen.go`；`go generate ./...` |
 | 持久化 | `gorm.io/gorm` + `gorm.io/driver/postgres`（pgx） | 显式 SQL 迁移（`internal/store/migrations` + `schema_migrations`） |
 | 数据库 | PostgreSQL 18（`postgres:18-alpine`） | 本机 Compose；生产与 api 同机 |
+| 共享状态 | Redis 7（`redis:7-alpine`）+ `github.com/redis/go-redis/v9` | 限流、SSE 广播、微信凭据缓存；封装在 `internal/redisx`，阶段 5 引入 |
 | 对象存储 | RustFS（`rustfs/rustfs:1.0.0`）+ `github.com/minio/minio-go/v7` | 只用 S3 协议；封装在 `internal/objectstore`，阶段 8 引入 |
 | 令牌 | Bearer API Token，库内只存 SHA-256 | 标准库 `crypto/sha256`；明文只在签发时返回一次 |
 | 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §10 |
@@ -125,6 +127,8 @@ main ──→ 全部
 apihttp ──→ api  auth  bizerr  echo
 auth / settings ──→ gorm
 store ──→ gorm                 （只被 main 与测试辅助 import）
+redisx ──→ go-redis           （客户端装配、Ping、测试辅助；阶段 5 起）
+ratelimit ──→ go-redis        （阶段 6 起）
 config ──→ os  godotenv        （不依赖 settings；覆盖值以 map 传入）
 httpapi ──→ echo               （不依赖 gorm、store 与任何领域包；就绪探针以函数注入）
 bizerr ──→ 标准库
@@ -142,10 +146,33 @@ bizerr ──→ 标准库
 | PostgreSQL | `127.0.0.1:15436`，开发库 `golottery`、测试库 `golottery_test`，账号 `postgres/secret` |
 | Adminer | `127.0.0.1:58033`，数据库管理页，默认连接 `postgres` 服务 |
 | RustFS | S3 接口 `127.0.0.1:57800`，控制台 `127.0.0.1:57801`，账号 `rustfsadmin/rustfsadmin` |
-| Redis | `127.0.0.1:57379`。业务尚未使用，用途见 [ROADMAP](ROADMAP.md) P-21 |
+| Redis | `127.0.0.1:57379`。开发用 db 0，测试用 db 15 |
 | Web dev（Vite） | `localhost:3000`，`/api`、`/healthz`、`/readyz`、`/openapi.json`、`/openapi.yaml` 代理到 `5568` |
 
 本机依赖用 `golottery-api/compose.yml` 启动。测试代码不负责 `CREATE DATABASE`（`init-db.sql` 建 `golottery_test`）。
+
+### 4.5 共享状态与多实例
+
+划分规则：需要持久、需要审计或参与业务事务的状态放 PostgreSQL；高频、短命、丢失后可自动重建的状态放 Redis。
+
+| 状态 | 位置 | 说明 |
+| --- | --- | --- |
+| 令牌与宾客会话 | PostgreSQL | `api_tokens`、`guest_sessions` |
+| 登录与绑定失败锁定 | PostgreSQL | `login_attempts`；安全相关、频率低，需要留痕 |
+| 抽奖串行与幂等 | PostgreSQL | 事务咨询锁 + `draw_logs.request_id` |
+| 迁移与清理命令互斥 | PostgreSQL | `pg_advisory_lock` / `pg_try_advisory_lock` |
+| 签到请求限流 | Redis | 按 openid 计数，高频且不需要留痕，见[阶段 6](phases/phase-6-checkin.md) |
+| SSE 广播 | Redis Pub/Sub | 按活动分频道，见[阶段 7](phases/phase-7-draw.md) |
+| 微信 access_token | Redis | 全部实例共用一份，见[阶段 5](phases/phase-5-event-setup.md) |
+
+Redis 约定：
+
+- 键统一前缀 `gl:`，所有键带过期时间；不开启持久化，数据丢失只造成限流计数归零或凭据重新获取
+- 运行中 Redis 不可用时降级：限流放行并记录错误日志，SSE 靠客户端版本号比对补漏；签到与抽奖不中断
+- 启动时 Redis 不可达则拒绝启动，尽早暴露配置错误；`/readyz` 只检查 PostgreSQL，避免 Redis 故障让全部实例被摘除
+- 测试连接真实 Redis 的 db 15，每个测试前 `FLUSHDB`；不用内存替身证明共享状态路径
+
+进程内只允许保存与当前连接绑定的状态，例如本实例持有的 SSE 连接列表。
 
 ## 5. 数据模型与不变量
 

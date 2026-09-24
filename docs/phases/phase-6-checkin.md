@@ -38,8 +38,8 @@ updated: 2026-09-24
 | 签到方式 | 活动配置提供 `checkin_mode`：`geo` / `direct`，随时可切换 |
 | 判定 | `geo`：距离减去最多 200 米精度后，仍小于等于半径才通过；`direct`：不判断位置 |
 | 精度 | `geo` 模式下大于 500 米拒绝自动签到 |
-| 限流 | 同一 openid 每分钟最多 10 次签到请求，不按 IP 限流。进程内计数，依赖[单实例前提](../DESIGN.md#4-系统架构) |
-| 微信 | 阶段 5 已提供 `internal/wechat` 与 `WECHAT_APP_ID` / `WECHAT_APP_SECRET` |
+| 限流 | 同一 openid 每分钟最多 10 次签到请求，不按 IP 限流 |
+| 微信与 Redis | 阶段 5 已提供 `internal/wechat`、`internal/redisx` 与相应配置 |
 
 签到是否通过只由服务端决定。
 
@@ -123,6 +123,17 @@ updated: 2026-09-24
 
 `GET /api/guest/checkin` 同时返回当前求助的状态，未绑定的宾客也能看到处理结果。
 
+签到限流由新增的 `internal/ratelimit` 实现，计数放 Redis，多实例共享：
+
+| 项 | 设定 |
+| --- | --- |
+| 算法 | 固定 60 秒窗口计数。同一个 Lua 脚本内执行 `INCR`，首次计数时设 `EXPIRE 60`，保证原子 |
+| 键 | `gl:rl:checkin:<event_id>:<openid>` |
+| 超限 | 返回 `429 E_TOO_MANY_ATTEMPTS`，分钟数取 1 |
+| Redis 不可用 | 放行并记录错误日志，限流失效不阻塞签到 |
+
+`internal/ratelimit` 只暴露 `Allow(ctx, key, limit, window)`，[ROADMAP](../ROADMAP.md) P-16 的按活动限流直接复用。
+
 绑定限速：手机号后四位只有 1 万种组合，姓名又容易猜到。同一 openid 在同一活动内连续匹配失败 5 次后锁定 10 分钟，返回 `429 E_TOO_MANY_ATTEMPTS`。计数复用 `login_attempts`，键为 `bind:<event_id>:<openid>`。
 
 判定顺序：未绑定、活动非 `ready`、已签到、时间窗外；`direct` 模式到此通过，`geo` 模式继续判断坐标非法、精度过差、围栏外，全部通过才签到。已签到排在时间窗之前，窗口关闭后再点签到仍看到已签到。错误码分别为 `E_NOT_BOUND`、`E_EVENT_NOT_OPEN`、（已签到返回 `200` 和原签到时间，不写第二次成功状态）、`E_WINDOW_CLOSED`、`E_BAD_REQUEST`、`E_LOW_ACCURACY`、`E_OUT_OF_RANGE`。新增的码与 `E_ATTENDEE_NOT_MATCHED` 一并补进 `bizerr` 与 [技术方案 §7.2](../DESIGN.md#72-错误体与错误码)。
@@ -187,6 +198,7 @@ updated: 2026-09-24
 | 对象 | 用例 |
 | --- | --- |
 | 距离 | 边界内通过、边界外拒绝、精度抵扣最多 200 米、精度超过 500 米拒绝 |
+| 限流 | 同一 openid 第 11 次返回 `429`；窗口过后恢复；两个 `ratelimit` 实例共用计数；Redis 不可达时放行 |
 | 直接签到 | 无坐标通过且方式为 `direct`；带坐标也不落库；未绑定、时间窗外仍被拒绝 |
 | 切换 | `geo` 切 `direct` 后原先围栏外的宾客可签到；`direct` 切 `geo` 后已签到记录不变、无坐标请求被拒绝；`staff` 角色不能切换 |
 | 幂等 | 并发两次签到只有一条 `checked_in` |

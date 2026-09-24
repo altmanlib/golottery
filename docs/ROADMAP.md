@@ -51,7 +51,6 @@ updated: 2026-09-24
 | P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
 | P-20 | api, web, mp | 阶段 8 品牌装修。见 [phases/phase-8-branding.md](phases/phase-8-branding.md) |
-| P-21 | api | 确定 Redis 用途。本机 Compose 已提供 Redis，业务尚未使用；候选用途是签到限流与 SSE 广播，用于解除[单实例前提](DESIGN.md#4-系统架构)。阶段 6 开工前定；确认不用则从 Compose 移除 |
 | P-4 | ops | 阶段 9 上线与现场兜底。见 [phases/phase-9-launch.md](phases/phase-9-launch.md) |
 | P-15 | mp, api | 宾客端中奖结果展示（PRD G6，P1）。依赖阶段 7 |
 | P-16 | api | 多场并行时按活动限流（PRD §9）。依赖阶段 9 压测结果；单场达标且无并行活动冲突时转暂缓 |
@@ -72,5 +71,6 @@ updated: 2026-09-24
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
+| P-21 | HASH | api | 确定 Redis 用途：签到限流、SSE 广播、微信凭据缓存，去掉单实例前提，见 [DESIGN.md §4.5](DESIGN.md#45-共享状态与多实例) |
 | P-14 | f374059 | docs | 删除三个子项目下的旧版文档，子项目 README 与 AGENTS.md 改为指向根 `docs/` |
 | P-1 | 33d5163 | api, web | 阶段 1 工程基线：config / store / httpapi / bizerr / auth、Web 令牌客户端 |

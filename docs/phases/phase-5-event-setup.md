@@ -132,7 +132,23 @@ updated: 2026-09-24
 
 小程序码由后端调用微信「获取不限制的小程序码」接口生成：`scene` 为 `public_id`（21 位 nanoid 字符在微信允许的字符集内，不超过 32 位上限），`page` 为 `pages/index/index`。该接口的 `page` 不能带参数，小程序从 `decodeURIComponent(query.scene)` 取活动码；`path` 中的 `e` 参数用于开发者工具与复制链接。`check_path` 默认要求页面已在正式版发布，开发期用 `env_version` 指向 `develop` 或 `trial`。组织客户没有平台小程序的管理后台权限，所以码图必须由后端生成。
 
-本阶段引入 ScopeInfra 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET` 与 `internal/wechat`（access_token 缓存、小程序码），阶段 6 复用它做 `code` 换 openid。
+本阶段引入 ScopeInfra 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET` 与 `internal/wechat`（access_token、小程序码），阶段 6 复用它做 `code` 换 openid。
+
+access_token 在多实例间共用：
+
+| 项 | 设定 |
+| --- | --- |
+| 获取接口 | 微信「获取稳定版接口调用凭据」（`/cgi-bin/stable_token`）普通模式。官方说明：有效期内重复调用不会更新凭据，并会提前 5 分钟更新。各实例并发获取不会互相作废 |
+| 缓存 | Redis 键 `gl:wechat:access_token`，过期时间取微信返回的 `expires_in` 减 300 秒 |
+| 强制刷新 | 不使用。官方限制每天 20 次且间隔 30 秒，并会作废旧凭据。微信返回凭据失效时只删除缓存并按普通模式重取一次 |
+| Redis 不可用 | 直接按普通模式获取，不缓存 |
+
+本阶段同时引入 Redis（归属规则见[技术方案 §4.5](../DESIGN.md#45-共享状态与多实例)）：
+
+- `internal/redisx`：客户端装配、`Ping`、测试辅助 `OpenTest`（连 db 15 并 `FLUSHDB`）
+- ScopeInfra 配置 `REDIS_URL`（必填，Secret），本机为 `redis://127.0.0.1:57379/0`
+- 启动顺序在 `store.Ping` 之后增加 `redisx.Ping`，不可达时拒绝启动；`GET /healthz` 增加 `redis` 字段，`/readyz` 不变
+- 落地时同步 [技术方案 §9 启动与关闭](../DESIGN.md#9-启动与关闭) 与 [§10 配置](../DESIGN.md#10-配置)
 
 导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。上传文件不超过 5 MB。导入后活动名单总数超过 `max_attendees` 返回 `400 E_BAD_REQUEST`。Excel 读写使用 `github.com/xuri/excelize/v2`，落地时写入 [技术方案 §4.1](../DESIGN.md#41-技术选型)。
 
@@ -178,6 +194,7 @@ updated: 2026-09-24
 | 隔离 | 其他组织的活动 ID 返回 `404` |
 | 导入 | 合法文件写入；重复或非法行整批拒绝；多次导入后总数超过人数上限拒绝 |
 | 状态 | `geo` 模式缺少围栏或缺少名单时拒绝就绪；`direct` 模式无围栏可就绪；就绪后切到 `geo` 但缺围栏被拒绝；非法迁移拒绝；`closed` 后拒绝修改 |
+| 微信凭据 | 两个实例共用 Redis 中的同一份；缓存过期后重取；微信返回凭据失效时只重取一次；Redis 不可达时仍能生成小程序码 |
 | 小程序码 | 微信接口用测试替身；`scene` 等于 `public_id`；微信错误转为 `E_INTERNAL` 并记录原始错误码 |
 | 奖项 | `quota <= 0` 拒绝；活动内 `sort_no` 重复拒绝 |
 
