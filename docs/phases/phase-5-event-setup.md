@@ -15,7 +15,7 @@ updated: 2026-09-24
 
 1. `events`、`attendees`、`prizes` 三张表
 2. 活动首次进入 `ready` 时扣 1 个场次，并写配额流水；草稿不收费
-3. 围栏、签到时间窗、是否允许兼中
+3. 签到方式、围栏、签到时间窗、是否允许兼中
 4. 奖项配置、Excel 名单导入与单条增删改
 5. 活动级人数上限；运营可单独调高
 6. 活动公开码与小程序码图片
@@ -66,7 +66,8 @@ updated: 2026-09-24
 | `public_id` | varchar(21) | 唯一 |
 | `name` | varchar(100) | 非空 |
 | `status` | varchar(16) | `draft` / `ready` / `closed` |
-| `center_lat` / `center_lng` | numeric(9,6) | 可空；就绪前必填 |
+| `checkin_mode` | varchar(16) | `geo` / `direct`，默认 `geo` |
+| `center_lat` / `center_lng` | numeric(9,6) | 可空；`geo` 模式就绪前必填 |
 | `radius_m` | integer | 默认 400 |
 | `checkin_start` / `checkin_end` | timestamptz | 可空；就绪前必填 |
 | `allow_multi_win` | boolean | 默认 false |
@@ -105,11 +106,11 @@ updated: 2026-09-24
 
 | 迁移 | 条件 |
 | --- | --- |
-| `draft` → `ready` | 已有中心点、半径、时间窗和至少一名名单人员；首次就绪还需要有剩余场次 |
+| `draft` → `ready` | 已有时间窗和至少一名名单人员；`geo` 模式还需要中心点与半径；首次就绪还需要有剩余场次 |
 | `ready` → `draft` | 没有现场数据（微信绑定、签到、人工确认、中奖记录，由阶段 6、7 引入）。试跑后先按[阶段 6](phase-6-checkin.md) 重置现场数据 |
 | `ready` → `closed` | 随时；`closed` 是终态 |
 
-`ready` 下仍可改围栏、时间窗、奖项和追加名单，保存后立即生效；`allow_multi_win` 在产生中奖记录后不可改。宾客签到与抽奖只接受 `ready` 活动。`closed` 后拒绝修改配置与导入。
+`ready` 下仍可改签到方式、围栏、时间窗、奖项和追加名单，保存后立即生效；`ready` 活动从 `direct` 切到 `geo` 时必须已有中心点与半径；`allow_multi_win` 在产生中奖记录后不可改。宾客签到与抽奖只接受 `ready` 活动。`closed` 后拒绝修改配置与导入。
 
 ### 4.2 接口
 
@@ -118,7 +119,7 @@ updated: 2026-09-24
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET · POST | `/api/organization/events` | 列表 · 创建 |
-| GET · PATCH | `/api/organization/events/:id` | 详情 · 修改名称、时间窗、围栏、兼中开关、状态 |
+| GET · PATCH | `/api/organization/events/:id` | 详情 · 修改名称、签到方式、时间窗、围栏、兼中开关、状态 |
 | GET | `/api/organization/events/:id/entry` | `{public_id, path}`，`path` 为小程序路径 `pages/index/index?e=<public_id>` |
 | GET | `/api/organization/events/:id/entry/qrcode` | 小程序码 PNG |
 | POST | `/api/organization/events/:id/attendees/import` | `multipart` xlsx |
@@ -160,7 +161,8 @@ updated: 2026-09-24
 - 创建时填写名称，不受场次限制
 - 未扣过场次的活动在就绪前提示「将消耗 1 场次」；剩余场次为 0 时就绪按钮不可用并提示联系开通
 - 名单区块支持单条新增、编辑、删除
-- 详情分围栏、时间窗、名单、奖项四个区块
+- 详情分签到设置（签到方式、围栏、时间窗）、名单、奖项三个区块；`direct` 模式隐藏围栏输入但保留已填值
+- 选择 `direct` 时提示「宾客不在现场也能签到，奖池可能包含缺席者，需依靠现场缺席重抽」
 - 导入后展示成功行数或逐行错误
 - 提供小程序码下载与活动路径复制
 
@@ -174,7 +176,7 @@ updated: 2026-09-24
 | 上限调整 | 运营调高后可继续导入；低于当前人数被拒绝；`console` 令牌调用返回 `401` |
 | 隔离 | 其他组织的活动 ID 返回 `404` |
 | 导入 | 合法文件写入；重复或非法行整批拒绝；多次导入后总数超过人数上限拒绝 |
-| 状态 | `ready` 缺少围栏或名单时拒绝；非法迁移拒绝；`closed` 后拒绝修改 |
+| 状态 | `geo` 模式缺少围栏或缺少名单时拒绝就绪；`direct` 模式无围栏可就绪；就绪后切到 `geo` 但缺围栏被拒绝；非法迁移拒绝；`closed` 后拒绝修改 |
 | 小程序码 | 微信接口用测试替身；`scene` 等于 `public_id`；微信错误转为 `E_INTERNAL` 并记录原始错误码 |
 | 奖项 | `quota <= 0` 拒绝；活动内 `sort_no` 重复拒绝 |
 

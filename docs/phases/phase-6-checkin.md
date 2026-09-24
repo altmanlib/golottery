@@ -15,9 +15,9 @@ updated: 2026-09-24
 
 1. 宾客微信登录与活动上下文
 2. 名单绑定
-3. 服务端围栏判定与签到流水
+3. 按签到方式判定（`geo` 围栏判定、`direct` 直接签到）与签到流水
 4. 现场求助：定位失败的人工确认，以及名单匹配不上时的关联或新增
-5. 工作人员邀请与身份、签到进度、代签到、小程序内围栏设置
+5. 工作人员邀请与身份、签到进度、代签到、小程序内签到方式与围栏设置
 6. 小程序宾客页与管理页
 7. 名单导出追加签到列；签到尝试明细导出
 8. 重置现场数据，清理试跑结果
@@ -35,8 +35,9 @@ updated: 2026-09-24
 | --- | --- |
 | 活动 | 活动配置提供 `public_id`、围栏、时间窗和 `pending` 名单 |
 | 坐标系 | GCJ-02 |
-| 判定 | 距离减去最多 200 米精度后，仍小于等于半径才通过 |
-| 精度 | 大于 500 米拒绝自动签到 |
+| 签到方式 | 活动配置提供 `checkin_mode`：`geo` / `direct`，随时可切换 |
+| 判定 | `geo`：距离减去最多 200 米精度后，仍小于等于半径才通过；`direct`：不判断位置 |
+| 精度 | `geo` 模式下大于 500 米拒绝自动签到 |
 | 限流 | 同一 openid 每分钟最多 10 次签到请求，不按 IP 限流。进程内计数，依赖[单实例前提](../DESIGN.md#4-系统架构) |
 | 微信 | 阶段 5 已提供 `internal/wechat` 与 `WECHAT_APP_ID` / `WECHAT_APP_SECRET` |
 
@@ -46,9 +47,10 @@ updated: 2026-09-24
 
 1. 每次签到尝试都写 `checkin_attempts`，无论成败
 2. 签到更新使用条件更新，重复请求不改变第一次签到时间
-3. 人工通过与定位通过最终都写成 `checked_in`，用 `checkin_method` 区分
-4. 工作人员权限按活动授权，不复用组织管理员的 Web 口令
-5. 坐标只在导出给组织管理员时可见
+3. 定位通过、直接签到与人工通过最终都写成 `checked_in`，用 `checkin_method` 区分
+4. 签到方式以服务端当前配置为准；`direct` 模式不保存客户端传来的坐标
+5. 工作人员权限按活动授权，不复用组织管理员的 Web 口令
+6. 坐标只在导出给组织管理员时可见
 
 ## 4. 方案
 
@@ -76,10 +78,10 @@ updated: 2026-09-24
 | `openid` | 可空；活动内唯一 |
 | `status` | `pending` / `checked_in` |
 | `checkin_at` | 可空 |
-| `checkin_method` | `geo` / `manual` / `proxy`，可空 |
+| `checkin_method` | `geo` / `direct` / `manual` / `proxy`，可空 |
 | `checkin_by` | 可空；人工通过或代签到的工作人员 openid |
 
-`checkin_attempts` 只追加：活动、名单人员、openid、经纬度、精度、距离、结果、原因、时间。只记录宾客自己的定位签到；人工通过与代签到没有坐标，只写 `attendees`。
+`checkin_attempts` 只追加：活动、名单人员、openid、经纬度、精度、距离、结果、原因、时间。只记录宾客自己点击的签到；`direct` 模式下经纬度、精度、距离为空；人工通过与代签到没有坐标，只写 `attendees`。
 
 `manual_requests`（现场求助）：
 
@@ -115,15 +117,15 @@ updated: 2026-09-24
 | --- | --- | --- |
 | POST | `/api/guest/session` | `{public_id, code}`，服务端用 `code` 换 openid 并签发宾客令牌 |
 | POST | `/api/guest/bind` | `{name, phone_last4}`；匹配失败返回 `400 E_ATTENDEE_NOT_MATCHED` |
-| GET | `/api/guest/checkin` | 当前签到状态 |
-| POST | `/api/guest/checkin` | `{lat, lng, accuracy}` |
+| GET | `/api/guest/checkin` | 当前签到状态与活动当前 `checkin_mode` |
+| POST | `/api/guest/checkin` | `geo`：`{lat, lng, accuracy}` 必填；`direct`：空请求体，带了坐标也忽略 |
 | POST | `/api/guest/manual-requests` | 已绑定：`{reason}`；未绑定：`{name, phone_last4, reason}`。绑定被锁定时仍可提交 |
 
 `GET /api/guest/checkin` 同时返回当前求助的状态，未绑定的宾客也能看到处理结果。
 
 绑定限速：手机号后四位只有 1 万种组合，姓名又容易猜到。同一 openid 在同一活动内连续匹配失败 5 次后锁定 10 分钟，返回 `429 E_TOO_MANY_ATTEMPTS`。计数复用 `login_attempts`，键为 `bind:<event_id>:<openid>`。
 
-判定顺序：未绑定、活动非 `ready`、已签到、时间窗外、坐标非法、精度过差、围栏外、通过。已签到排在时间窗之前，窗口关闭后再点签到仍看到已签到。错误码分别为 `E_NOT_BOUND`、`E_EVENT_NOT_OPEN`、（已签到返回 `200` 和原签到时间，不写第二次成功状态）、`E_WINDOW_CLOSED`、`E_BAD_REQUEST`、`E_LOW_ACCURACY`、`E_OUT_OF_RANGE`。新增的码与 `E_ATTENDEE_NOT_MATCHED` 一并补进 `bizerr` 与 [技术方案 §7.2](../DESIGN.md#72-错误体与错误码)。
+判定顺序：未绑定、活动非 `ready`、已签到、时间窗外；`direct` 模式到此通过，`geo` 模式继续判断坐标非法、精度过差、围栏外，全部通过才签到。已签到排在时间窗之前，窗口关闭后再点签到仍看到已签到。错误码分别为 `E_NOT_BOUND`、`E_EVENT_NOT_OPEN`、（已签到返回 `200` 和原签到时间，不写第二次成功状态）、`E_WINDOW_CLOSED`、`E_BAD_REQUEST`、`E_LOW_ACCURACY`、`E_OUT_OF_RANGE`。新增的码与 `E_ATTENDEE_NOT_MATCHED` 一并补进 `bizerr` 与 [技术方案 §7.2](../DESIGN.md#72-错误体与错误码)。
 
 ### 4.3 现场管理接口
 
@@ -137,7 +139,7 @@ updated: 2026-09-24
 | POST | `/api/guest/staff/manual-requests/:id/reject` | 拒绝 |
 | POST | `/api/guest/staff/checkins/proxy` | `{attendee_id}` 代签到 |
 | GET | `/api/guest/staff/attendees?q=` | 按姓名搜索，供代签到选人 |
-| PATCH | `/api/guest/staff/fence` | `{center_lat, center_lng, radius_m}`，仅 `admin`，PRD M5 |
+| PATCH | `/api/guest/staff/checkin-settings` | `{checkin_mode, center_lat, center_lng, radius_m}`，字段可部分提交，仅 `admin`，PRD M5。切到 `geo` 时缺围栏返回 `400 E_BAD_REQUEST` |
 
 无现场权限统一返回 `404 E_NOT_FOUND`。
 
@@ -171,7 +173,9 @@ updated: 2026-09-24
 - 宾客页显示未签到、已签到、待确认
 - 绑定失败或被锁定时提示「联系现场工作人员」并提供求助表单
 - 管理页处理未绑定者的求助时，先按申报姓名搜索名单，再选「关联」或「新增」
-- 定位拒绝时引导打开设置
+- 点签到时先读取当前 `checkin_mode`：`geo` 才调用 `wx.getLocation`，`direct` 不调用也不弹授权；签到请求失败后重新读取状态，应对现场切换
+- `geo` 模式下定位拒绝时引导打开设置
+- 管理页对 `admin` 展示签到方式切换，切到 `direct` 前展示与控制台相同的代价提示
 - 管理页只在 staff 接口返回成功时显示
 
 微信 `appSecret` 只放服务端。
@@ -181,6 +185,8 @@ updated: 2026-09-24
 | 对象 | 用例 |
 | --- | --- |
 | 距离 | 边界内通过、边界外拒绝、精度抵扣最多 200 米、精度超过 500 米拒绝 |
+| 直接签到 | 无坐标通过且方式为 `direct`；带坐标也不落库；未绑定、时间窗外仍被拒绝 |
+| 切换 | `geo` 切 `direct` 后原先围栏外的宾客可签到；`direct` 切 `geo` 后已签到记录不变、无坐标请求被拒绝；`staff` 角色不能切换 |
 | 幂等 | 并发两次签到只有一条 `checked_in` |
 | 绑定 | 第二个 openid 绑定同一名单人员被拒绝；连续失败 5 次返回 `429` |
 | 邀请 | 邀请码过期或已使用被拒绝；其他活动的邀请码无效 |
