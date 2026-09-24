@@ -4,7 +4,7 @@
 
 技术栈：原生小程序 · TypeScript · 微信开发者工具
 
-需求与技术方案见 [docs/README.md](docs/README.md)
+需求与技术方案见仓库根目录 [docs/README.md](../docs/README.md)
 
 ## 快速开始
 

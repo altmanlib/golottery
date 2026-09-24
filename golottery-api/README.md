@@ -4,7 +4,7 @@
 
 技术栈：Go · Echo · GORM · PostgreSQL
 
-需求与技术方案见 [docs/README.md](docs/README.md)
+需求与技术方案见仓库根目录 [docs/README.md](../docs/README.md)
 
 ## 快速开始
 

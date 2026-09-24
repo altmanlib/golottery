@@ -40,7 +40,6 @@ updated: 2026-09-24
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
 | P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 8 上线 |
-| P-14 | docs | 删除 `golottery-api/docs`、`golottery-web/docs`、`golottery-mp/docs` 下的旧版文档（JWT、bcrypt、分层包结构等已被根 `docs/` 取代），`golottery-mp/AGENTS.md` 改为指向根 `docs/` |
 
 ## 5. 之后
 
@@ -70,4 +69,5 @@ updated: 2026-09-24
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
+| P-14 | HASH | docs | 删除三个子项目下的旧版文档，子项目 README 与 AGENTS.md 改为指向根 `docs/` |
 | P-1 | 33d5163 | api, web | 阶段 1 工程基线：config / store / httpapi / bizerr / auth、Web 令牌客户端 |
