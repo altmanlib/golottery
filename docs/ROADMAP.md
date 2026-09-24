@@ -69,5 +69,5 @@ updated: 2026-09-24
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
-| P-14 | HASH | docs | 删除三个子项目下的旧版文档，子项目 README 与 AGENTS.md 改为指向根 `docs/` |
+| P-14 | f374059 | docs | 删除三个子项目下的旧版文档，子项目 README 与 AGENTS.md 改为指向根 `docs/` |
 | P-1 | 33d5163 | api, web | 阶段 1 工程基线：config / store / httpapi / bizerr / auth、Web 令牌客户端 |
