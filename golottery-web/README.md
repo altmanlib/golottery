@@ -2,7 +2,7 @@
 
 控制台与大屏前端
 
-技术栈：Vite · React 18 · Mantine 8 · TanStack Query · Zustand
+技术栈：Vite · React 19 · Mantine 8 · TanStack Query · Zustand
 
 需求与技术方案见 [docs/README.md](docs/README.md)
 

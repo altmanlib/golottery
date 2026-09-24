@@ -82,7 +82,7 @@ updated: 2026-09-24
 | 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §11 |
 | 口令 | `golang.org/x/crypto/argon2` | argon2id，PHC 字符串 |
 | 门禁 | `make fmt` + `make lint` + `make test` | golangci-lint：errcheck / govet / ineffassign / staticcheck |
-| 前端 | Bun + Vite + React 18 + TypeScript + Mantine 8 | TanStack Query、React Router、Vitest、Biome |
+| 前端 | Bun + Vite + React 19 + TypeScript + Mantine 8 | TanStack Query、React Router、Vitest、Biome |
 | API 客户端 | `@hey-api/openapi-ts` → `src/api-gen` | 同一份 `openapi.yaml`；运行时在 `src/api.ts` 注入令牌与 `401` |
 
 ### 4.2 目录

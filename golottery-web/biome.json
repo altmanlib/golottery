@@ -1,19 +1,38 @@
 {
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "biome.json"]
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 160,
-    "includes": ["src/**/*.ts", "src/**/*.tsx", "!src/api-gen/**"]
+    "lineWidth": 160
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "semicolons": "always",
-      "trailingCommas": "all"
+      "semicolons": "asNeeded",
+      "trailingCommas": "all",
+      "bracketSameLine": true
     }
-  },
-  "linter": {
-    "enabled": false
   }
 }
