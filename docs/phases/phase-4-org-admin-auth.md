@@ -32,7 +32,7 @@ updated: 2026-09-24
 | 项 | 现状 |
 | --- | --- |
 | 令牌 | `auth.TokenIssuer` 已能签发 `console` 类型，但还没有登录入口 |
-| 运营认证 | [阶段 2](phase-2-console-auth.md) 提供 `platform` 令牌与登录限速 |
+| 运营认证 | [阶段 2](phase-2-platform-auth.md) 提供 `platform` 令牌与登录限速 |
 | 组织 | [阶段 3](phase-3-org-quota.md) 提供 `orgs.id` 与 `orgs.status` |
 | 隔离 | 管理员只能看见令牌里的 `org_id` |
 
@@ -73,11 +73,11 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/console/orgs/:id/users` | 该组织的管理员列表，不含口令哈希 |
-| POST | `/api/console/orgs/:id/users` | `{name, email}` → `{id, email, password}` |
-| POST | `/api/console/orgs/:id/users/:userId/reset-password` | 返回一次性新口令 |
-| POST | `/api/console/orgs/:id/users/:userId/disable` | 停用并删除该账号全部令牌 |
-| POST | `/api/console/orgs/:id/users/:userId/enable` | 启用，不改口令 |
+| GET | `/api/platform/orgs/:id/users` | 该组织的管理员列表，不含口令哈希 |
+| POST | `/api/platform/orgs/:id/users` | `{name, email}` → `{id, email, password}` |
+| POST | `/api/platform/orgs/:id/users/:userId/reset-password` | 返回一次性新口令 |
+| POST | `/api/platform/orgs/:id/users/:userId/disable` | 停用并删除该账号全部令牌 |
+| POST | `/api/platform/orgs/:id/users/:userId/enable` | 启用，不改口令 |
 
 组织不存在返回 `404 E_NOT_FOUND`。邮箱重复返回 `409 E_CONFLICT`。邮箱格式不合法或姓名为空返回 `400 E_BAD_REQUEST`。用户不属于路径中的组织时返回 `404 E_NOT_FOUND`，不暴露该用户属于别的组织。
 
@@ -96,21 +96,21 @@ updated: 2026-09-24
 
 ### 4.4 前端
 
-控制台按令牌类型分两条入口。令牌按主体分开存储：`gl.token.platform`、`gl.token.console`，阶段 7 再加 `gl.token.host`。同一浏览器同时登录运营、组织控制台或大屏时互不覆盖。`src/api.ts` 按请求路径前缀选择令牌，`gl.token` 在本阶段删除：
+Web 按令牌类型分两条入口。令牌按主体分开存储：`gl.token.platform`、`gl.token.console`，阶段 7 再加 `gl.token.host`。同一浏览器同时登录运营、组织控制台或大屏时互不覆盖。`src/api.ts` 按请求路径前缀选择令牌，`gl.token` 在本阶段删除：
 
-- `/login` 继续是运营登录
+- `/platform/login` 继续是运营登录
 - `/organization/login` 是组织管理员登录
 - 运营的组织详情里可以创建管理员，并一次性展示临时口令
 - 管理员登录后进入 `/organization`，只看到自己的组织
 
-`401` 时按请求 URL 清除对应令牌并回对应登录页：`/api/organization/*` 清 `gl.token.console` 并回 `/organization/login`，`/api/console/*` 清 `gl.token.platform` 并回 `/login`。登录接口自身的 `401` 不触发跳转，由表单展示错误。本阶段不在 `/organization` 做活动页面。
+`401` 时按请求 URL 清除对应令牌并回对应登录页：`/api/organization/*` 清 `gl.token.console` 并回 `/organization/login`，`/api/platform/*` 清 `gl.token.platform` 并回 `/platform/login`。登录接口自身的 `401` 不触发跳转，由表单展示错误。本阶段不在 `/organization` 做活动页面。
 
 ### 4.5 测试
 
 | 对象 | 用例 |
 | --- | --- |
 | 创建 | 临时口令只出现在响应里；库内哈希可校验；重复邮箱返回 `409` |
-| 登录 | 正确口令得到 `console` 令牌；该令牌不能访问 `/api/console/me` |
+| 登录 | 正确口令得到 `console` 令牌；该令牌不能访问 `/api/platform/me` |
 | 隔离 | 令牌只能解析出自己的 `org_id` |
 | 停用 | 停用账号或停用组织后，旧令牌访问 `/api/organization/me` 返回 `401` |
 | 重置与改密 | 旧令牌失效；响应里的新口令或新令牌可用 |

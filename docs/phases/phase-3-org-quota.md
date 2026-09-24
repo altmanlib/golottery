@@ -16,7 +16,7 @@ updated: 2026-09-24
 1. `orgs`、`org_quotas`、`credit_ledger` 三张表
 2. 开通组织、停用与启用、调整场次与人数上限
 3. 每次配额变化写一条只追加流水
-4. 控制台列出组织与剩余场次
+4. 运营后台列出组织与剩余场次
 
 不做：
 
@@ -30,7 +30,7 @@ updated: 2026-09-24
 
 | 项 | 现状 |
 | --- | --- |
-| 身份 | 控制台认证计划只提供 `platform` 令牌，本模块全部接口使用它 |
+| 身份 | 运营认证只提供 `platform` 令牌，本模块全部接口使用它 |
 | 配额规则 | 创建活动消耗 1 个场次；用尽后不可创建。创建动作不在本模块 |
 | 人数档位 | 体验 100、标准 800、加量 2000。首发由运营写入，不在线购买 |
 | 隔离 | 共享库，业务行带 `org_id`。本模块的行本身就是组织 |
@@ -91,16 +91,16 @@ updated: 2026-09-24
 
 ### 4.2 接口
 
-全部在 `/api/console` 下，要求 `platform` 令牌。
+全部在 `/api/platform` 下，要求 `platform` 令牌。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/console/orgs` | 列表。项含名称、状态、剩余场次、人数上限 |
-| POST | `/api/console/orgs` | `{name, contact, event_credits, max_attendees}` |
-| GET | `/api/console/orgs/:id` | 组织、配额、最近 20 条流水 |
-| POST | `/api/console/orgs/:id/disable` | 停用 |
-| POST | `/api/console/orgs/:id/enable` | 启用 |
-| POST | `/api/console/orgs/:id/credits` | `{delta, reason}` |
+| GET | `/api/platform/orgs` | 列表。项含名称、状态、剩余场次、人数上限 |
+| POST | `/api/platform/orgs` | `{name, contact, event_credits, max_attendees}` |
+| GET | `/api/platform/orgs/:id` | 组织、配额、最近 20 条流水 |
+| POST | `/api/platform/orgs/:id/disable` | 停用 |
+| POST | `/api/platform/orgs/:id/enable` | 启用 |
+| POST | `/api/platform/orgs/:id/credits` | `{delta, reason}` |
 
 校验：
 
@@ -116,7 +116,7 @@ updated: 2026-09-24
 
 ### 4.3 前端
 
-控制台在 `/console` 下增加组织列表与开通表单：
+运营后台在 `/platform` 下增加组织列表与开通表单：
 
 - 列表显示名称、状态、剩余场次、人数上限
 - 开通时填写名称、联系人、初始场次、人数上限

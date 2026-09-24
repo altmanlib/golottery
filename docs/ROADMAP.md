@@ -33,7 +33,7 @@ updated: 2026-09-24
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-5 | api, web | 阶段 2 控制台认证。见 [phases/phase-2-console-auth.md](phases/phase-2-console-auth.md) |
+| P-5 | api, web | 阶段 2 运营认证。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |
 
 ## 4. 计划中
 

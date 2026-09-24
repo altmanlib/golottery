@@ -1,25 +1,27 @@
 ---
-title: 阶段 2：控制台认证
+title: 阶段 2：运营认证
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 阶段 2：控制台认证
+# 阶段 2：运营认证
 
 ## 1. 目标与范围
 
-在工程基线上交付 Web 控制台的账号认证。凭证继续用已有的 Bearer API Token：明文只返回一次，库内只存 SHA-256，吊销即删行。
+在工程基线上交付平台运营后台的账号认证。凭证继续用已有的 Bearer API Token：明文只返回一次，库内只存 SHA-256，吊销即删行。
 
-本阶段只做**平台运营账号**这一类主体，`principal_type = platform`。它是控制台的第一道门，后续组织、活动、配额都挂在这个会话后面。
+本阶段只做**平台运营账号**这一类主体，`principal_type = platform`。后续开通组织、调整配额、创建组织管理员都挂在这个会话后面。
+
+命名约定：`platform` 专指平台运营，API 前缀 `/api/platform`，页面前缀 `/platform`；「控制台」专指组织管理员使用的 Web 控制台，API 前缀 `/api/organization`，令牌类型 `console`。
 
 做：
 
 1. `platform_users` 表与启动时播种一个运营账号
-2. `POST /api/console/login`、`POST /api/console/logout`、`GET /api/console/me`、`POST /api/console/password`
-3. `/api/console/*` 除登录外都要求 platform 令牌
+2. `POST /api/platform/login`、`POST /api/platform/logout`、`GET /api/platform/me`、`POST /api/platform/password`
+3. `/api/platform/*` 除登录外都要求 platform 令牌
 4. 登录失败限速，账号不存在时仍做一次 argon2 校验
-5. 控制台登录页接上真实接口；`401` 沿用 `src/api.ts` 的跳转
+5. 运营登录页接上真实接口；基线占位路由 `/login`、`/console` 改为 `/platform/login`、`/platform`
 
 不做：
 
@@ -74,10 +76,10 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 鉴权 | 说明 |
 | --- | --- | --- | --- |
-| POST | `/api/console/login` | 无 | `{username, password}` → `{token, expires_at}` |
-| POST | `/api/console/logout` | platform | 删除当前令牌，`204` |
-| GET | `/api/console/me` | platform | `{username}` |
-| POST | `/api/console/password` | platform | `{current_password, new_password}` → `{token, expires_at}` |
+| POST | `/api/platform/login` | 无 | `{username, password}` → `{token, expires_at}` |
+| POST | `/api/platform/logout` | platform | 删除当前令牌，`204` |
+| GET | `/api/platform/me` | platform | `{username}` |
+| POST | `/api/platform/password` | platform | `{current_password, new_password}` → `{token, expires_at}` |
 
 登录失败、令牌缺失、令牌类型不符、令牌过期，统一 `401 E_UNAUTHORIZED` 或 `401 E_INVALID_CREDENTIALS`。口令错误用 `E_INVALID_CREDENTIALS`；未带或无效令牌用 `E_UNAUTHORIZED`。新口令少于 8 个字符返回 `400 E_PASSWORD_TOO_SHORT`；与当前口令相同返回 `400 E_PASSWORD_UNCHANGED`；当前口令不对返回 `400 E_CURRENT_PASSWORD_WRONG`。当前口令错误不用 `401`：前端遇到 `401` 会清除令牌并跳登录页，输错一次就被登出。
 
@@ -90,9 +92,10 @@ updated: 2026-09-24
 
 ### 4.3 前端
 
-- `/login` 提交用户名与口令，成功后 `setToken` 并进入 `/console`
+- `/platform/login` 提交用户名与口令，成功后 `setToken` 并进入 `/platform`
 - 登录失败展示接口返回的 `message`
-- `/console` 在没有令牌时直接去 `/login`；有令牌时请求 `GET /api/console/me`，失败交给现有 `401` 处理
+- `/platform` 在没有令牌时直接去 `/platform/login`；有令牌时请求 `GET /api/platform/me`，失败交给 `401` 处理
+- `401` 跳转目标改为 `/platform/login`；根路径 `/` 暂时重定向到 `/platform`
 - 不在本阶段做改密页面
 
 ### 4.4 测试
@@ -120,4 +123,5 @@ updated: 2026-09-24
 - `make generate` 后生成物与契约一致
 - `make fmt && make lint && make test` 全绿
 - `bun run gen:api && bun run test:run && bun run typecheck` 全绿
-- 用播种账号可以登录、看到 `/console`、登出后回到 `/login`
+- 用播种账号可以登录、看到 `/platform`、登出后回到 `/platform/login`
+- [技术方案 §8](../DESIGN.md#8-前端结构) 的路由表与测试边界同步更新
