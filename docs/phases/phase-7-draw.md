@@ -89,7 +89,7 @@ updated: 2026-09-24
 | GET | `/api/host/stream` | SSE，事件为 `snapshot`、`draw`、`void`，15 秒心跳 |
 | POST | `/api/host/draws` | `{prize_id, count, request_id}` |
 | POST | `/api/host/results/:id/void` | `{reason, request_id}` |
-| GET | `/api/org/events/:id/exports/draw-log` | 组织管理员导出日志 |
+| GET | `/api/organization/events/:id/exports/draw-log` | 组织管理员导出日志 |
 
 抽取在锁内完成：
 

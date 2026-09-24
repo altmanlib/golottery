@@ -101,18 +101,18 @@ updated: 2026-09-24
 
 ### 4.2 接口
 
-全部要求 `console` 令牌，挂在 `/api/org`。
+全部要求 `console` 令牌，挂在 `/api/organization`。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET · POST | `/api/org/events` | 列表 · 创建 |
-| GET · PATCH | `/api/org/events/:id` | 详情 · 修改名称、时间窗、围栏、兼中开关、状态 |
-| GET | `/api/org/events/:id/entry` | `{public_id, path}`，`path` 为小程序路径 `pages/index/index?e=<public_id>` |
-| POST | `/api/org/events/:id/attendees/import` | `multipart` xlsx |
-| GET | `/api/org/events/:id/attendees` | 名单分页 |
-| GET · POST | `/api/org/events/:id/prizes` | 奖项列表 · 新增 |
-| PATCH · DELETE | `/api/org/events/:id/prizes/:prizeId` | 修改 · 删除 |
-| GET | `/api/org/events/:id/exports/:type` | `attendees` 或 `winners` |
+| GET · POST | `/api/organization/events` | 列表 · 创建 |
+| GET · PATCH | `/api/organization/events/:id` | 详情 · 修改名称、时间窗、围栏、兼中开关、状态 |
+| GET | `/api/organization/events/:id/entry` | `{public_id, path}`，`path` 为小程序路径 `pages/index/index?e=<public_id>` |
+| POST | `/api/organization/events/:id/attendees/import` | `multipart` xlsx |
+| GET | `/api/organization/events/:id/attendees` | 名单分页 |
+| GET · POST | `/api/organization/events/:id/prizes` | 奖项列表 · 新增 |
+| PATCH · DELETE | `/api/organization/events/:id/prizes/:prizeId` | 修改 · 删除 |
+| GET | `/api/organization/events/:id/exports/:type` | `attendees` 或 `winners` |
 
 导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。单文件最多 `max_attendees` 行，超过返回 `400 E_BAD_REQUEST`。
 
@@ -124,7 +124,7 @@ updated: 2026-09-24
 
 ### 4.3 前端
 
-`/org` 进入活动列表：
+`/organization` 进入活动列表：
 
 - 创建时填写名称；剩余场次为 0 时按钮不可用
 - 详情分围栏、时间窗、名单、奖项四个区块

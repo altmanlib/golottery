@@ -85,25 +85,25 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 鉴权 | 说明 |
 | --- | --- | --- | --- |
-| POST | `/api/org/login` | 无 | `{email, password}` → `{token, expires_at, org_id}` |
-| POST | `/api/org/logout` | console | 删除当前令牌，`204` |
-| GET | `/api/org/me` | console | `{name, email, org_id}` |
-| POST | `/api/org/password` | console | `{current_password, new_password}` → `{token, expires_at}` |
+| POST | `/api/organization/login` | 无 | `{email, password}` → `{token, expires_at, org_id}` |
+| POST | `/api/organization/logout` | console | 删除当前令牌，`204` |
+| GET | `/api/organization/me` | console | `{name, email, org_id}` |
+| POST | `/api/organization/password` | console | `{current_password, new_password}` → `{token, expires_at}` |
 
 登录按 `org:<email>` 限速，规则与运营登录相同。邮箱不存在、口令错误、账号停用、所属组织停用，对外都返回 `401 E_INVALID_CREDENTIALS`。新口令少于 8 个字符返回 `400 E_PASSWORD_TOO_SHORT`；与当前口令相同返回 `400 E_PASSWORD_UNCHANGED`。
 
-后续组织侧业务接口统一挂在 `/api/org/*`，中间件只接受 `console` 令牌，并把解析出的 `org_id` 放进请求上下文。
+后续组织侧业务接口统一挂在 `/api/organization/*`，中间件只接受 `console` 令牌，并把解析出的 `org_id` 放进请求上下文。
 
 ### 4.4 前端
 
 控制台按令牌类型分两条入口，仍共用 `gl.token`：
 
 - `/login` 继续是运营登录
-- `/org/login` 是组织管理员登录
+- `/organization/login` 是组织管理员登录
 - 运营的组织详情里可以创建管理员，并一次性展示临时口令
-- 管理员登录后进入 `/org`，只看到自己的组织
+- 管理员登录后进入 `/organization`，只看到自己的组织
 
-`401` 时按当前路径回对应登录页：`/api/org/*` 回 `/org/login`，其余回 `/login`。本阶段不在 `/org` 做活动页面。
+`401` 时按当前路径回对应登录页：`/api/organization/*` 回 `/organization/login`，其余回 `/login`。本阶段不在 `/organization` 做活动页面。
 
 ### 4.5 测试
 
@@ -112,7 +112,7 @@ updated: 2026-09-24
 | 创建 | 临时口令只出现在响应里；库内哈希可校验；重复邮箱返回 `409` |
 | 登录 | 正确口令得到 `console` 令牌；该令牌不能访问 `/api/console/me` |
 | 隔离 | 令牌只能解析出自己的 `org_id` |
-| 停用 | 停用账号或停用组织后，旧令牌访问 `/api/org/me` 返回 `401` |
+| 停用 | 停用账号或停用组织后，旧令牌访问 `/api/organization/me` 返回 `401` |
 | 重置与改密 | 旧令牌失效；响应里的新口令或新令牌可用 |
 | 限速 | 同一邮箱连续失败达到阈值返回 `429` |
 

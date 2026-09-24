@@ -79,7 +79,7 @@ updated: 2026-09-24
 
 `manual_requests`：活动、名单人员、原因、状态 `pending` / `approved` / `rejected`、处理人 openid、处理时间。同一人员同时只能有一条 `pending`，用部分唯一索引保证。
 
-`event_staff`：`event_id + openid` 唯一，`role` 为 `staff` 或 `admin`。组织管理员不自动拥有现场权限，需要运营或组织管理员另行授权。授权接口放在 `/api/org/events/:id/staff`，入参是 openid 与角色。
+`event_staff`：`event_id + openid` 唯一，`role` 为 `staff` 或 `admin`。组织管理员不自动拥有现场权限，需要运营或组织管理员另行授权。授权接口放在 `/api/organization/events/:id/staff`，入参是 openid 与角色。
 
 ### 4.2 宾客接口
 

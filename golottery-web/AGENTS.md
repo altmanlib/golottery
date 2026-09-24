@@ -29,7 +29,7 @@ bun run gen:api    # 需 golottery-api 已启动并提供 /openapi.json
 - 动效只做 CSS 微交互：路由淡入写在对应壳的 CSS Module；弹层用 Mantine `Modal`（默认 portal 到 `body`）；尊重 `prefers-reduced-motion`
 - 加载用 `TableSkeleton`；空列表用 `EmptyState` 并带 CTA
 - toast 右下角
-- 运营控制台在 `src/console/`，路由前缀 `/console`；组织端在 `src/org/`，路由前缀 `/org`；大屏在 `src/host/`，路由前缀 `/host`。三块都懒加载
+- 运营控制台在 `src/console/`，路由前缀 `/console`；组织端在 `src/organization/`，路由前缀 `/organization`；大屏在 `src/host/`，路由前缀 `/host`。三块都懒加载
 - 分层：查询、变更与表单状态放各自目录的 `hooks/`，可复用视图块放 `components/`，页面只做装配；query key 集中在该目录的 `queryKeys.ts`
 - 筛选写入 URL
 - 不写视觉/UI 测试：不为 token、主题、CSS 变量、类名、内联样式或计算样式写 `*.test.tsx`；前端测试只覆盖纯函数与接口契约
@@ -42,7 +42,7 @@ bun run gen:api    # 需 golottery-api 已启动并提供 /openapi.json
 - 源契约：`golottery-api/api/openapi.yaml`
 - 生成产物：`src/api-gen/`（勿手改）
 - 运行时：入口 `import '#/api'`。`src/api.ts` 把 `baseUrl` 覆写为空字符串，按 `gl.token` 附加 Bearer
-- `401` 删除令牌：`/api/org/*` 跳 `/org/login`，`/api/host/*` 跳 `/host`，其余跳 `/login`
+- `401` 删除令牌：`/api/organization/*` 跳 `/organization/login`，`/api/host/*` 跳 `/host`，其余跳 `/login`
 
 业务代码只从 `#/api-gen/sdk.gen` / `#/api-gen/types.gen` 引用 API，禁止手写 fetch 封装重复描述同一接口。
 
