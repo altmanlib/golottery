@@ -9,16 +9,17 @@ updated: 2026-09-24
 
 ## 1. 目标与范围
 
-组织管理员用 `console` 令牌准备一场活动：创建活动、配置围栏与奖项、导入名单、生成活动码，并在结束后导出数据。
+组织管理员用 `console` 令牌准备一场活动：创建活动、配置围栏与奖项、导入并维护名单、生成活动码，并在结束后导出数据。
 
 做：
 
 1. `events`、`attendees`、`prizes` 三张表
-2. 创建活动时扣 1 个场次，并写配额流水
+2. 活动首次进入 `ready` 时扣 1 个场次，并写配额流水；草稿不收费
 3. 围栏、签到时间窗、是否允许兼中
-4. 奖项配置与 Excel 名单导入
-5. 活动公开码与小程序码图片
-6. 导出名单
+4. 奖项配置、Excel 名单导入与单条增删改
+5. 活动级人数上限；运营可单独调高
+6. 活动公开码与小程序码图片
+7. 导出名单
 
 不做：
 
@@ -33,18 +34,18 @@ updated: 2026-09-24
 | 项 | 现状 |
 | --- | --- |
 | 身份 | 组织管理员认证提供 `console` 令牌和 `org_id` |
-| 配额 | 组织与配额提供 `event_credits` 和 `max_attendees` |
+| 配额 | 组织与配额提供 `event_credits` 和组织默认 `max_attendees` |
 | 坐标系 | GCJ-02 |
 | 半径 | 默认 400 米，允许 100～1000 米 |
-| 导入上限 | 活动名单总人数不得超过该组织的 `max_attendees` |
+| 名单上限 | 活动名单总人数不得超过 `events.max_attendees`；导入与单条新增都校验 |
 | 时区 | 库内 `timestamptz`；控制台输入、页面展示与 Excel 导出一律按 `Asia/Shanghai` |
 
 所有查询都从令牌解出 `org_id`。路径里的活动 ID 必须属于该组织，否则返回 `404 E_NOT_FOUND`。
 
 ## 3. 原则
 
-1. 创建活动、扣场次、写流水在同一个事务里
-2. 配额不足时不创建活动
+1. 首次就绪、扣场次、写流水在同一个事务里；同一活动只扣一次，退回草稿或结束都不退还
+2. 配额不足时可以创建和配置草稿，但不能就绪
 3. 停用组织不能创建或修改活动
 4. `public_id` 使用 21 位 nanoid，不暴露自增 ID
 5. 导入整批校验。有错误时不写入任何名单行
@@ -69,6 +70,8 @@ updated: 2026-09-24
 | `radius_m` | integer | 默认 400 |
 | `checkin_start` / `checkin_end` | timestamptz | 可空；就绪前必填 |
 | `allow_multi_win` | boolean | 默认 false |
+| `max_attendees` | integer | 非空，`> 0`；创建时复制组织默认值 |
+| `credit_consumed_at` | timestamptz | 可空；首次就绪扣场次时写入 |
 | `created_at` / `updated_at` | timestamptz | |
 
 `attendees`
@@ -96,14 +99,14 @@ updated: 2026-09-24
 | `quota` | integer | `> 0` |
 | `sort_no` | integer | 活动内唯一 |
 
-创建活动时锁定组织配额行，要求组织为 `active` 且 `event_credits > 0`。成功后余额减 1，流水 `delta = -1`，原因固定为 `create event`。
+创建活动要求组织为 `active`，不扣场次。`credit_consumed_at` 为空的活动进入 `ready` 时，锁定组织配额行，要求 `event_credits > 0`；成功后余额减 1，写入 `credit_consumed_at`，流水 `delta = -1`、`event_id` 为该活动、原因固定为 `event ready`。余额为 0 时返回 `409 E_NO_EVENT_CREDITS`，补进 `bizerr`。
 
 状态迁移：
 
 | 迁移 | 条件 |
 | --- | --- |
-| `draft` → `ready` | 已有中心点、半径、时间窗和至少一名名单人员 |
-| `ready` → `draft` | 尚无签到记录 |
+| `draft` → `ready` | 已有中心点、半径、时间窗和至少一名名单人员；首次就绪还需要有剩余场次 |
+| `ready` → `draft` | 没有现场数据（微信绑定、签到、人工确认、中奖记录，由阶段 6、7 引入）。试跑后先按[阶段 6](phase-6-checkin.md) 重置现场数据 |
 | `ready` → `closed` | 随时；`closed` 是终态 |
 
 `ready` 下仍可改围栏、时间窗、奖项和追加名单，保存后立即生效；`allow_multi_win` 在产生中奖记录后不可改。宾客签到与抽奖只接受 `ready` 活动。`closed` 后拒绝修改配置与导入。
@@ -119,7 +122,8 @@ updated: 2026-09-24
 | GET | `/api/organization/events/:id/entry` | `{public_id, path}`，`path` 为小程序路径 `pages/index/index?e=<public_id>` |
 | GET | `/api/organization/events/:id/entry/qrcode` | 小程序码 PNG |
 | POST | `/api/organization/events/:id/attendees/import` | `multipart` xlsx |
-| GET | `/api/organization/events/:id/attendees` | 名单分页 |
+| GET · POST | `/api/organization/events/:id/attendees` | 名单分页 · 单条新增 `{name, dept, phone}` |
+| PATCH · DELETE | `/api/organization/events/:id/attendees/:attendeeId` | 修改姓名、部门、后四位 · 删除 |
 | GET · POST | `/api/organization/events/:id/prizes` | 奖项列表 · 新增 |
 | PATCH · DELETE | `/api/organization/events/:id/prizes/:prizeId` | 修改 · 删除 |
 | GET | `/api/organization/events/:id/exports/attendees` | 名单 xlsx。签到列由阶段 6 追加 |
@@ -130,7 +134,22 @@ updated: 2026-09-24
 
 导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。上传文件不超过 5 MB。导入后活动名单总数超过 `max_attendees` 返回 `400 E_BAD_REQUEST`。Excel 读写使用 `github.com/xuri/excelize/v2`，落地时写入 [技术方案 §4.1](../DESIGN.md#41-技术选型)。
 
-导入错误体包含行号与原因：空姓名、手机号不足四位、文件内重复、与已有名单重复。任一错误都回滚。
+导入错误体包含行号与原因：空姓名、手机号不足四位、文件内重复、与已有名单重复。任一错误都回滚。多次导入只追加，不提供覆盖导入：覆盖会冲掉已绑定的宾客。
+
+单条维护：
+
+| 操作 | 规则 |
+| --- | --- |
+| 新增 | 校验同导入；超过 `events.max_attendees` 返回 `400 E_BAD_REQUEST`；与已有 `(name, phone_last4)` 重复返回 `409 E_CONFLICT` |
+| 修改 | 姓名、部门、后四位随时可改；已绑定的微信保持不变 |
+| 删除 | 只删未绑定、未签到、未中奖的人，否则返回 `409 E_CONFLICT`。绑定与签到校验由阶段 6 补上，中奖校验由阶段 7 补上 |
+
+运营调整活动上限（要求 `platform` 令牌）：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/platform/orgs/:id/events` | 该组织的活动列表，含状态、名单人数、上限 |
+| PATCH | `/api/platform/orgs/:id/events/:eventId` | `{max_attendees}`；不能低于当前名单人数；不影响场次余额 |
 
 奖项在已有中奖记录后只允许改名称、奖品和顺序，不允许把 `quota` 改到小于已抽出的有效人数，也不允许删除。该约束由 [阶段 7](phase-7-draw.md) 在建中奖表时实现。
 
@@ -138,7 +157,9 @@ updated: 2026-09-24
 
 `/organization` 进入活动列表：
 
-- 创建时填写名称；剩余场次为 0 时按钮不可用
+- 创建时填写名称，不受场次限制
+- 未扣过场次的活动在就绪前提示「将消耗 1 场次」；剩余场次为 0 时就绪按钮不可用并提示联系开通
+- 名单区块支持单条新增、编辑、删除
 - 详情分围栏、时间窗、名单、奖项四个区块
 - 导入后展示成功行数或逐行错误
 - 提供小程序码下载与活动路径复制
@@ -147,7 +168,10 @@ updated: 2026-09-24
 
 | 对象 | 用例 |
 | --- | --- |
-| 创建 | 成功扣 1 个场次并写流水；余额为 0 或组织停用时不产生活动 |
+| 创建 | 不扣场次；复制组织人数上限；组织停用时拒绝 |
+| 扣场次 | 首次就绪扣 1 次并写带 `event_id` 的流水；退回草稿再就绪不再扣；余额为 0 时返回 `409` 且状态不变；并发就绪两场活动不能扣成负数 |
+| 名单维护 | 新增超限或重复被拒绝；修改后唯一约束仍生效 |
+| 上限调整 | 运营调高后可继续导入；低于当前人数被拒绝；`console` 令牌调用返回 `401` |
 | 隔离 | 其他组织的活动 ID 返回 `404` |
 | 导入 | 合法文件写入；重复或非法行整批拒绝；多次导入后总数超过人数上限拒绝 |
 | 状态 | `ready` 缺少围栏或名单时拒绝；非法迁移拒绝；`closed` 后拒绝修改 |
@@ -161,16 +185,9 @@ updated: 2026-09-24
 - 工作人员白名单
 - 导出签到尝试明细。由阶段 6 交付
 - 导出中奖名单。由阶段 7 交付
+- 短链。已降为 P1，登记在 [ROADMAP](../ROADMAP.md)
 
-## 6. 开放项
-
-| 问题 | 现状 | 需要在哪个阶段前定 |
-| --- | --- | --- |
-| 名单单条增删改 | 只有整批导入，导入错字或现场临时加人无法处理 | 阶段 5 开工前 |
-| 试跑数据清理 | PRD 要求活动前用测试账号跑通签到与抽奖，试跑产生的签到和中奖记录会留在正式活动里 | 阶段 6 开工前。备选：`ready` → `draft` 时允许清空签到、人工确认与中奖数据 |
-| 短链 | PRD O4 要求短链，本阶段只交付小程序码与页面路径 | 阶段 8 前，需先核实微信官方链接能力的限制 |
-
-## 7. 完成定义
+## 6. 完成定义
 
 - 迁移可重复执行，测试用真实 PostgreSQL
 - 生成物与 `openapi.yaml` 一致

@@ -9,17 +9,18 @@ updated: 2026-09-24
 
 ## 1. 目标与范围
 
-宾客从活动码进入小程序，绑定名单后在地理围栏内签到。定位失败时提交人工确认，现场工作人员在小程序里处理。
+宾客从活动码进入小程序，绑定名单后在地理围栏内签到。定位失败或名单匹配不上时提交现场求助，现场工作人员在小程序里处理。
 
 做：
 
 1. 宾客微信登录与活动上下文
 2. 名单绑定
 3. 服务端围栏判定与签到流水
-4. 人工确认
+4. 现场求助：定位失败的人工确认，以及名单匹配不上时的关联或新增
 5. 工作人员邀请与身份、签到进度、代签到、小程序内围栏设置
 6. 小程序宾客页与管理页
 7. 名单导出追加签到列；签到尝试明细导出
+8. 重置现场数据，清理试跑结果
 
 不做：
 
@@ -80,7 +81,19 @@ updated: 2026-09-24
 
 `checkin_attempts` 只追加：活动、名单人员、openid、经纬度、精度、距离、结果、原因、时间。只记录宾客自己的定位签到；人工通过与代签到没有坐标，只写 `attendees`。
 
-`manual_requests`：活动、名单人员、原因、状态 `pending` / `approved` / `rejected`、处理人 openid、处理时间。同一人员同时只能有一条 `pending`，用部分唯一索引保证；被拒绝后可以再次提交。
+`manual_requests`（现场求助）：
+
+| 字段 | 说明 |
+| --- | --- |
+| `event_id` | 非空 |
+| `openid` | 非空；提交人 |
+| `attendee_id` | 可空。已绑定者提交时即填；未绑定者由工作人员处理时填入 |
+| `claimed_name` / `claimed_phone_last4` | 未绑定者申报的姓名与后四位 |
+| `reason` | 备注 |
+| `status` | `pending` / `approved` / `rejected` |
+| `handled_by` / `handled_at` | 处理人 openid 与时间 |
+
+同一活动同一 openid 同时只能有一条 `pending`，用 `(event_id, openid) WHERE status = 'pending'` 部分唯一索引保证；被拒绝后可以再次提交。
 
 `event_staff`：`event_id + openid` 唯一，`role` 为 `staff` 或 `admin`。`admin` 额外可以在小程序里改围栏。组织管理员不自动拥有现场权限。
 
@@ -104,7 +117,9 @@ updated: 2026-09-24
 | POST | `/api/guest/bind` | `{name, phone_last4}`；匹配失败返回 `400 E_ATTENDEE_NOT_MATCHED` |
 | GET | `/api/guest/checkin` | 当前签到状态 |
 | POST | `/api/guest/checkin` | `{lat, lng, accuracy}` |
-| POST | `/api/guest/manual-requests` | `{reason}` |
+| POST | `/api/guest/manual-requests` | 已绑定：`{reason}`；未绑定：`{name, phone_last4, reason}`。绑定被锁定时仍可提交 |
+
+`GET /api/guest/checkin` 同时返回当前求助的状态，未绑定的宾客也能看到处理结果。
 
 绑定限速：手机号后四位只有 1 万种组合，姓名又容易猜到。同一 openid 在同一活动内连续匹配失败 5 次后锁定 10 分钟，返回 `429 E_TOO_MANY_ATTEMPTS`。计数复用 `login_attempts`，键为 `bind:<event_id>:<openid>`。
 
@@ -118,13 +133,32 @@ updated: 2026-09-24
 | --- | --- | --- |
 | GET | `/api/guest/staff/summary` | 应到、已签到、待确认 |
 | GET | `/api/guest/staff/manual-requests` | `pending` 列表 |
-| POST | `/api/guest/staff/manual-requests/:id/approve` | 通过并签到 |
+| POST | `/api/guest/staff/manual-requests/:id/approve` | 通过并签到，入参见下表 |
 | POST | `/api/guest/staff/manual-requests/:id/reject` | 拒绝 |
 | POST | `/api/guest/staff/checkins/proxy` | `{attendee_id}` 代签到 |
 | GET | `/api/guest/staff/attendees?q=` | 按姓名搜索，供代签到选人 |
 | PATCH | `/api/guest/staff/fence` | `{center_lat, center_lng, radius_m}`，仅 `admin`，PRD M5 |
 
 无现场权限统一返回 `404 E_NOT_FOUND`。
+
+通过求助时按申请类型处理，一步完成「绑定微信 + 签到」。工作人员当面处理即证明本人在现场：
+
+| 申请 | 入参 | 结果 |
+| --- | --- | --- |
+| 已绑定者 | `{}` | 签到 |
+| 未绑定，名单有错字 | `{attendee_id}` | 关联已有人员并绑定 openid；该人员已绑定其他 openid 时返回 `409 E_CONFLICT` |
+| 未绑定，不在名单 | `{create: {name, dept, phone_last4}}` | 新增名单人员并绑定；受 `events.max_attendees` 约束 |
+
+三种结果都写 `checkin_method = manual` 与 `checkin_by`，并删除该 openid 的绑定失败计数。
+
+重置现场数据：`POST /api/organization/events/:id/reset`，要求 `console` 令牌，入参 `{confirm_name}` 必须等于活动名称。
+
+| 项 | 规则 |
+| --- | --- |
+| 可用时间 | 仅 `checkin_start` 之前；之后返回 `409 E_CONFLICT`。这一时间点之前的数据按定义都是试跑数据 |
+| 清空 | 微信绑定、签到状态、`checkin_attempts`、`manual_requests`、`guest_sessions`；阶段 7 追加中奖记录与抽奖日志 |
+| 保留 | 名单、奖项、围栏、工作人员、主持人、场次扣减记录 |
+| 原子性 | 同一事务完成；写运行日志，记录操作人与各表删除行数 |
 
 组织管理员导出：名单导出追加签到状态、时间、方式与操作人；新增 `GET /api/organization/events/:id/exports/checkin-attempts`，含坐标、精度与距离。
 
@@ -135,6 +169,8 @@ updated: 2026-09-24
 - 工作人员邀请码走独立页面，扫码后先建立会话再调用 `join`
 - 管理页签到进度每 10 秒轮询一次
 - 宾客页显示未签到、已签到、待确认
+- 绑定失败或被锁定时提示「联系现场工作人员」并提供求助表单
+- 管理页处理未绑定者的求助时，先按申报姓名搜索名单，再选「关联」或「新增」
 - 定位拒绝时引导打开设置
 - 管理页只在 staff 接口返回成功时显示
 
@@ -149,7 +185,9 @@ updated: 2026-09-24
 | 绑定 | 第二个 openid 绑定同一名单人员被拒绝；连续失败 5 次返回 `429` |
 | 邀请 | 邀请码过期或已使用被拒绝；其他活动的邀请码无效 |
 | 状态 | `draft` / `closed` 活动拒绝签到 |
-| 人工 | 同一人不能有两条 pending；通过后方法为 `manual` |
+| 求助 | 同一 openid 不能有两条 pending；三种通过方式都得到绑定且 `manual` 签到；关联到已被他人绑定的人员返回 `409`；新增超限被拒绝；通过后绑定锁定解除 |
+| 重置 | `checkin_start` 之前清空现场数据且名单保留；之后拒绝；确认名不符拒绝；重置后可退回 `draft` |
+| 名单删除 | 已绑定或已签到的人员不能删除（补上阶段 5 的预留校验） |
 | 权限 | 普通宾客访问 staff 接口返回 `404` |
 
 ## 5. 明确不做
@@ -158,14 +196,8 @@ updated: 2026-09-24
 - 人脸、蓝牙或 Wi-Fi 校验
 - 工作人员自行注册
 
-## 6. 开放项
-
-| 问题 | 现状 | 需要在哪个阶段前定 |
-| --- | --- | --- |
-| 名单匹配失败的宾客 | 名单错字或不在名单内的人无法绑定，也就无法提交人工确认。代签到能入池，但该宾客在小程序里看不到自己的状态 | 阶段 6 开工前。依赖阶段 5「名单单条增删改」的结论 |
-
-## 7. 完成定义
+## 6. 完成定义
 
 - 真实 PostgreSQL 测试覆盖判定、幂等和权限
-- 小程序能用活动参数完成绑定、签到和人工确认
+- 小程序能用活动参数完成绑定、签到和现场求助（含名单匹配不上的情形）
 - API 格式、lint、测试全绿
