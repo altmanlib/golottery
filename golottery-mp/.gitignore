@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+miniprogram_npm/
+
+# WeChat DevTools
+project.private.config.json
+
+# Build / compile output
+dist/
+*.js.map
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Coverage
+coverage/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary
+*.tmp
+*.temp
+*.local

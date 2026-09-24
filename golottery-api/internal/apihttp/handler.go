@@ -1,0 +1,142 @@
+// Package apihttp adapts the generated OpenAPI server onto the process router.
+package apihttp
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
+
+	api "golottery/api/api"
+	"golottery/api/internal/bizerr"
+)
+
+// Server implements the generated strict interface.
+type Server struct {
+	db *gorm.DB
+}
+
+// New builds a server bound to db. A nil db reports the database as down.
+func New(db *gorm.DB) *Server {
+	return &Server{db: db}
+}
+
+var _ api.StrictServerInterface = (*Server)(nil)
+
+// Register mounts generated routes and translates bizerr values to JSON.
+func Register(engine *echo.Echo, db *gorm.DB) {
+	server := New(db)
+	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{recoverBizErr})
+	api.RegisterHandlers(engine, handler)
+}
+
+func recoverBizErr(next api.StrictHandlerFunc, _ string) api.StrictHandlerFunc {
+	return func(ctx echo.Context, request any) (any, error) {
+		response, err := next(ctx, request)
+		if err == nil {
+			return response, nil
+		}
+		if be, ok := bizerr.As(err); ok {
+			return nil, writeBizErr(ctx, be)
+		}
+		return nil, err
+	}
+}
+
+func writeBizErr(c echo.Context, be *bizerr.Error) error {
+	if c.Response().Committed {
+		return nil
+	}
+	return c.JSON(bizerr.StatusOf(be.Code), map[string]string{
+		"code":    string(be.Code),
+		"message": be.Message,
+	})
+}
+
+// GetHealthz reports liveness and whether the database answers a ping.
+func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) (api.GetHealthzResponseObject, error) {
+	dbStatus := api.Down
+	ok := false
+	if s.db != nil {
+		sqlDB, err := s.db.DB()
+		if err == nil {
+			pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			err = sqlDB.PingContext(pingCtx)
+			cancel()
+		}
+		if err == nil {
+			dbStatus = api.Up
+			ok = true
+		}
+	}
+	body := api.Healthz{
+		Ok:      ok,
+		Service: "golottery-api",
+		Ts:      time.Now().UTC(),
+		Db:      &dbStatus,
+	}
+	if !ok {
+		return api.GetHealthz503JSONResponse(body), nil
+	}
+	return api.GetHealthz200JSONResponse(body), nil
+}
+
+// GetApiInfo returns service metadata.
+func (s *Server) GetApiInfo(_ context.Context, _ api.GetApiInfoRequestObject) (api.GetApiInfoResponseObject, error) {
+	return api.GetApiInfo200JSONResponse{
+		Name:  "golottery",
+		Phase: "M1",
+		Stack: "echo+gorm+postgresql",
+		Docs:  []string{"prd", "design", "roadmap"},
+	}, nil
+}
+
+// GetOpenAPIJSON returns the embedded OpenAPI document as JSON.
+func (s *Server) GetOpenAPIJSON(_ context.Context, _ api.GetOpenAPIJSONRequestObject) (api.GetOpenAPIJSONResponseObject, error) {
+	doc, err := api.GetSpec()
+	if err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	raw, err := doc.MarshalJSON()
+	if err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	return api.GetOpenAPIJSON200JSONResponse(payload), nil
+}
+
+// GetOpenAPIYaml returns the embedded OpenAPI document as YAML.
+func (s *Server) GetOpenAPIYaml(_ context.Context, _ api.GetOpenAPIYamlRequestObject) (api.GetOpenAPIYamlResponseObject, error) {
+	raw, err := api.GetSpecJSON()
+	if err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	var doc any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	yamlBytes, err := yaml.Marshal(doc)
+	if err != nil {
+		return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	return api.GetOpenAPIYaml200ApplicationyamlResponse{
+		Body:          bytes.NewReader(yamlBytes),
+		ContentLength: int64(len(yamlBytes)),
+	}, nil
+}
+
+// DBStatus is exported for tests that need the HTTP status of a health payload.
+func DBStatus(ok bool) int {
+	if ok {
+		return http.StatusOK
+	}
+	return http.StatusServiceUnavailable
+}

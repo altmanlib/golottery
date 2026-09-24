@@ -1,0 +1,6 @@
+<view class="wrap">
+  <view class="title">golottery</view>
+  <view class="sub">小程序骨架（M0）</view>
+  <view class="row">活动 publicId：{{eventPublicId || "未进入活动"}}</view>
+  <view class="hint">请通过活动码进入；完整签到流程在 M1 实现</view>
+</view>

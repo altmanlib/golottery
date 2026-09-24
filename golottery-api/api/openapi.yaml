@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: golottery API
+  version: 0.1.0
+  description: Positioning check-in and on-site lottery API (M0 scaffold).
+servers:
+  - url: http://127.0.0.1:5568
+    description: Local development
+paths:
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: Liveness and database ping
+      tags: [system]
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthz"
+        "503":
+          description: Service or database unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthz"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api:
+    get:
+      operationId: getApiInfo
+      summary: Service metadata
+      tags: [system]
+      responses:
+        "200":
+          description: Basic service info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiInfo"
+  /openapi.yaml:
+    get:
+      operationId: getOpenAPIYaml
+      summary: OpenAPI document (YAML)
+      tags: [system]
+      responses:
+        "200":
+          description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+              example: "openapi: 3.0.3"
+  /openapi.json:
+    get:
+      operationId: getOpenAPIJSON
+      summary: OpenAPI document (JSON)
+      tags: [system]
+      responses:
+        "200":
+          description: OpenAPI JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INTERNAL_ERROR
+        message:
+          type: string
+        requestId:
+          type: string
+          nullable: true
+    Healthz:
+      type: object
+      required: [ok, service, ts]
+      properties:
+        ok:
+          type: boolean
+        service:
+          type: string
+          example: golottery-api
+        ts:
+          type: string
+          format: date-time
+        db:
+          type: string
+          description: Database status
+          enum: [up, down, skipped]
+    ApiInfo:
+      type: object
+      required: [name, phase, stack, docs]
+      properties:
+        name:
+          type: string
+          example: golottery
+        phase:
+          type: string
+          example: M0
+        stack:
+          type: string
+          example: echo+gorm+postgresql
+        docs:
+          type: array
+          items:
+            type: string

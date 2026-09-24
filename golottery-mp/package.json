@@ -1,0 +1,5 @@
+{
+  "name": "@golottery/mp",
+  "private": true,
+  "description": "WeChat mini program scaffold (native). Open this directory in WeChat DevTools."
+}

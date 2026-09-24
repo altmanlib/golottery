@@ -1,0 +1,15 @@
+.wrap {
+  padding: 48rpx;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: 600;
+}
+
+.sub,
+.row,
+.hint {
+  margin-top: 24rpx;
+  color: #666;
+}

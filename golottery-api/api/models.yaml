@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/v2.8.0/configuration-schema.json
+package: api
+output: models.gen.go
+generate:
+  models: true
+output-options:
+  # Keep schemas that are not yet referenced by paths (e.g. shared Error).
+  skip-prune: true
