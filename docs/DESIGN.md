@@ -26,7 +26,7 @@ updated: 2026-09-24
 - 自动计费与开票
 - 对象存储、封面、Redis
 
-工程基线的交付范围见 [phases/phase-1-engineering-baseline.md](phases/phase-1-engineering-baseline.md)。业务表与业务接口不在基线内。
+工程基线的交付范围见 [phases/phase-1-baseline.md](phases/phase-1-baseline.md)。业务表与业务接口不在基线内。
 
 ## 2. 约束
 

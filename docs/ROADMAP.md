@@ -13,7 +13,7 @@ updated: 2026-09-24
 
 - 本文件是唯一登记待办与已知缺口的文档，其余文档只记录当前事实
 - **开始工作前**先读本文件，从「计划中」中取最靠前、依赖已满足的一项
-- **开工时**把条目移到「现在」，在 `docs/plan/` 新建或关联计划文件
+- **开工时**把条目移到「现在」，并确认对应的 `docs/phases/phase-<n>-<slug>.md` 已定稿
 - **完成时**移到「已完成」并写上提交号；roadmap 的改动与对应工作放在同一个提交里
 - **发现新工作**登记到「之后」
 - 「现在」最多两项
@@ -33,7 +33,7 @@ updated: 2026-09-24
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-1 | api, web | 阶段 1 工程基线：config / store / httpapi / bizerr / auth、Web 令牌客户端 |
+| P-5 | api, web | 阶段 2 控制台认证。见 [phases/phase-2-console-auth.md](phases/phase-2-console-auth.md) |
 
 ## 4. 计划中
 
@@ -45,18 +45,24 @@ updated: 2026-09-24
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-2 | api, web | 阶段 2：组织登录、活动、名单、奖项、配额 |
-| P-3 | api, web, mp | 阶段 3：围栏签到、抽奖事务、SSE |
-| P-4 | ops | 阶段 4：镜像发版、反向代理、备份 |
+| P-2 | api, web | 阶段 3 组织与配额。见 [phases/phase-3-org-quota.md](phases/phase-3-org-quota.md) |
+| P-6 | api, web | 阶段 4 组织管理员认证。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
+| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md) |
+| P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
+| P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
+| P-4 | ops | 阶段 8 上线与现场兜底。见 [phases/phase-8-launch.md](phases/phase-8-launch.md) |
 
 ## 6. 暂缓
 
 | 编号 | 范围 | 结论与触发条件 |
 | --- | --- | --- |
-| — | — | — |
+| P-9 | web | 复制活动模板。触发条件：同一组织需要重复办活动 |
+| P-10 | mp, api | 中奖订阅消息、我的活动列表。触发条件：首发现场流程稳定 |
+| P-11 | api | 运营用量统计。触发条件：手动开通组织超过电子表格可维护的规模 |
+| P-12 | ops | 在线支付与发票。触发条件：不再由运营手工开通场次 |
 
 ## 7. 已完成
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
-| — | — | — | — |
+| P-1 | 33d5163 | api, web | 阶段 1 工程基线：config / store / httpapi / bizerr / auth、Web 令牌客户端 |
