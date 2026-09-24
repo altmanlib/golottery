@@ -55,7 +55,7 @@ updated: 2026-09-24
               \                 /
                \   HTTPS       /
                 ▼             ▼
-              Nginx（生产，阶段 4）
+              Nginx（生产，阶段 8）
                      │
                      ▼
         golottery-api (Go, echo)  127.0.0.1:5568
@@ -67,7 +67,9 @@ updated: 2026-09-24
                PostgreSQL 18
 ```
 
-没有异步任务，没有对象存储。签到与抽奖都是短事务。大屏推送用 SSE，在业务阶段挂到同一进程。
+没有进程内异步任务，没有对象存储。签到与抽奖都是短事务。大屏推送用 SSE，在业务阶段挂到同一进程。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
+
+**单实例前提**：SSE 广播与按 openid 限流都在进程内实现，只在单个 API 实例下成立。改为多实例是触发条件后的事，届时再引入共享状态。
 
 ### 4.1 技术选型
 
@@ -79,7 +81,7 @@ updated: 2026-09-24
 | 持久化 | `gorm.io/gorm` + `gorm.io/driver/postgres`（pgx） | 显式 SQL 迁移（`internal/store/migrations` + `schema_migrations`） |
 | 数据库 | PostgreSQL 18（`postgres:18-alpine`） | 本机 Compose；生产与 api 同机 |
 | 令牌 | Bearer API Token，库内只存 SHA-256 | 标准库 `crypto/sha256`；明文只在签发时返回一次 |
-| 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §11 |
+| 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §10 |
 | 口令 | `golang.org/x/crypto/argon2` | argon2id，PHC 字符串 |
 | 门禁 | `make fmt` + `make lint` + `make test` | golangci-lint：errcheck / govet / ineffassign / staticcheck |
 | 前端 | Bun + Vite + React 19 + TypeScript + Mantine 8 | TanStack Query、React Router、Vitest、Biome |
@@ -285,6 +287,8 @@ bizerr ──→ 标准库
 
 ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `golottery settings` 写入 `settings` 表覆盖，优先级 `settings > .env > 环境变量 > 默认值`，改动后重启生效。
 
+`.env` 用 `godotenv.Overload` 加载，会覆盖同名环境变量。生产只用环境变量注入，工作目录不放 `.env`。`make dev` 用 shell `.` 读取 `.env`，含 `$` 的值（如 argon2id PHC 哈希）必须用单引号包裹。
+
 | 键 | Scope | 默认 | Secret | 说明 |
 | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | Infra | （必填） | ✅ | PostgreSQL URL |
@@ -304,7 +308,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 
 | 层 | 做法 |
 | --- | --- |
-| `config` | 必填项缺失时报出键名；`SESSION_SECRET` 过短拒绝；ScopeInfra 不接受 settings 覆盖；优先级 `settings > 环境变量 > 默认值` |
+| `config` | 必填项缺失时报出键名；`SESSION_SECRET` 过短拒绝；ScopeInfra 不接受 settings 覆盖；优先级 `settings > .env > 环境变量 > 默认值` |
 | `settings` | 读写删；未知键与 ScopeInfra 键拒绝 |
 | `store` | 真实库 `Ping` / `Migrate` / `Reset`；默认 `postgres://postgres:secret@127.0.0.1:15436/golottery_test?sslmode=disable` |
 | `bizerr` | 每个 Code 都有文案；文案句尾无中文句号 |

@@ -39,7 +39,8 @@ updated: 2026-09-24
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| — | — | — |
+| P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 8 上线 |
+| P-14 | docs | 删除 `golottery-api/docs`、`golottery-web/docs`、`golottery-mp/docs` 下的旧版文档（JWT、bcrypt、分层包结构等已被根 `docs/` 取代），`golottery-mp/AGENTS.md` 改为指向根 `docs/` |
 
 ## 5. 之后
 
@@ -51,6 +52,8 @@ updated: 2026-09-24
 | P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
 | P-4 | ops | 阶段 8 上线与现场兜底。见 [phases/phase-8-launch.md](phases/phase-8-launch.md) |
+| P-15 | mp, api | 宾客端中奖结果展示（PRD G6，P1）。依赖阶段 7 |
+| P-16 | api | 多场并行时按活动限流（PRD §9）。依赖阶段 8 压测结果；单场达标且无并行活动冲突时转暂缓 |
 
 ## 6. 暂缓
 
@@ -60,6 +63,7 @@ updated: 2026-09-24
 | P-10 | mp, api | 中奖订阅消息、我的活动列表。触发条件：首发现场流程稳定 |
 | P-11 | api | 运营用量统计。触发条件：手动开通组织超过电子表格可维护的规模 |
 | P-12 | ops | 在线支付与发票。触发条件：不再由运营手工开通场次 |
+| P-17 | api, web | 组织管理员邀请其他管理员（PRD O5），首发由运营代建。触发条件：运营代建管理员成为经常性工作 |
 
 ## 7. 已完成
 

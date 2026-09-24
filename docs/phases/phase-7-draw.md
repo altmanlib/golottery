@@ -1,11 +1,11 @@
 ---
-title: 现场抽奖
+title: 阶段 7：现场抽奖
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 现场抽奖
+# 阶段 7：现场抽奖
 
 ## 1. 目标与范围
 
@@ -16,8 +16,9 @@ updated: 2026-09-24
 1. 主持人登录
 2. 抽奖事务、一人一奖、作废与重抽
 3. SSE 和刷新后的状态恢复
-4. 大屏控制页
-5. 抽奖日志导出
+4. 大屏控制页与签到大屏
+5. 中奖名单与抽奖日志导出
+6. 奖项在有中奖记录后的修改约束（[阶段 5 §4.2](phase-5-event-setup.md#42-接口)）
 
 不做：
 
@@ -39,7 +40,7 @@ updated: 2026-09-24
 
 ## 3. 原则
 
-1. 相同 `request_id` 重复提交返回第一次的结果
+1. 抽奖请求相同 `request_id` 重复提交返回第一次的结果；作废天然幂等，已是 `void` 时直接返回当前记录
 2. 同一活动的抽奖、作废、重抽用事务咨询锁串行
 3. 中奖记录只追加。作废把状态改为 `void`，不删除
 4. 抽奖提交成功后才发布 SSE
@@ -57,10 +58,10 @@ updated: 2026-09-24
 | --- | --- | --- |
 | `id` | uuid | 主键 |
 | `org_id` / `event_id` | uuid | `event_id` 唯一 |
-| `username` | varchar(64) | 活动内唯一 |
 | `password_hash` | text | argon2id |
+| `created_at` / `updated_at` | timestamptz | |
 
-组织管理员在活动详情创建或重置主持人，临时口令只返回一次。
+每场活动只有一个主持人凭证，不设用户名，与 PRD「活动专属链接 + 主持人口令」一致。组织管理员用 `POST /api/organization/events/:id/host` 创建或重置，临时口令只返回一次；重置时删除该主持人全部 `host` 令牌。主持人登录按 `host:<event_public_id>` 限速。
 
 `draw_results`
 
@@ -69,11 +70,19 @@ updated: 2026-09-24
 | `id` | uuid | 主键 |
 | `org_id` / `event_id` / `prize_id` / `attendee_id` | uuid | 非空 |
 | `status` | varchar(16) | `valid` / `void` |
+| `exclusive` | boolean | 写入时复制 `NOT events.allow_multi_win` |
 | `void_reason` | varchar(200) | 可空 |
 | `voided_at` | timestamptz | 可空 |
 | `created_at` | timestamptz | |
 
-`allow_multi_win = false` 时，部分唯一索引保证同一人只有一条 `valid`。为 true 时，唯一范围改为同一奖项下的同一人。
+部分唯一索引不能引用其他表的列，因此建两条：
+
+| 索引 | 范围 |
+| --- | --- |
+| `(prize_id, attendee_id) WHERE status = 'valid'` | 始终生效：同一奖项同一人只有一条有效记录 |
+| `(event_id, attendee_id) WHERE status = 'valid' AND exclusive` | 禁止兼中时：同一活动同一人只有一条有效记录 |
+
+活动产生中奖记录后 `allow_multi_win` 不可改，保证同一活动内 `exclusive` 取值一致。
 
 `draw_logs`：活动、奖项、奖池人数、抽取人数、操作人、`request_id`、创建时间。`request_id` 全局唯一。
 
@@ -83,13 +92,22 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| POST | `/api/host/login` | `{event_public_id, username, password}` |
+| POST | `/api/host/login` | `{event_public_id, password}` |
 | GET | `/api/host/snapshot` | 奖项、剩余名额、签到人数、有效中奖记录 |
 | GET | `/api/host/pool` | 当前可抽取人员的姓名与部门 |
-| GET | `/api/host/stream` | SSE，事件为 `snapshot`、`draw`、`void`，15 秒心跳 |
+| GET | `/api/host/stream` | SSE，事件为 `snapshot`、`draw`、`void`、`stats` |
 | POST | `/api/host/draws` | `{prize_id, count, request_id}` |
-| POST | `/api/host/results/:id/void` | `{reason, request_id}` |
-| GET | `/api/organization/events/:id/exports/draw-log` | 组织管理员导出日志 |
+| POST | `/api/host/results/:id/void` | `{reason}` |
+| GET | `/api/organization/events/:id/exports/winners` | 中奖名单，作废单独标注 |
+| GET | `/api/organization/events/:id/exports/draw-log` | 抽奖日志 |
+
+SSE 约定：
+
+- 浏览器 `EventSource` 不能设置 `Authorization` 头。大屏用 `fetch` 读取流式响应并自行解析 SSE，沿用 Bearer；不把令牌放进 URL，避免进入访问日志
+- `stats` 每 5 秒推送一次签到人数，兼作心跳，满足 PRD D1 签到大屏
+- 响应头带 `X-Accel-Buffering: no`
+- 广播在进程内完成，依赖[单实例前提](../DESIGN.md#4-系统架构)
+- `http.Server` 不设 `WriteTimeout`；关闭时用 `RegisterOnShutdown` 主动结束所有流，否则 `Shutdown` 会等到 5 秒超时
 
 抽取在锁内完成：
 
@@ -100,11 +118,13 @@ updated: 2026-09-24
 5. 写中奖记录和抽奖日志
 6. 提交后发 SSE
 
-名额不足、奖池不足返回 `409 E_CONFLICT`。`count` 小于 1 返回 `400 E_BAD_REQUEST`。
+活动非 `ready`、名额不足、奖池不足返回 `409 E_CONFLICT`。`count` 小于 1 返回 `400 E_BAD_REQUEST`。作废只改状态，补抽由主持人再发一次 `count = 1` 的抽奖请求。
 
 ### 4.3 大屏
 
-`/host` 先登录，再进入单一活动：
+`/host/:publicId` 先输入主持人口令，再进入该活动。令牌存 `gl.token.host`：
+
+- 抽奖前展示活动小程序码与实时签到人数
 
 - 展示剩余名额、签到人数和奖池
 - 开始抽奖后只播放服务端返回的名单
@@ -121,7 +141,9 @@ updated: 2026-09-24
 | 幂等 | 同一 `request_id` 不产生第二组结果 |
 | 并发 | 两个请求不能抽出超过名额的人数，也不能让同一人在禁止兼中时中两次 |
 | 作废 | 原记录保留；重抽不再抽到该奖项已作废的人 |
-| SSE | 数据库提交失败时不发送抽中事件 |
+| 兼中 | `allow_multi_win = false` 时同一人不能中两个奖项；为 true 时同一奖项仍不能中两次；有记录后改开关被拒绝 |
+| 奖项 | 有中奖记录后删除或把 `quota` 改到小于有效人数被拒绝 |
+| SSE | 数据库提交失败时不发送抽中事件；服务关闭时流在 5 秒内结束 |
 
 ## 5. 明确不做
 

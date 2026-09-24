@@ -1,11 +1,11 @@
 ---
-title: 控制台用户认证
+title: 阶段 2：控制台认证
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 控制台用户认证
+# 阶段 2：控制台认证
 
 ## 1. 目标与范围
 
@@ -38,7 +38,7 @@ updated: 2026-09-24
 | 契约 | 业务接口只写在 `api/openapi.yaml`，前后端都从生成物引用 |
 | 前端 | `gl.token`、Bearer 拦截器、`401` 跳 `/login` 已接好；登录页是占位 |
 
-配置沿用现有键：`PLATFORM_USER`、`PLATFORM_PASSWORD_HASH` 本阶段新增为 ScopeInfra 必填；`PLATFORM_SESSION_TTL`、`LOGIN_MAX_FAILURES`、`LOGIN_WINDOW` 已存在。
+配置：本阶段新增 ScopeInfra 键 `PLATFORM_USER`、`PLATFORM_PASSWORD_HASH`，写入 [技术方案 §10](../DESIGN.md#10-配置)。两者只在 `platform_users` 为空时必填，表非空时可以不配。`PHC` 哈希含 `$`，写进 `.env` 时用单引号包裹。`PLATFORM_SESSION_TTL`、`LOGIN_MAX_FAILURES`、`LOGIN_WINDOW` 已存在。
 
 ## 3. 原则
 
@@ -62,9 +62,11 @@ updated: 2026-09-24
 | `password_hash` | text | argon2id |
 | `created_at` / `updated_at` | timestamptz | |
 
-启动时若表为空，用 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH` 插入一行。表非空时不再改已有口令，避免重启覆盖人工改密。
+启动时若表为空，用 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH` 插入一行；表为空且两键缺任一时拒绝启动。表非空时不再改已有口令，避免重启覆盖人工改密。
 
-`auth.LoginLimiter` 放在 `internal/auth`：按 `platform:<username>` 计数，窗口与阈值取配置。达到阈值返回 `429 E_TOO_MANY_ATTEMPTS`，分钟数向上取整且至少为 1。成功登录删除该键的失败记录。
+`auth.LoginLimiter` 放在 `internal/auth`：按 `platform:<username>` 计数，窗口与阈值取配置。达到阈值返回 `429 E_TOO_MANY_ATTEMPTS`，分钟数向上取整且至少为 1。成功登录删除该键的失败记录。超出窗口的失败记录与过期令牌由 [阶段 8](phase-8-launch.md) 的清理命令删除。
+
+限速键用用户名原文，达到阈值后正确口令也返回 `429`。这会让他人故意输错来锁住运营账号；运营账号只有一个且入口不对外公布，首发接受这个风险。
 
 ### 4.2 接口
 
@@ -77,7 +79,14 @@ updated: 2026-09-24
 | GET | `/api/console/me` | platform | `{username}` |
 | POST | `/api/console/password` | platform | `{current_password, new_password}` → `{token, expires_at}` |
 
-登录失败、令牌缺失、令牌类型不符、令牌过期，统一 `401 E_UNAUTHORIZED` 或 `401 E_INVALID_CREDENTIALS`。口令错误用 `E_INVALID_CREDENTIALS`；未带或无效令牌用 `E_UNAUTHORIZED`。新口令少于 8 个字符返回 `400 E_PASSWORD_TOO_SHORT`；与当前口令相同返回 `400 E_PASSWORD_UNCHANGED`。当前口令不对返回 `401 E_CURRENT_PASSWORD_WRONG`，本阶段补这个错误码。
+登录失败、令牌缺失、令牌类型不符、令牌过期，统一 `401 E_UNAUTHORIZED` 或 `401 E_INVALID_CREDENTIALS`。口令错误用 `E_INVALID_CREDENTIALS`；未带或无效令牌用 `E_UNAUTHORIZED`。新口令少于 8 个字符返回 `400 E_PASSWORD_TOO_SHORT`；与当前口令相同返回 `400 E_PASSWORD_UNCHANGED`；当前口令不对返回 `400 E_CURRENT_PASSWORD_WRONG`。当前口令错误不用 `401`：前端遇到 `401` 会清除令牌并跳登录页，输错一次就被登出。
+
+本阶段向 `bizerr` 与 [技术方案 §7.2](../DESIGN.md#72-错误体与错误码) 补充：
+
+| HTTP | Code | 文案 |
+| --- | --- | --- |
+| 400 | `E_PASSWORD_UNCHANGED` | 新口令不能与当前口令相同 |
+| 400 | `E_CURRENT_PASSWORD_WRONG` | 当前口令不正确 |
 
 ### 4.3 前端
 
@@ -93,7 +102,8 @@ updated: 2026-09-24
 | limiter | 未达阈值允许；达到阈值返回剩余等待；成功后计数清零 |
 | login | 正确口令返回可校验的 platform 令牌；错误口令与不存在用户都是 `401`；连续失败触发 `429` |
 | logout | 当前令牌删除后再次访问 `401`；其他主体的令牌不受影响 |
-| password | 成功后旧令牌失效、响应中的新令牌有效；短口令与相同口令被拒绝 |
+| password | 成功后旧令牌失效、响应中的新令牌有效；短口令与相同口令被拒绝；当前口令错误返回 `400` 且令牌仍有效 |
+| seed | 表为空时按配置播种；表非空时不覆盖口令；表为空且缺配置时拒绝启动 |
 | me | 无令牌、host 令牌、过期令牌均为 `401` |
 
 前端只测登录表单的提交参数与错误展示条件，不测样式。

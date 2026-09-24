@@ -1,11 +1,11 @@
 ---
-title: 组织管理员认证
+title: 阶段 4：组织管理员认证
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 组织管理员认证
+# 阶段 4：组织管理员认证
 
 ## 1. 目标与范围
 
@@ -43,7 +43,7 @@ updated: 2026-09-24
 1. `org_users` 与 `platform_users` 分开，不共用账号行
 2. `console` 与 `platform` 令牌不可互换
 3. 令牌里的组织以 `api_tokens.principal_id` 保存的 `org_user_id` 为准，服务端再查出 `org_id`，不接受客户端另传组织
-4. 停用账号或停用组织后，该账号已签发的 `console` 令牌立即失效
+4. 停用账号或停用组织后，该账号已签发的 `console` 令牌立即失效。停用账号时删除其令牌；停用组织不批量删令牌，由中间件在每次请求校验 `org_users.status` 与 `orgs.status`
 5. 重置口令或修改口令时删除该账号全部令牌
 6. 账号是否存在不通过响应时间或文案区分
 
@@ -96,14 +96,14 @@ updated: 2026-09-24
 
 ### 4.4 前端
 
-控制台按令牌类型分两条入口，仍共用 `gl.token`：
+控制台按令牌类型分两条入口。令牌按主体分开存储：`gl.token.platform`、`gl.token.console`，阶段 7 再加 `gl.token.host`。同一浏览器同时登录运营、组织控制台或大屏时互不覆盖。`src/api.ts` 按请求路径前缀选择令牌，`gl.token` 在本阶段删除：
 
 - `/login` 继续是运营登录
 - `/organization/login` 是组织管理员登录
 - 运营的组织详情里可以创建管理员，并一次性展示临时口令
 - 管理员登录后进入 `/organization`，只看到自己的组织
 
-`401` 时按当前路径回对应登录页：`/api/organization/*` 回 `/organization/login`，其余回 `/login`。本阶段不在 `/organization` 做活动页面。
+`401` 时按请求 URL 清除对应令牌并回对应登录页：`/api/organization/*` 清 `gl.token.console` 并回 `/organization/login`，`/api/console/*` 清 `gl.token.platform` 并回 `/login`。登录接口自身的 `401` 不触发跳转，由表单展示错误。本阶段不在 `/organization` 做活动页面。
 
 ### 4.5 测试
 
@@ -123,7 +123,7 @@ updated: 2026-09-24
 - 管理员邀请邮件
 - 一个邮箱加入多个组织
 - 组织内角色分级
-- 管理员自行创建其他管理员
+- 管理员自行创建其他管理员。PRD O5（P1）的「邀请组织管理员」首发由运营代建替代，登记在 [ROADMAP](../ROADMAP.md)
 - 主持人口令
 
 ## 6. 完成定义

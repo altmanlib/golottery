@@ -1,11 +1,11 @@
 ---
-title: 活动配置
+title: 阶段 5：活动配置
 type: design
 status: published
 updated: 2026-09-24
 ---
 
-# 活动配置
+# 阶段 5：活动配置
 
 ## 1. 目标与范围
 
@@ -17,8 +17,8 @@ updated: 2026-09-24
 2. 创建活动时扣 1 个场次，并写配额流水
 3. 围栏、签到时间窗、是否允许兼中
 4. 奖项配置与 Excel 名单导入
-5. 活动公开码与短链
-6. 导出签到名单与中奖名单
+5. 活动公开码与小程序码图片
+6. 导出名单
 
 不做：
 
@@ -36,7 +36,8 @@ updated: 2026-09-24
 | 配额 | 组织与配额提供 `event_credits` 和 `max_attendees` |
 | 坐标系 | GCJ-02 |
 | 半径 | 默认 400 米，允许 100～1000 米 |
-| 导入上限 | 名单行数不得超过该组织的 `max_attendees` |
+| 导入上限 | 活动名单总人数不得超过该组织的 `max_attendees` |
+| 时区 | 库内 `timestamptz`；控制台输入、页面展示与 Excel 导出一律按 `Asia/Shanghai` |
 
 所有查询都从令牌解出 `org_id`。路径里的活动 ID 必须属于该组织，否则返回 `404 E_NOT_FOUND`。
 
@@ -97,7 +98,15 @@ updated: 2026-09-24
 
 创建活动时锁定组织配额行，要求组织为 `active` 且 `event_credits > 0`。成功后余额减 1，流水 `delta = -1`，原因固定为 `create event`。
 
-活动从 `draft` 变为 `ready` 前必须已有中心点、半径、时间窗和至少一名名单人员。`closed` 后拒绝修改配置与导入。
+状态迁移：
+
+| 迁移 | 条件 |
+| --- | --- |
+| `draft` → `ready` | 已有中心点、半径、时间窗和至少一名名单人员 |
+| `ready` → `draft` | 尚无签到记录 |
+| `ready` → `closed` | 随时；`closed` 是终态 |
+
+`ready` 下仍可改围栏、时间窗、奖项和追加名单，保存后立即生效；`allow_multi_win` 在产生中奖记录后不可改。宾客签到与抽奖只接受 `ready` 活动。`closed` 后拒绝修改配置与导入。
 
 ### 4.2 接口
 
@@ -108,19 +117,22 @@ updated: 2026-09-24
 | GET · POST | `/api/organization/events` | 列表 · 创建 |
 | GET · PATCH | `/api/organization/events/:id` | 详情 · 修改名称、时间窗、围栏、兼中开关、状态 |
 | GET | `/api/organization/events/:id/entry` | `{public_id, path}`，`path` 为小程序路径 `pages/index/index?e=<public_id>` |
+| GET | `/api/organization/events/:id/entry/qrcode` | 小程序码 PNG |
 | POST | `/api/organization/events/:id/attendees/import` | `multipart` xlsx |
 | GET | `/api/organization/events/:id/attendees` | 名单分页 |
 | GET · POST | `/api/organization/events/:id/prizes` | 奖项列表 · 新增 |
 | PATCH · DELETE | `/api/organization/events/:id/prizes/:prizeId` | 修改 · 删除 |
-| GET | `/api/organization/events/:id/exports/:type` | `attendees` 或 `winners` |
+| GET | `/api/organization/events/:id/exports/attendees` | 名单 xlsx。签到列由阶段 6 追加 |
 
-导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。单文件最多 `max_attendees` 行，超过返回 `400 E_BAD_REQUEST`。
+小程序码由后端调用微信「获取不限制的小程序码」接口生成：`scene` 为 `public_id`（21 位 nanoid 字符在微信允许的字符集内，不超过 32 位上限），`page` 为 `pages/index/index`。该接口的 `page` 不能带参数，小程序从 `decodeURIComponent(query.scene)` 取活动码；`path` 中的 `e` 参数用于开发者工具与复制链接。`check_path` 默认要求页面已在正式版发布，开发期用 `env_version` 指向 `develop` 或 `trial`。组织客户没有平台小程序的管理后台权限，所以码图必须由后端生成。
+
+本阶段引入 ScopeInfra 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET` 与 `internal/wechat`（access_token 缓存、小程序码），阶段 6 复用它做 `code` 换 openid。
+
+导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。上传文件不超过 5 MB。导入后活动名单总数超过 `max_attendees` 返回 `400 E_BAD_REQUEST`。Excel 读写使用 `github.com/xuri/excelize/v2`，落地时写入 [技术方案 §4.1](../DESIGN.md#41-技术选型)。
 
 导入错误体包含行号与原因：空姓名、手机号不足四位、文件内重复、与已有名单重复。任一错误都回滚。
 
-奖项在已有中奖记录后只允许改名称、奖品和顺序，不允许把 `quota` 改到小于已抽出的有效人数，也不允许删除。中奖表由抽奖方案建立，本方案只预留这个约束。
-
-`winners` 导出在抽奖记录不存在时返回只有表头的文件。
+奖项在已有中奖记录后只允许改名称、奖品和顺序，不允许把 `quota` 改到小于已抽出的有效人数，也不允许删除。该约束由 [阶段 7](phase-7-draw.md) 在建中奖表时实现。
 
 ### 4.3 前端
 
@@ -129,7 +141,7 @@ updated: 2026-09-24
 - 创建时填写名称；剩余场次为 0 时按钮不可用
 - 详情分围栏、时间窗、名单、奖项四个区块
 - 导入后展示成功行数或逐行错误
-- 提供活动路径复制。小程序码图片由微信侧生成，不在后端渲染
+- 提供小程序码下载与活动路径复制
 
 ### 4.4 测试
 
@@ -137,8 +149,9 @@ updated: 2026-09-24
 | --- | --- |
 | 创建 | 成功扣 1 个场次并写流水；余额为 0 或组织停用时不产生活动 |
 | 隔离 | 其他组织的活动 ID 返回 `404` |
-| 导入 | 合法文件写入；重复或非法行整批拒绝；超过人数上限拒绝 |
-| 状态 | `ready` 缺少围栏或名单时拒绝；`closed` 后拒绝修改 |
+| 导入 | 合法文件写入；重复或非法行整批拒绝；多次导入后总数超过人数上限拒绝 |
+| 状态 | `ready` 缺少围栏或名单时拒绝；非法迁移拒绝；`closed` 后拒绝修改 |
+| 小程序码 | 微信接口用测试替身；`scene` 等于 `public_id`；微信错误转为 `E_INTERNAL` 并记录原始错误码 |
 | 奖项 | `quota <= 0` 拒绝；活动内 `sort_no` 重复拒绝 |
 
 ## 5. 明确不做
@@ -146,11 +159,20 @@ updated: 2026-09-24
 - 在线地图组件的供应商选型。前端可先用经纬度输入
 - 复制上场配置
 - 工作人员白名单
-- 导出签到尝试坐标。签到方案确定记录内容后再开放
+- 导出签到尝试明细。由阶段 6 交付
+- 导出中奖名单。由阶段 7 交付
 
-## 6. 完成定义
+## 6. 开放项
+
+| 问题 | 现状 | 需要在哪个阶段前定 |
+| --- | --- | --- |
+| 名单单条增删改 | 只有整批导入，导入错字或现场临时加人无法处理 | 阶段 5 开工前 |
+| 试跑数据清理 | PRD 要求活动前用测试账号跑通签到与抽奖，试跑产生的签到和中奖记录会留在正式活动里 | 阶段 6 开工前。备选：`ready` → `draft` 时允许清空签到、人工确认与中奖数据 |
+| 短链 | PRD O4 要求短链，本阶段只交付小程序码与页面路径 | 阶段 8 前，需先核实微信官方链接能力的限制 |
+
+## 7. 完成定义
 
 - 迁移可重复执行，测试用真实 PostgreSQL
 - 生成物与 `openapi.yaml` 一致
 - API 与 Web 的格式、lint、测试全绿
-- 管理员可以完成创建、导入、配置奖项和复制活动路径
+- 管理员可以完成创建、导入、配置奖项，并下载可扫码进入小程序的活动码
