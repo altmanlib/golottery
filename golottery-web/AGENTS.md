@@ -21,6 +21,7 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 ## 约定
 
 - 视觉 token 定义在 `src/theme.ts` 的 Mantine 主题（`colors` / `radius` / `fontSizes` / `fontFamily` / `other`）；Mantine 生成 `--mantine-*`，主题词汇覆盖不到的值经 `cssVariablesResolver` 输出，`brand` 第 6 阶为 `#1E4544`
+- CSS Modules 是 Mantine 官方推荐的组件样式方式（手册 *Consider using CSS modules first*：「CSS modules are the recommended way of styling Mantine components」，见 `docs/reference/mantine-ui-library.txt`）。选内联 `style`、CSS-in-JS 或 utility 类之前，先确认 CSS Modules 做不到：utility 类难以按 `data-*` 属性定制样式，styled-components 一类方案无法用静态选择器命中经 Portal 渲染到组件外的内部节点。本项目不引入其他样式方案
 - 样式用 CSS Modules：全局只留 `src/styles/base.css`（reset，`main.tsx` 引入）。组件视觉规则写在同目录 `*.module.css`，`import classes from './X.module.css'` 后用 `className={classes.x}`。Mantine 内部节点用 `classNames={classes}`（键名对齐 Styles API），不要用全局类名覆盖 `.mantine-*`。不新增全局样式文件，不跨组件复用类名；确实共用的壳做成组件再引用
 - 字体自托管：`@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500）
 - 不做运行时配置；只请求相对路径
