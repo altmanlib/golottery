@@ -16,9 +16,14 @@ import (
 // schemeTokenTypes maps OpenAPI security schemes to the token type they accept.
 var schemeTokenTypes = map[string]string{
 	"platformBearer": auth.TokenTypePlatform,
+	"consoleBearer":  auth.TokenTypeConsole,
 }
 
 type tokenKey struct{}
+
+// principalResolver runs after the token lookup for token types whose owner can be
+// disabled; it rejects stale owners and adds the resolved principal to the context.
+type principalResolver func(ctx context.Context, token auth.APIToken) (context.Context, error)
 
 // tokenFrom returns the token authenticated for the current request.
 func tokenFrom(ctx context.Context) (auth.APIToken, error) {
@@ -64,7 +69,7 @@ func goOperationName(operationID string) string {
 }
 
 // authenticate requires a live bearer token of the declared type before secured operations.
-func authenticate(tokens *auth.TokenIssuer, secured map[string]string) api.StrictMiddlewareFunc {
+func authenticate(tokens *auth.TokenIssuer, secured map[string]string, resolvers map[string]principalResolver) api.StrictMiddlewareFunc {
 	return func(next api.StrictHandlerFunc, operationID string) api.StrictHandlerFunc {
 		typ, ok := secured[operationID]
 		if !ok {
@@ -83,7 +88,13 @@ func authenticate(tokens *auth.TokenIssuer, secured map[string]string) api.Stric
 			if err != nil {
 				return nil, bizerr.Wrap(bizerr.CodeInternal, err)
 			}
-			c.SetRequest(c.Request().WithContext(context.WithValue(ctx, tokenKey{}, token)))
+			ctx = context.WithValue(ctx, tokenKey{}, token)
+			if resolve, ok := resolvers[typ]; ok {
+				if ctx, err = resolve(ctx, token); err != nil {
+					return nil, err
+				}
+			}
+			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c, request)
 		}
 	}

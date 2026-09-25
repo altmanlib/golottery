@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -17,8 +16,6 @@ import (
 )
 
 const (
-	// MinPasswordLen is the minimum length, in characters, of a new password.
-	MinPasswordLen = 8
 	// MaxUsernameLen matches platform_users.username; longer names cannot exist.
 	MaxUsernameLen = 64
 )
@@ -71,26 +68,11 @@ func NewService(db *gorm.DB, tokens *auth.TokenIssuer, limiter *auth.LoginLimite
 	return &Service{db: db, tokens: tokens, limiter: limiter}
 }
 
-var (
-	dummyHashOnce sync.Once
-	dummyHash     string
-)
-
-// verifyDummy spends the same argon2 cost as a real check so unknown users are not faster.
-func verifyDummy(password string) {
-	dummyHashOnce.Do(func() {
-		dummyHash, _ = auth.HashPassword("golottery-dummy-password")
-	})
-	if dummyHash != "" {
-		_, _ = auth.VerifyPassword(dummyHash, password)
-	}
-}
-
 // Login checks credentials and issues a platform token.
 func (s *Service) Login(ctx context.Context, username, password string) (auth.IssuedToken, error) {
 	// Such a name has no account and would not fit the limiter key; answer like any unknown user.
 	if utf8.RuneCountInString(username) > MaxUsernameLen {
-		verifyDummy(password)
+		auth.VerifyDummy(password)
 		return auth.IssuedToken{}, bizerr.New(bizerr.CodeInvalidCredentials)
 	}
 	key := "platform:" + username
@@ -108,7 +90,7 @@ func (s *Service) Login(ctx context.Context, username, password string) (auth.Is
 	}
 	ok := false
 	if user == nil {
-		verifyDummy(password)
+		auth.VerifyDummy(password)
 	} else {
 		ok, err = auth.VerifyPassword(user.PasswordHash, password)
 		if err != nil {
@@ -147,7 +129,7 @@ func (s *Service) Me(ctx context.Context, token auth.APIToken) (User, error) {
 
 // ChangePassword replaces the password, revokes every token of the operator and issues a new one.
 func (s *Service) ChangePassword(ctx context.Context, token auth.APIToken, current, next string) (auth.IssuedToken, error) {
-	if utf8.RuneCountInString(next) < MinPasswordLen {
+	if utf8.RuneCountInString(next) < auth.MinPasswordLen {
 		return auth.IssuedToken{}, bizerr.New(bizerr.CodePasswordTooShort)
 	}
 	user, err := s.findByToken(ctx, token)

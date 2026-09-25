@@ -34,7 +34,7 @@ type platformEnv struct {
 func newPlatformEnv(t *testing.T) platformEnv {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &org.LedgerEntry{}, &org.Quota{}, &org.Org{})
+	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &org.User{}, &org.LedgerEntry{}, &org.Quota{}, &org.Org{})
 	hash, err := auth.HashPassword(testPassword)
 	if err != nil {
 		t.Fatal(err)
@@ -50,6 +50,7 @@ func newPlatformEnv(t *testing.T) platformEnv {
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
 		Orgs:     org.NewService(db.Gorm),
+		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 	})
 	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens}
 }
@@ -256,16 +257,24 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]string{
-		"PlatformLogout":         auth.TokenTypePlatform,
-		"GetPlatformMe":          auth.TokenTypePlatform,
-		"ChangePlatformPassword": auth.TokenTypePlatform,
-		"ListOrgs":               auth.TokenTypePlatform,
-		"CreateOrg":              auth.TokenTypePlatform,
-		"GetOrg":                 auth.TokenTypePlatform,
-		"DisableOrg":             auth.TokenTypePlatform,
-		"EnableOrg":              auth.TokenTypePlatform,
-		"AdjustOrgCredits":       auth.TokenTypePlatform,
-		"SetOrgMaxAttendees":     auth.TokenTypePlatform,
+		"PlatformLogout":             auth.TokenTypePlatform,
+		"GetPlatformMe":              auth.TokenTypePlatform,
+		"ChangePlatformPassword":     auth.TokenTypePlatform,
+		"ListOrgs":                   auth.TokenTypePlatform,
+		"CreateOrg":                  auth.TokenTypePlatform,
+		"GetOrg":                     auth.TokenTypePlatform,
+		"DisableOrg":                 auth.TokenTypePlatform,
+		"EnableOrg":                  auth.TokenTypePlatform,
+		"AdjustOrgCredits":           auth.TokenTypePlatform,
+		"SetOrgMaxAttendees":         auth.TokenTypePlatform,
+		"ListOrgUsers":               auth.TokenTypePlatform,
+		"CreateOrgUser":              auth.TokenTypePlatform,
+		"ResetOrgUserPassword":       auth.TokenTypePlatform,
+		"DisableOrgUser":             auth.TokenTypePlatform,
+		"EnableOrgUser":              auth.TokenTypePlatform,
+		"OrganizationLogout":         auth.TokenTypeConsole,
+		"GetOrganizationMe":          auth.TokenTypeConsole,
+		"ChangeOrganizationPassword": auth.TokenTypeConsole,
 	}
 	if len(secured) != len(want) {
 		t.Fatalf("secured = %v, want %v", secured, want)

@@ -46,7 +46,8 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 - 源契约：`golottery-api/api/openapi.yaml`
 - 生成产物：`src/api-gen/`（勿手改）
 - 运行时：入口 `import '#/api'`。`src/api.ts` 把 `baseUrl` 覆写为空字符串，按请求路径前缀附加对应令牌：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
-- `401` 删除对应令牌并跳到该入口：`/api/platform/*` 跳 `/platform/login`（已接入）；`/api/organization/*` 跳 `/organization/login`（阶段 4），`/api/host/*` 回当前活动的 `/host/:publicId`（阶段 7），跳转表在 `main.tsx` 的 `LOGIN_ROUTES`；登录接口自身的 `401` 不跳转
+- `401` 删除对应令牌并只清该入口的查询缓存（`QUERY_ROOTS`）；当前页面仍在该入口内时跳到它的登录页：`/api/platform/*` → `/platform/login`，`/api/organization/*` → `/organization/login`，`/api/host/*` 在阶段 7 接入。跳转表与判断在 `src/api.ts`（`LOGIN_ROUTES`、`redirectAfterExpiry`），执行用 `router.navigate`，不直接改 `location.hash`；登录接口自身的 `401` 不跳转
+- 一次性口令（临时口令、重置口令）只放在组件状态里展示一次，拿到后立刻 `mutation.reset()`，不进查询缓存
 - SDK 调用用 `unwrap(...)` 取数据，失败抛 `ApiError`（`code` / `message` 来自接口错误体）
 
 业务代码只从 `#/api-gen/sdk.gen` / `#/api-gen/types.gen` 引用 API，禁止手写 fetch 封装重复描述同一接口。

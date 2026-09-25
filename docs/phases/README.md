@@ -39,7 +39,7 @@ updated: 2026-09-25
 | [阶段 1：工程基线](phase-1-baseline.md) | config / store / httpapi / bizerr / auth、迁移、Web 令牌客户端 | PRD 与技术方案已发布 | 已通过 |
 | [阶段 2：运营认证](phase-2-platform-auth.md) | 运营账号登录、登出、改密 | 阶段 1 通过 | 已通过 |
 | [阶段 3：组织与配额](phase-3-org-quota.md) | 开通组织、场次与人数上限、配额流水 | 阶段 2 通过 | 已通过 |
-| [阶段 4：组织管理员认证](phase-4-org-admin-auth.md) | `org_users`、管理员登录与组织范围令牌 | 阶段 3 通过 | 未开始 |
+| [阶段 4：组织管理员认证](phase-4-org-admin-auth.md) | `org_users`、管理员登录与组织范围令牌 | 阶段 3 通过 | 已通过 |
 | [阶段 5：活动配置](phase-5-event-setup.md) | 活动、围栏、奖项、名单、活动码 | 阶段 4 通过 | 未开始 |
 | [阶段 6：现场签到](phase-6-checkin.md) | 绑定、围栏签到、人工确认、小程序 | 阶段 5 通过 | 未开始 |
 | [阶段 7：现场抽奖](phase-7-draw.md) | 主持人、抽奖事务、作废重抽、大屏 | 阶段 6 通过 | 未开始 |

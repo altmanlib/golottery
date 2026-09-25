@@ -32,16 +32,34 @@ func (e HealthzDb) Valid() bool {
 
 // Defines values for OrgStatus.
 const (
-	Active   OrgStatus = "active"
-	Disabled OrgStatus = "disabled"
+	OrgStatusActive   OrgStatus = "active"
+	OrgStatusDisabled OrgStatus = "disabled"
 )
 
 // Valid indicates whether the value is a known member of the OrgStatus enum.
 func (e OrgStatus) Valid() bool {
 	switch e {
-	case Active:
+	case OrgStatusActive:
 		return true
-	case Disabled:
+	case OrgStatusDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUserStatus.
+const (
+	OrgUserStatusActive   OrgUserStatus = "active"
+	OrgUserStatusDisabled OrgUserStatus = "disabled"
+)
+
+// Valid indicates whether the value is a known member of the OrgUserStatus enum.
+func (e OrgUserStatus) Valid() bool {
+	switch e {
+	case OrgUserStatusActive:
+		return true
+	case OrgUserStatusDisabled:
 		return true
 	default:
 		return false
@@ -83,6 +101,12 @@ type CreateOrgRequest struct {
 	Name         string  `json:"name"`
 }
 
+// CreateOrgUserRequest defines model for CreateOrgUserRequest.
+type CreateOrgUserRequest struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	// Code Example: INTERNAL_ERROR
@@ -119,6 +143,12 @@ type LedgerEntry struct {
 	Reason       string `json:"reason"`
 }
 
+// OneTimePassword defines model for OneTimePassword.
+type OneTimePassword struct {
+	// Password Temporary password; returned only once
+	Password string `json:"password"`
+}
+
 // OrgDetail defines model for OrgDetail.
 type OrgDetail struct {
 	// Ledger Latest 20 entries, newest first
@@ -148,6 +178,48 @@ type OrgSummary struct {
 	MaxAttendees int       `json:"max_attendees"`
 	Name         string    `json:"name"`
 	Status       OrgStatus `json:"status"`
+}
+
+// OrgUser defines model for OrgUser.
+type OrgUser struct {
+	CreatedAt time.Time          `json:"created_at"`
+	Email     string             `json:"email"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	Status    OrgUserStatus      `json:"status"`
+}
+
+// OrgUserStatus defines model for OrgUserStatus.
+type OrgUserStatus string
+
+// OrgUserWithPassword defines model for OrgUserWithPassword.
+type OrgUserWithPassword struct {
+	// Password Temporary password; returned only once
+	Password string  `json:"password"`
+	User     OrgUser `json:"user"`
+}
+
+// OrganizationLoginRequest defines model for OrganizationLoginRequest.
+type OrganizationLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// OrganizationMe defines model for OrganizationMe.
+type OrganizationMe struct {
+	Email   string             `json:"email"`
+	Name    string             `json:"name"`
+	OrgId   openapi_types.UUID `json:"org_id"`
+	OrgName string             `json:"org_name"`
+}
+
+// OrganizationSession defines model for OrganizationSession.
+type OrganizationSession struct {
+	ExpiresAt time.Time          `json:"expires_at"`
+	OrgId     openapi_types.UUID `json:"org_id"`
+
+	// Token Bearer token plaintext; returned only once
+	Token string `json:"token"`
 }
 
 // PlatformLoginRequest defines model for PlatformLoginRequest.
@@ -183,11 +255,20 @@ type Offset = int
 // OrgId defines model for OrgId.
 type OrgId = openapi_types.UUID
 
+// UserId defines model for UserId.
+type UserId = openapi_types.UUID
+
 // ListOrgsParams defines parameters for ListOrgs.
 type ListOrgsParams struct {
 	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// OrganizationLoginJSONRequestBody defines body for OrganizationLogin for application/json ContentType.
+type OrganizationLoginJSONRequestBody = OrganizationLoginRequest
+
+// ChangeOrganizationPasswordJSONRequestBody defines body for ChangeOrganizationPassword for application/json ContentType.
+type ChangeOrganizationPasswordJSONRequestBody = ChangePasswordRequest
 
 // PlatformLoginJSONRequestBody defines body for PlatformLogin for application/json ContentType.
 type PlatformLoginJSONRequestBody = PlatformLoginRequest
@@ -200,6 +281,9 @@ type AdjustOrgCreditsJSONRequestBody = AdjustCreditsRequest
 
 // SetOrgMaxAttendeesJSONRequestBody defines body for SetOrgMaxAttendees for application/json ContentType.
 type SetOrgMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest
+
+// CreateOrgUserJSONRequestBody defines body for CreateOrgUser for application/json ContentType.
+type CreateOrgUserJSONRequestBody = CreateOrgUserRequest
 
 // ChangePlatformPasswordJSONRequestBody defines body for ChangePlatformPassword for application/json ContentType.
 type ChangePlatformPasswordJSONRequestBody = ChangePasswordRequest

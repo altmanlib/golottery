@@ -113,6 +113,59 @@ export type SetMaxAttendeesRequest = {
     max_attendees: number;
 };
 
+export type OrgUserStatus = 'active' | 'disabled';
+
+export type OrgUser = {
+    id: string;
+    name: string;
+    email: string;
+    status: OrgUserStatus;
+    created_at: string;
+};
+
+export type OrgUserWithPassword = {
+    user: OrgUser;
+    /**
+     * Temporary password; returned only once
+     */
+    password: string;
+};
+
+export type OneTimePassword = {
+    /**
+     * Temporary password; returned only once
+     */
+    password: string;
+};
+
+export type CreateOrgUserRequest = {
+    name: string;
+    email: string;
+};
+
+export type OrganizationLoginRequest = {
+    email: string;
+    password: string;
+};
+
+export type OrganizationSession = {
+    /**
+     * Bearer token plaintext; returned only once
+     */
+    token: string;
+    expires_at: string;
+    org_id: string;
+};
+
+export type OrganizationMe = {
+    name: string;
+    email: string;
+    org_id: string;
+    org_name: string;
+};
+
+export type UserId = string;
+
 export type OrgId = string;
 
 export type Offset = number;
@@ -529,3 +582,277 @@ export type SetOrgMaxAttendeesResponses = {
 };
 
 export type SetOrgMaxAttendeesResponse = SetOrgMaxAttendeesResponses[keyof SetOrgMaxAttendeesResponses];
+
+export type ListOrgUsersData = {
+    body?: never;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/users';
+};
+
+export type ListOrgUsersErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListOrgUsersError = ListOrgUsersErrors[keyof ListOrgUsersErrors];
+
+export type ListOrgUsersResponses = {
+    /**
+     * Admins, oldest first
+     */
+    200: Array<OrgUser>;
+};
+
+export type ListOrgUsersResponse = ListOrgUsersResponses[keyof ListOrgUsersResponses];
+
+export type CreateOrgUserData = {
+    body: CreateOrgUserRequest;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/users';
+};
+
+export type CreateOrgUserErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type CreateOrgUserError = CreateOrgUserErrors[keyof CreateOrgUserErrors];
+
+export type CreateOrgUserResponses = {
+    /**
+     * Admin created; the password is shown once
+     */
+    201: OrgUserWithPassword;
+};
+
+export type CreateOrgUserResponse = CreateOrgUserResponses[keyof CreateOrgUserResponses];
+
+export type ResetOrgUserPasswordData = {
+    body?: never;
+    path: {
+        orgId: string;
+        userId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/users/{userId}/reset-password';
+};
+
+export type ResetOrgUserPasswordErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ResetOrgUserPasswordError = ResetOrgUserPasswordErrors[keyof ResetOrgUserPasswordErrors];
+
+export type ResetOrgUserPasswordResponses = {
+    /**
+     * New one-time password
+     */
+    200: OneTimePassword;
+};
+
+export type ResetOrgUserPasswordResponse = ResetOrgUserPasswordResponses[keyof ResetOrgUserPasswordResponses];
+
+export type DisableOrgUserData = {
+    body?: never;
+    path: {
+        orgId: string;
+        userId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/users/{userId}/disable';
+};
+
+export type DisableOrgUserErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type DisableOrgUserError = DisableOrgUserErrors[keyof DisableOrgUserErrors];
+
+export type DisableOrgUserResponses = {
+    /**
+     * Admin is disabled
+     */
+    204: void;
+};
+
+export type DisableOrgUserResponse = DisableOrgUserResponses[keyof DisableOrgUserResponses];
+
+export type EnableOrgUserData = {
+    body?: never;
+    path: {
+        orgId: string;
+        userId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/users/{userId}/enable';
+};
+
+export type EnableOrgUserErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type EnableOrgUserError = EnableOrgUserErrors[keyof EnableOrgUserErrors];
+
+export type EnableOrgUserResponses = {
+    /**
+     * Admin is active
+     */
+    204: void;
+};
+
+export type EnableOrgUserResponse = EnableOrgUserResponses[keyof EnableOrgUserResponses];
+
+export type OrganizationLoginData = {
+    body: OrganizationLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/organization/login';
+};
+
+export type OrganizationLoginErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    429: Error;
+};
+
+export type OrganizationLoginError = OrganizationLoginErrors[keyof OrganizationLoginErrors];
+
+export type OrganizationLoginResponses = {
+    /**
+     * Login succeeded; the token is shown once
+     */
+    200: OrganizationSession;
+};
+
+export type OrganizationLoginResponse = OrganizationLoginResponses[keyof OrganizationLoginResponses];
+
+export type OrganizationLogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/organization/logout';
+};
+
+export type OrganizationLogoutErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type OrganizationLogoutError = OrganizationLogoutErrors[keyof OrganizationLogoutErrors];
+
+export type OrganizationLogoutResponses = {
+    /**
+     * Token revoked
+     */
+    204: void;
+};
+
+export type OrganizationLogoutResponse = OrganizationLogoutResponses[keyof OrganizationLogoutResponses];
+
+export type GetOrganizationMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/organization/me';
+};
+
+export type GetOrganizationMeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type GetOrganizationMeError = GetOrganizationMeErrors[keyof GetOrganizationMeErrors];
+
+export type GetOrganizationMeResponses = {
+    /**
+     * Current admin
+     */
+    200: OrganizationMe;
+};
+
+export type GetOrganizationMeResponse = GetOrganizationMeResponses[keyof GetOrganizationMeResponses];
+
+export type ChangeOrganizationPasswordData = {
+    body: ChangePasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/organization/password';
+};
+
+export type ChangeOrganizationPasswordErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type ChangeOrganizationPasswordError = ChangeOrganizationPasswordErrors[keyof ChangeOrganizationPasswordErrors];
+
+export type ChangeOrganizationPasswordResponses = {
+    /**
+     * Password changed; the new token is shown once
+     */
+    200: SessionToken;
+};
+
+export type ChangeOrganizationPasswordResponse = ChangeOrganizationPasswordResponses[keyof ChangeOrganizationPasswordResponses];

@@ -292,8 +292,194 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/users:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    get:
+      operationId: listOrgUsers
+      summary: Admins of an organization
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "200":
+          description: Admins, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrgUser"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createOrgUser
+      summary: Create an admin with a one-time password
+      tags: [platform]
+      security:
+        - platformBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrgUserRequest"
+      responses:
+        "201":
+          description: Admin created; the password is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgUserWithPassword"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/users/{userId}/reset-password:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+      - $ref: "#/components/parameters/UserId"
+    post:
+      operationId: resetOrgUserPassword
+      summary: Replace the password and revoke every token of the admin
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "200":
+          description: New one-time password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OneTimePassword"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/users/{userId}/disable:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+      - $ref: "#/components/parameters/UserId"
+    post:
+      operationId: disableOrgUser
+      summary: Disable an admin and revoke its tokens; idempotent
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "204":
+          description: Admin is disabled
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/users/{userId}/enable:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+      - $ref: "#/components/parameters/UserId"
+    post:
+      operationId: enableOrgUser
+      summary: Enable an admin without changing its password; idempotent
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "204":
+          description: Admin is active
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/organization/login:
+    post:
+      operationId: organizationLogin
+      summary: Organization admin login
+      tags: [organization]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationLoginRequest"
+      responses:
+        "200":
+          description: Login succeeded; the token is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationSession"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/organization/logout:
+    post:
+      operationId: organizationLogout
+      summary: Revoke the current console token
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "204":
+          description: Token revoked
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/organization/me:
+    get:
+      operationId: getOrganizationMe
+      summary: Current admin and its organization
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: Current admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationMe"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/organization/password:
+    post:
+      operationId: changeOrganizationPassword
+      summary: Change the admin password
+      description: Revokes every token of the admin and returns a new one.
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed; the new token is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     OrgId:
       name: orgId
       in: path
@@ -321,6 +507,10 @@ components:
       type: http
       scheme: bearer
       description: Platform operator token from platformLogin
+    consoleBearer:
+      type: http
+      scheme: bearer
+      description: Organization admin token from organizationLogin
   responses:
     Error:
       description: Business error
@@ -512,3 +702,82 @@ components:
         max_attendees:
           type: integer
           minimum: 1
+    OrgUserStatus:
+      type: string
+      enum: [active, disabled]
+    OrgUser:
+      type: object
+      required: [id, name, email, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        status:
+          $ref: "#/components/schemas/OrgUserStatus"
+        created_at:
+          type: string
+          format: date-time
+    OrgUserWithPassword:
+      type: object
+      required: [user, password]
+      properties:
+        user:
+          $ref: "#/components/schemas/OrgUser"
+        password:
+          type: string
+          description: Temporary password; returned only once
+    OneTimePassword:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          description: Temporary password; returned only once
+    CreateOrgUserRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          maxLength: 254
+    OrganizationLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    OrganizationSession:
+      type: object
+      required: [token, expires_at, org_id]
+      properties:
+        token:
+          type: string
+          description: Bearer token plaintext; returned only once
+        expires_at:
+          type: string
+          format: date-time
+        org_id:
+          type: string
+          format: uuid
+    OrganizationMe:
+      type: object
+      required: [name, email, org_id, org_name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        org_id:
+          type: string
+          format: uuid
+        org_name:
+          type: string

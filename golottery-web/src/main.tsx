@@ -16,22 +16,21 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
-import { setUnauthorizedHandler, type TokenScope } from '#/api'
+import { QUERY_ROOTS, redirectAfterExpiry, setUnauthorizedHandler } from '#/api'
 import { queryClient } from '#/lib/queryClient'
 import { router } from '#/router'
 import { cssVariablesResolver, theme } from '#/theme'
 
-/** Where each scope goes after its token is rejected; console and host join in later phases. */
-const LOGIN_ROUTES: Partial<Record<TokenScope, string>> = {
-  platform: '/platform/login',
-}
-
 setUnauthorizedHandler((scope) => {
-  void queryClient.cancelQueries()
-  queryClient.clear()
-  const target = LOGIN_ROUTES[scope]
-  if (target && !window.location.hash.startsWith(`#${target}`)) {
-    window.location.hash = `#${target}`
+  // Only this scope's data goes; another signed-in entry in the same browser keeps its cache.
+  const queryKey = [QUERY_ROOTS[scope]]
+  void queryClient.cancelQueries({ queryKey })
+  queryClient.removeQueries({ queryKey })
+  // Navigate through the router: writing location.hash behind its back can leave it
+  // rendering a stale page while another <Navigate> is in flight.
+  const target = redirectAfterExpiry(scope, router.state.location.pathname)
+  if (target) {
+    void router.navigate(target, { replace: true })
   }
 })
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { ApiError, apiErrorFrom, expiredScope, getToken, scopeOf, setToken, TOKEN_KEYS, unwrap } from './api'
+import { ApiError, apiErrorFrom, expiredScope, getToken, loginRouteFor, redirectAfterExpiry, scopeOf, setToken, TOKEN_KEYS, unwrap } from './api'
 
 afterEach(() => {
   localStorage.clear()
@@ -45,11 +45,29 @@ describe('token scopes', () => {
     expect(scopeOf('/api/platformx')).toBeNull()
   })
 
-  it('drops the scope token on 401 except for the login call itself', () => {
+  it('drops the scope token on 401 except for the login calls themselves', () => {
     expect(expiredScope('/api/platform/me', 401)).toBe('platform')
+    expect(expiredScope('/api/organization/me', 401)).toBe('console')
     expect(expiredScope('/api/platform/login', 401)).toBeNull()
+    expect(expiredScope('/api/organization/login', 401)).toBeNull()
     expect(expiredScope('/api/platform/me', 400)).toBeNull()
     expect(expiredScope('/healthz', 401)).toBeNull()
+  })
+
+  it('sends each rejected scope back to its own login page', () => {
+    expect(loginRouteFor('platform')).toBe('/platform/login')
+    expect(loginRouteFor('console')).toBe('/organization/login')
+    expect(loginRouteFor('host')).toBeNull()
+  })
+
+  it('redirects only when the user is still inside the expired scope', () => {
+    expect(redirectAfterExpiry('console', '/organization')).toBe('/organization/login')
+    expect(redirectAfterExpiry('console', '/organization/events/1')).toBe('/organization/login')
+    expect(redirectAfterExpiry('console', '/organization/login')).toBeNull()
+    expect(redirectAfterExpiry('console', '/platform/orgs')).toBeNull()
+    expect(redirectAfterExpiry('platform', '/platform/orgs')).toBe('/platform/login')
+    expect(redirectAfterExpiry('platform', '/platformx')).toBeNull()
+    expect(redirectAfterExpiry('host', '/host/abc')).toBeNull()
   })
 
   it('stores each scope under its own key', () => {
