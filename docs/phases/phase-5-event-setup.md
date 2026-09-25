@@ -101,7 +101,9 @@ updated: 2026-09-24
 | `quota` | integer | `> 0` |
 | `sort_no` | integer | 活动内唯一 |
 
-创建活动要求组织为 `active`，不扣场次。`credit_consumed_at` 为空的活动进入 `ready` 时，锁定组织配额行，要求 `event_credits > 0`；成功后余额减 1，写入 `credit_consumed_at`，流水 `delta = -1`、`event_id` 为该活动、原因固定为 `event ready`。余额为 0 时返回 `409 E_NO_EVENT_CREDITS`，补进 `bizerr`。
+创建活动要求组织为 `active`（停用组织的 `console` 令牌在中间件即被拒绝），不扣场次。`credit_consumed_at` 为空的活动进入 `ready` 时，在锁住活动行的同一事务里用一条带条件的 `UPDATE ... WHERE event_credits > 0` 扣减余额；成功后写入 `credit_consumed_at`，流水 `delta = -1`、`event_id` 为该活动、原因固定为 `event ready`。余额为 0 时返回 `409 E_NO_EVENT_CREDITS`。`credit_ledger` 上对 `event_id` 的扣减行有唯一索引兜底，同一活动至多扣一次。
+
+就绪条件不满足时返回 `400 E_EVENT_INCOMPLETE`，文案列出缺项（签到时间窗、签到中心点、名单）。表中未列出的迁移（包括 `draft` → `closed`）返回 `409 E_CONFLICT`。
 
 状态迁移：
 
@@ -128,11 +130,13 @@ updated: 2026-09-24
 | PATCH · DELETE | `/api/organization/events/:id/attendees/:attendeeId` | 修改姓名、部门、后四位 · 删除 |
 | GET · POST | `/api/organization/events/:id/prizes` | 奖项列表 · 新增 |
 | PATCH · DELETE | `/api/organization/events/:id/prizes/:prizeId` | 修改 · 删除 |
-| GET | `/api/organization/events/:id/exports/attendees` | 名单 xlsx。签到列由阶段 6 追加 |
+| GET | `/api/organization/events/:id/exports/attendees` | 名单 xlsx，时间按 `Asia/Shanghai`，文件名为「活动名-名单.xlsx」。签到列由阶段 6 追加 |
+
+`GET /api/organization/me` 同时返回组织剩余场次 `event_credits`，控制台据此在余额为 0 时禁用就绪。
 
 小程序码由后端调用微信「获取不限制的小程序码」接口生成：`scene` 为 `public_id`（21 位 nanoid 字符在微信允许的字符集内，不超过 32 位上限），`page` 为 `pages/index/index`。该接口的 `page` 不能带参数，小程序从 `decodeURIComponent(query.scene)` 取活动码；`path` 中的 `e` 参数用于开发者工具与复制链接。`check_path` 默认要求页面已在正式版发布，开发期用 `env_version` 指向 `develop` 或 `trial`。组织客户没有平台小程序的管理后台权限，所以码图必须由后端生成。
 
-本阶段引入 ScopeInfra 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET` 与 `internal/wechat`（access_token、小程序码），阶段 6 复用它做 `code` 换 openid。
+本阶段引入 ScopeInfra 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`WECHAT_ENV_VERSION`（`release` / `trial` / `develop`，默认 `release`）、`WECHAT_API_BASE`（测试替身用）与 `internal/wechat`（access_token、小程序码），阶段 6 复用它做 `code` 换 openid。未配置 AppID 或 AppSecret 时活动码接口返回 `503 E_WECHAT_NOT_CONFIGURED`，其余功能不受影响。微信返回的图片统一转为 PNG。微信错误转为 `500 E_INTERNAL`，原始 `errcode` 写入日志。
 
 access_token 在多实例间共用：
 
@@ -150,15 +154,15 @@ access_token 在多实例间共用：
 - 启动顺序在 `store.Ping` 之后增加 `redisx.Ping`，不可达时拒绝启动；`GET /healthz` 增加 `redis` 字段，`/readyz` 不变
 - 落地时同步 [技术方案 §9 启动与关闭](../DESIGN.md#9-启动与关闭) 与 [§10 配置](../DESIGN.md#10-配置)
 
-导入文件第一行是表头：`姓名`、`部门`、`手机号`。服务端只取手机号后四位。上传文件不超过 5 MB。导入后活动名单总数超过 `max_attendees` 返回 `400 E_BAD_REQUEST`。Excel 读写使用 `github.com/xuri/excelize/v2`，落地时写入 [技术方案 §4.1](../DESIGN.md#41-技术选型)。
+导入文件第一行是表头：`姓名`、`部门`、`手机号`，列顺序不限，`部门` 可省略。服务端只取手机号后四位，按单元格原始值读取，避免数字格式改写号码。上传文件不超过 5 MB。文件无法读取、缺表头或没有数据行返回 `400 E_IMPORT_FILE`；导入后活动名单总数超过 `max_attendees` 返回 `400 E_ROSTER_FULL`。Excel 读写使用 `github.com/xuri/excelize/v2`，落地时写入 [技术方案 §4.1](../DESIGN.md#41-技术选型)。
 
-导入错误体包含行号与原因：空姓名、手机号不足四位、文件内重复、与已有名单重复。任一错误都回滚。多次导入只追加，不提供覆盖导入：覆盖会冲掉已绑定的宾客。
+导入错误体为 `400 E_IMPORT_INVALID`，`rows` 列出行号与原因：姓名为空、姓名或部门超过 100 字、手机号不足四位、与第 N 行重复、与已有名单重复。任一错误都回滚。多次导入只追加，不提供覆盖导入：覆盖会冲掉已绑定的宾客。
 
 单条维护：
 
 | 操作 | 规则 |
 | --- | --- |
-| 新增 | 校验同导入；超过 `events.max_attendees` 返回 `400 E_BAD_REQUEST`；与已有 `(name, phone_last4)` 重复返回 `409 E_CONFLICT` |
+| 新增 | 校验同导入；超过 `events.max_attendees` 返回 `400 E_ROSTER_FULL`；与已有 `(name, phone_last4)` 重复返回 `409 E_CONFLICT` |
 | 修改 | 姓名、部门、后四位随时可改；已绑定的微信保持不变 |
 | 删除 | 只删未绑定、未签到、未中奖的人，否则返回 `409 E_CONFLICT`。绑定与签到校验由阶段 6 补上，中奖校验由阶段 7 补上 |
 

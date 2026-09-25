@@ -34,7 +34,7 @@ updated: 2026-09-25
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md)。已接入 Redis；小程序码真机验证依赖 P-13 的 AppID |
+| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md)。已完成：Redis、活动与状态迁移、首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）。待做：运营调整活动人数上限、控制台前端；小程序码真机验证依赖 P-13 的 AppID |
 
 ## 4. 计划中
 
