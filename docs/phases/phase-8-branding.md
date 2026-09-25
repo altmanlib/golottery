@@ -2,7 +2,7 @@
 title: 阶段 8：品牌装修
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 阶段 8：品牌装修
@@ -40,7 +40,7 @@ updated: 2026-09-24
 ## 3. 原则
 
 1. 只依赖 S3 协议，不依赖 RustFS 特有接口；生产可换任意 S3 兼容存储
-2. 客户端只使用服务端返回的 `url`，不自行拼接地址。以后改走 CDN 只改配置
+2. 客户端只使用服务端返回的 `url`，不自行拼接地址。改公网读域名或接 CDN 只改 `ASSET_PUBLIC_BASE_URL`
 3. 素材归属组织，活动只引用素材 ID。组织级品牌库以后直接复用素材表
 4. 对象键包含素材 ID，素材 ID 永不复用，因此素材地址可以永久缓存
 5. 不接受 SVG，避免脚本注入；格式由服务端读取文件头判定，不信任扩展名与 `Content-Type`
@@ -124,7 +124,9 @@ updated: 2026-09-24
 | `S3_BUCKET` | `golottery` | | |
 | `S3_ACCESS_KEY` | （必填） | ✅ | |
 | `S3_SECRET_KEY` | （必填） | ✅ | |
-| `ASSET_PUBLIC_BASE_URL` | 空 | | 为空时 `url` 为 `/api/assets/<id>`；设置后改为 `<base>/<object_key>`，用于以后接 CDN |
+| `ASSET_PUBLIC_BASE_URL` | 空 | | 为空时 `url` 为相对路径 `/api/assets/<id>`（本机与 Web 同域可用）；生产设为 `https://golottery-oss.ioclub.cn`，`url` 变为 `<base>/<object_key>` |
+
+生产公网读域名是 `golottery-oss.ioclub.cn`：路径等于桶内 `object_key`，只允许匿名 `GET`，不暴露 S3 管理端口与写凭证。API 仍经内网 `S3_ENDPOINT` 上传与删除。小程序 `<image>` / `downloadFile` 需要 HTTPS 绝对地址，因此生产不能把 `ASSET_PUBLIC_BASE_URL` 留空；微信后台把该域名加入 `downloadFile` 合法域名。
 
 桶由部署步骤创建，API 不自动建桶。本机与测试用 `golottery storage init` 建桶，命令可重复执行。启动时 `Ping` 失败只记录错误日志，不拒绝启动。
 

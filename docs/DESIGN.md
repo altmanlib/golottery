@@ -56,20 +56,24 @@ updated: 2026-09-25
                \   HTTPS       /
                 ▼             ▼
               Nginx（生产，阶段 9）
+           golottery.ioclub.cn
                      │
                      ▼
         golottery-api (Go, echo)  127.0.0.1:5568
           ├── /healthz /readyz          httpapi
           ├── /openapi.json /openapi.yaml
           └── /api/*                    OpenAPI strict handler
-                │ gorm (pgx)       │ go-redis        │ S3 协议
+                │ gorm (pgx)       │ go-redis        │ S3 协议（内网写）
                 ▼                  ▼                 ▼
           PostgreSQL 18         Redis 7        对象存储（RustFS）
+                                                     │
+                                                     ▼ 公网读
+                                          golottery-oss.ioclub.cn
 ```
 
-Nginx 后可以挂多个 API 实例，不需要会话保持。
+生产对外主机名：`golottery.ioclub.cn` 承载 Web 与 API；`golottery-oss.ioclub.cn` 只提供品牌素材的公网读取。Nginx 后可以挂多个 API 实例，不需要会话保持。
 
-对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。它不可用时只影响素材上传与读取，不影响签到与抽奖。
+对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。API 经内网 `S3_ENDPOINT` 读写；对外素材 URL 由 `ASSET_PUBLIC_BASE_URL` 指向 `https://golottery-oss.ioclub.cn`。对象存储不可用时只影响素材上传与读取，不影响签到与抽奖。
 
 没有进程内异步任务。签到与抽奖都是短事务。大屏推送用 SSE，跨实例广播走 Redis。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
 

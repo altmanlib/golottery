@@ -178,6 +178,7 @@ updated: 2026-09-25
 ### 4.4 小程序
 
 - 没有活动码参数时只显示扫码说明，不调用签到
+- 正式版服务器域名：`request` 合法域名为 `golottery.ioclub.cn`；品牌封面启用后另将 `golottery-oss.ioclub.cn` 加入 `downloadFile` 合法域名（见 [阶段 8](phase-8-branding.md)）
 - 在公众平台「用户隐私保护指引」声明位置信息；`app.json` 已声明 `getLocation`、`chooseLocation`
 - 工作人员邀请码走独立页面，扫码后先建立会话再调用 `join`
 - 管理页签到进度每 10 秒轮询一次

@@ -2,7 +2,7 @@
 title: 阶段 9：上线与现场兜底
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 阶段 9：上线与现场兜底
@@ -34,7 +34,8 @@ updated: 2026-09-24
 | 项 | 现状 |
 | --- | --- |
 | API | 单进程 Go 二进制，默认 `127.0.0.1:5568` |
-| 对象存储 | S3 兼容存储，存放品牌素材（[阶段 8](phase-8-branding.md)） |
+| 业务域名 | `golottery.ioclub.cn`（Web + API） |
+| 对象存储 | S3 兼容存储，存放品牌素材（[阶段 8](phase-8-branding.md)）；公网读域名 `golottery-oss.ioclub.cn` |
 | Web | Vite 静态产物 |
 | 数据 | 一台 PostgreSQL |
 | 共享状态 | 一台 Redis；只存限流计数、微信凭据与 Pub/Sub，全部可丢失 |
@@ -57,7 +58,9 @@ updated: 2026-09-24
 - API 使用现有 Dockerfile 构建镜像，版本取 `golottery-api/VERSION`
 - Web 构建 `dist`，以时间戳加提交号保存版本目录，当前版本用软链接切换
 - 生产配置只通过环境变量注入。`SESSION_SECRET`、数据库口令、微信密钥和 `S3_SECRET_KEY` 不进镜像；容器工作目录不放 `.env`（`.env` 会覆盖环境变量）
-- Nginx 将 `/api`、`/healthz`、`/readyz`、`/openapi.json` 反代到 API；其余路径回落 `index.html`
+- 生产主机名：`golottery.ioclub.cn`（Web + API）、`golottery-oss.ioclub.cn`（素材公网读）。`ASSET_PUBLIC_BASE_URL=https://golottery-oss.ioclub.cn`
+- `golottery.ioclub.cn`：Nginx 将 `/api`、`/healthz`、`/readyz`、`/openapi.json` 反代到 API；其余路径回落 `index.html`
+- `golottery-oss.ioclub.cn`：只反代对象存储的匿名 `GET`，路径对应桶内 `object_key`；不开放管理控制台与写接口
 - Nginx 设置 `X-Forwarded-For`，API 的 `TRUSTED_PROXIES` 只列 Nginx 所在地址
 - Nginx `upstream` 可列多个 API 实例，轮询即可，不配置会话保持
 - Redis 不开启持久化、不做备份，设置 `maxmemory`；端口只对 API 所在内网开放并设置口令

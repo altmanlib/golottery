@@ -40,7 +40,7 @@ updated: 2026-09-25
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
 | P-6 | api, web | 阶段 4 组织管理员认证。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
-| P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 9 上线 |
+| P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引；业务域名 `golottery.ioclub.cn` 与素材域名 `golottery-oss.ioclub.cn` 的 ICP 备案与 HTTPS；微信后台配置 `request` / `downloadFile` 合法域名。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 9 上线 |
 
 ## 5. 之后
 
