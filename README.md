@@ -9,7 +9,7 @@
 | 目录 | 说明 |
 | --- | --- |
 | `golottery-api` | 后端：Go + Echo + GORM + PostgreSQL，OpenAPI / oapi-codegen |
-| `golottery-web` | 控制台与大屏：Vite + React 19 + Mantine 8 |
+| `golottery-web` | 控制台与大屏：Vite + React 19 + Mantine 9 |
 | `golottery-mp` | 微信小程序（原生 TypeScript） |
 | `docs` | 产品与技术方案 |
 

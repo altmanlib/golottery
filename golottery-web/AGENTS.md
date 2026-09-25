@@ -48,7 +48,7 @@ bun run gen:api    # 需 golottery-api 已启动并提供 /openapi.json
 
 ## 布局组件
 
-完整手册见仓库根目录 `docs/reference/mantine-ui-library.txt`（按组件名检索章节）
+完整手册见仓库根目录 `docs/reference/mantine-ui-library.txt`（mantine.dev 官方全文快照，Mantine 9；按组件名检索章节）
 
 | 场景 | 组件 |
 | --- | --- |
