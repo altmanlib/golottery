@@ -2,7 +2,7 @@
 title: 阶段 5：活动配置
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 阶段 5：活动配置
@@ -216,4 +216,5 @@ access_token 在多实例间共用：
 - 迁移可重复执行，测试用真实 PostgreSQL
 - 生成物与 `openapi.yaml` 一致
 - API 与 Web 的格式、lint、测试全绿
-- 管理员可以完成创建、导入、配置奖项，并下载可扫码进入小程序的活动码
+- 管理员可以完成创建、导入、配置奖项，并拿到网页宾客端的活动入口（地址与二维码）
+- 小程序码的真机扫码验证依赖平台 AppID，移到 [ROADMAP P-25](../ROADMAP.md)；本阶段以微信接口替身验证

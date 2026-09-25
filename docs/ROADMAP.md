@@ -34,7 +34,7 @@ updated: 2026-09-25
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md)。已完成：Redis、活动与状态迁移、首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）。待做：运营调整活动人数上限、控制台前端；小程序码真机验证依赖 P-13 的 AppID |
+| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md)。已完成：Redis、活动与状态迁移、首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）。待做：运营调整活动人数上限、控制台前端。首发不上小程序，真机验证移到 P-25 |
 
 ## 4. 计划中
 
@@ -46,7 +46,7 @@ updated: 2026-09-25
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
+| P-3 | api, web | 阶段 6 现场签到：后端按方案实现，客户端先用网页宾客端（`/m/:publicId`），见 [phases/phase-6-checkin.md §4.6](phases/phase-6-checkin.md#46-首发的网页宾客端) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
 | P-20 | api, web, mp | 阶段 8 品牌装修。见 [phases/phase-8-branding.md](phases/phase-8-branding.md) |
 | P-4 | ops | 阶段 9 上线与现场兜底。见 [phases/phase-9-launch.md](phases/phase-9-launch.md) |
@@ -54,6 +54,7 @@ updated: 2026-09-25
 | P-16 | api | 多场并行时按活动限流（PRD §9）。依赖阶段 9 压测结果；单场达标且无并行活动冲突时转暂缓 |
 | P-18 | api, web | 活动短链（PRD O8，P1）。依赖阶段 5；实施前先核实微信官方链接能力的有效期与调用额度 |
 | P-23 | api | OpenAPI 对外冻结前评审：命名、错误码、分页、默认值、可空性、枚举，收回内部开关。须在小程序首次提审前完成，见 [phase-6-checkin.md §7](phases/phase-6-checkin.md#7-开放项) |
+| P-25 | api, mp | 小程序宾客端接入：小程序宾客页与管理页、`GUEST_LOGIN_MODE=wechat`、小程序码真机验证。替换首发的网页宾客端，后端接口不变。依赖 P-13 的 AppID 与 P-23 |
 
 ## 6. 暂缓
 
