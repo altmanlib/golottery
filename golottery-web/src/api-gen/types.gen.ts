@@ -4,13 +4,6 @@ export type ClientOptions = {
     baseUrl: 'http://127.0.0.1:5568' | (string & {});
 };
 
-export type ApiInfo = {
-    docs: Array<string>;
-    name: string;
-    phase: string;
-    stack: string;
-};
-
 export type Error = {
     code: string;
     message: string;
@@ -18,30 +11,21 @@ export type Error = {
 };
 
 export type Healthz = {
+    ok: boolean;
+    service: string;
+    ts: string;
     /**
      * Database status
      */
     db?: 'up' | 'down' | 'skipped';
-    ok: boolean;
-    service: string;
-    ts: string;
 };
 
-export type GetApiInfoData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api';
+export type ApiInfo = {
+    name: string;
+    phase: string;
+    stack: string;
+    docs: Array<string>;
 };
-
-export type GetApiInfoResponses = {
-    /**
-     * Basic service info
-     */
-    200: ApiInfo;
-};
-
-export type GetApiInfoResponse = GetApiInfoResponses[keyof GetApiInfoResponses];
 
 export type GetHealthzData = {
     body?: never;
@@ -72,6 +56,38 @@ export type GetHealthzResponses = {
 
 export type GetHealthzResponse = GetHealthzResponses[keyof GetHealthzResponses];
 
+export type GetApiInfoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api';
+};
+
+export type GetApiInfoResponses = {
+    /**
+     * Basic service info
+     */
+    200: ApiInfo;
+};
+
+export type GetApiInfoResponse = GetApiInfoResponses[keyof GetApiInfoResponses];
+
+export type GetOpenApiYamlData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/openapi.yaml';
+};
+
+export type GetOpenApiYamlResponses = {
+    /**
+     * OpenAPI YAML
+     */
+    200: string;
+};
+
+export type GetOpenApiYamlResponse = GetOpenApiYamlResponses[keyof GetOpenApiYamlResponses];
+
 export type GetOpenApijsonData = {
     body?: never;
     path?: never;
@@ -89,19 +105,3 @@ export type GetOpenApijsonResponses = {
 };
 
 export type GetOpenApijsonResponse = GetOpenApijsonResponses[keyof GetOpenApijsonResponses];
-
-export type GetOpenApiYamlData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/openapi.yaml';
-};
-
-export type GetOpenApiYamlResponses = {
-    /**
-     * OpenAPI YAML
-     */
-    200: string;
-};
-
-export type GetOpenApiYamlResponse = GetOpenApiYamlResponses[keyof GetOpenApiYamlResponses];

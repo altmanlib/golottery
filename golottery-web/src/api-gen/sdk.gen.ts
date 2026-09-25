@@ -19,21 +19,21 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Service metadata
- */
-export const getApiInfo = <ThrowOnError extends boolean = false>(options?: Options<GetApiInfoData, ThrowOnError>): RequestResult<GetApiInfoResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetApiInfoResponses, unknown, ThrowOnError>({ url: '/api', ...options });
-
-/**
  * Liveness and database ping
  */
 export const getHealthz = <ThrowOnError extends boolean = false>(options?: Options<GetHealthzData, ThrowOnError>): RequestResult<GetHealthzResponses, GetHealthzErrors, ThrowOnError> => (options?.client ?? client).get<GetHealthzResponses, GetHealthzErrors, ThrowOnError>({ url: '/healthz', ...options });
 
 /**
- * OpenAPI document (JSON)
+ * Service metadata
  */
-export const getOpenApijson = <ThrowOnError extends boolean = false>(options?: Options<GetOpenApijsonData, ThrowOnError>): RequestResult<GetOpenApijsonResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOpenApijsonResponses, unknown, ThrowOnError>({ url: '/openapi.json', ...options });
+export const getApiInfo = <ThrowOnError extends boolean = false>(options?: Options<GetApiInfoData, ThrowOnError>): RequestResult<GetApiInfoResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetApiInfoResponses, unknown, ThrowOnError>({ url: '/api', ...options });
 
 /**
  * OpenAPI document (YAML)
  */
 export const getOpenApiYaml = <ThrowOnError extends boolean = false>(options?: Options<GetOpenApiYamlData, ThrowOnError>): RequestResult<GetOpenApiYamlResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOpenApiYamlResponses, unknown, ThrowOnError>({ url: '/openapi.yaml', ...options });
+
+/**
+ * OpenAPI document (JSON)
+ */
+export const getOpenApijson = <ThrowOnError extends boolean = false>(options?: Options<GetOpenApijsonData, ThrowOnError>): RequestResult<GetOpenApijsonResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOpenApijsonResponses, unknown, ThrowOnError>({ url: '/openapi.json', ...options });
