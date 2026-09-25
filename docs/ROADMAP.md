@@ -72,7 +72,7 @@ updated: 2026-09-25
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
-| P-5 | 待回填 | api, web | 阶段 2 运营认证：`platform_users` 与播种、登录限速、`/api/platform` 登录 / 登出 / me / 改密、按契约 `security` 校验令牌、运营登录页与按前缀分开的令牌。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |
+| P-5 | 928d946 | api, web | 阶段 2 运营认证：`platform_users` 与播种、登录限速、`/api/platform` 登录 / 登出 / me / 改密、按契约 `security` 校验令牌、运营登录页与按前缀分开的令牌。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |
 | P-22 | 97b01fc | ops | 工程流程：`agent/develop` 分支工作流、CI、文档规范检查、真实产物验证（`make smoke`、镜像构建、SDK 一致性）。见仓库根目录 `AGENTS.md` |
 | P-21 | 546295f | api | 确定 Redis 用途：签到限流、SSE 广播、微信凭据缓存，去掉单实例前提，见 [DESIGN.md §4.5](DESIGN.md#45-共享状态与多实例) |
 | P-14 | f374059 | docs | 删除三个子项目下的旧版文档，子项目 README 与 AGENTS.md 改为指向根 `docs/` |
