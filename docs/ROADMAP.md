@@ -39,14 +39,13 @@ updated: 2026-09-25
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-2 | api, web | 阶段 3 组织与配额。见 [phases/phase-3-org-quota.md](phases/phase-3-org-quota.md) |
+| P-6 | api, web | 阶段 4 组织管理员认证。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
 | P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引、ICP 备案域名与 HTTPS。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 9 上线 |
 
 ## 5. 之后
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-6 | api, web | 阶段 4 组织管理员认证。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
 | P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md) |
 | P-3 | api, mp | 阶段 6 现场签到。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
@@ -72,6 +71,7 @@ updated: 2026-09-25
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
+| P-2 | 待回填 | api, web | 阶段 3 组织与配额：`orgs` / `org_quotas` / `credit_ledger`，开通、停用启用、调整场次（并发安全）、人数上限，运营后台组织列表与详情。见 [phases/phase-3-org-quota.md](phases/phase-3-org-quota.md) |
 | P-5 | 928d946 | api, web | 阶段 2 运营认证：`platform_users` 与播种、登录限速、`/api/platform` 登录 / 登出 / me / 改密、按契约 `security` 校验令牌、运营登录页与按前缀分开的令牌。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |
 | P-22 | 97b01fc | ops | 工程流程：`agent/develop` 分支工作流、CI、文档规范检查、真实产物验证（`make smoke`、镜像构建、SDK 一致性）。见仓库根目录 `AGENTS.md` |
 | P-21 | 546295f | api | 确定 Redis 用途：签到限流、SSE 广播、微信凭据缓存，去掉单实例前提，见 [DESIGN.md §4.5](DESIGN.md#45-共享状态与多实例) |

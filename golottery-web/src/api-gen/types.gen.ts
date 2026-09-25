@@ -49,6 +49,76 @@ export type PlatformMe = {
     username: string;
 };
 
+export type OrgStatus = 'active' | 'disabled';
+
+export type OrgSummary = {
+    id: string;
+    name: string;
+    contact: string;
+    status: OrgStatus;
+    /**
+     * Remaining event credits
+     */
+    event_credits: number;
+    /**
+     * Default attendee limit copied into new events
+     */
+    max_attendees: number;
+    created_at: string;
+};
+
+export type OrgPage = {
+    items: Array<OrgSummary>;
+    total: number;
+};
+
+export type OrgDetail = {
+    org: OrgSummary;
+    /**
+     * Latest 20 entries, newest first
+     */
+    ledger: Array<LedgerEntry>;
+};
+
+export type LedgerEntry = {
+    id: string;
+    delta: number;
+    balance_after: number;
+    reason: string;
+    event_id?: string | null;
+    /**
+     * principal_type of the token that made the change
+     */
+    operator_type: string;
+    operator_id: string;
+    created_at: string;
+};
+
+export type CreateOrgRequest = {
+    name: string;
+    contact?: string;
+    event_credits: number;
+    max_attendees: number;
+};
+
+export type AdjustCreditsRequest = {
+    /**
+     * Non-zero; negative removes credits
+     */
+    delta: number;
+    reason: string;
+};
+
+export type SetMaxAttendeesRequest = {
+    max_attendees: number;
+};
+
+export type OrgId = string;
+
+export type Offset = number;
+
+export type Limit = number;
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -235,3 +305,227 @@ export type ChangePlatformPasswordResponses = {
 };
 
 export type ChangePlatformPasswordResponse = ChangePlatformPasswordResponses[keyof ChangePlatformPasswordResponses];
+
+export type ListOrgsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        offset?: number;
+        limit?: number;
+    };
+    url: '/api/platform/orgs';
+};
+
+export type ListOrgsErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type ListOrgsError = ListOrgsErrors[keyof ListOrgsErrors];
+
+export type ListOrgsResponses = {
+    /**
+     * One page of organizations
+     */
+    200: OrgPage;
+};
+
+export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
+
+export type CreateOrgData = {
+    body: CreateOrgRequest;
+    path?: never;
+    query?: never;
+    url: '/api/platform/orgs';
+};
+
+export type CreateOrgErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type CreateOrgError = CreateOrgErrors[keyof CreateOrgErrors];
+
+export type CreateOrgResponses = {
+    /**
+     * Organization opened
+     */
+    201: OrgSummary;
+};
+
+export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
+
+export type GetOrgData = {
+    body?: never;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}';
+};
+
+export type GetOrgErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type GetOrgError = GetOrgErrors[keyof GetOrgErrors];
+
+export type GetOrgResponses = {
+    /**
+     * Organization detail
+     */
+    200: OrgDetail;
+};
+
+export type GetOrgResponse = GetOrgResponses[keyof GetOrgResponses];
+
+export type DisableOrgData = {
+    body?: never;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/disable';
+};
+
+export type DisableOrgErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type DisableOrgError = DisableOrgErrors[keyof DisableOrgErrors];
+
+export type DisableOrgResponses = {
+    /**
+     * Organization is disabled
+     */
+    204: void;
+};
+
+export type DisableOrgResponse = DisableOrgResponses[keyof DisableOrgResponses];
+
+export type EnableOrgData = {
+    body?: never;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/enable';
+};
+
+export type EnableOrgErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type EnableOrgError = EnableOrgErrors[keyof EnableOrgErrors];
+
+export type EnableOrgResponses = {
+    /**
+     * Organization is active
+     */
+    204: void;
+};
+
+export type EnableOrgResponse = EnableOrgResponses[keyof EnableOrgResponses];
+
+export type AdjustOrgCreditsData = {
+    body: AdjustCreditsRequest;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/credits';
+};
+
+export type AdjustOrgCreditsErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type AdjustOrgCreditsError = AdjustOrgCreditsErrors[keyof AdjustOrgCreditsErrors];
+
+export type AdjustOrgCreditsResponses = {
+    /**
+     * The ledger entry written
+     */
+    200: LedgerEntry;
+};
+
+export type AdjustOrgCreditsResponse = AdjustOrgCreditsResponses[keyof AdjustOrgCreditsResponses];
+
+export type SetOrgMaxAttendeesData = {
+    body: SetMaxAttendeesRequest;
+    path: {
+        orgId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/max-attendees';
+};
+
+export type SetOrgMaxAttendeesErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type SetOrgMaxAttendeesError = SetOrgMaxAttendeesErrors[keyof SetOrgMaxAttendeesErrors];
+
+export type SetOrgMaxAttendeesResponses = {
+    /**
+     * Limit updated
+     */
+    204: void;
+};
+
+export type SetOrgMaxAttendeesResponse = SetOrgMaxAttendeesResponses[keyof SetOrgMaxAttendeesResponses];

@@ -110,6 +110,7 @@ golottery/
       httpapi/                  echo 根路由、中间件、/readyz、安全响应头、请求关联 ID
       auth/                     API Token、argon2id、LoginAttempt 实体、登录限速
       platform/                 平台运营账号：实体、播种、登录 / 登出 / 改密
+      org/                      组织、配额、场次流水
       apihttp/                  实现 api.StrictServerInterface，注册生成路由
     api/                        openapi.yaml、生成配置、*.gen.go（禁止手改生成物）
     Makefile  Dockerfile  compose.yml  .env.example  .golangci.yml  VERSION
@@ -117,6 +118,7 @@ golottery/
     src/api-gen/                openapi-ts 生成物，禁止手改
     src/api.ts                  按路径前缀附加令牌、401、ApiError
     src/platform/               运营后台（路由前缀 /platform，懒加载）
+    src/components/             跨入口复用的视图壳：TableSkeleton、EmptyState
   golottery-mp/                 微信小程序，不在工程基线交付内
   docs/
 ```
@@ -126,8 +128,9 @@ golottery/
 ```text
 main ──→ 全部
 
-apihttp ──→ api  auth  bizerr  platform  echo
+apihttp ──→ api  auth  bizerr  platform  org  echo
 platform ──→ auth  bizerr  gorm
+org ──→ bizerr  gorm
 auth / settings ──→ gorm
 store ──→ gorm                 （只被 main 与测试辅助 import）
 redisx ──→ go-redis           （客户端装配、Ping、测试辅助；阶段 5 起）
@@ -229,6 +232,14 @@ Redis 约定：
 
 启动时表为空则用 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH` 播种一行；表为空且缺任一键，或哈希格式无效时拒绝启动。表非空时不改已有行。
 
+### 5.5 组织与配额（`org.Org`、`org.Quota`、`org.LedgerEntry`）
+
+表结构见 [阶段 3 §4.1](phases/phase-3-org-quota.md#41-数据)。不变量：
+
+- `org_quotas.event_credits >= 0`、`max_attendees > 0`、`credit_ledger.delta <> 0`、`balance_after >= 0` 由数据库 `CHECK` 兜底
+- 调整场次用一条带条件的 `UPDATE ... WHERE event_credits + delta >= 0 RETURNING`，与流水写入同一事务；并发扣减不会把余额打成负数
+- 流水只追加；`operator_type` / `operator_id` 取自操作令牌
+
 ## 6. 认证与会话
 
 ### 6.1 令牌
@@ -269,6 +280,9 @@ Redis 约定：
 | `GET /openapi.json` · `GET /openapi.yaml` | 无 | `apihttp` |
 | `POST /api/platform/login` | 无 | `apihttp` → `platform` |
 | `POST /api/platform/logout` · `GET /api/platform/me` · `POST /api/platform/password` | platform 令牌 | `apihttp` → `platform` |
+| `/api/platform/orgs` 下的组织与配额接口（[阶段 3 §4.2](phases/phase-3-org-quota.md#42-接口)） | platform 令牌 | `apihttp` → `org` |
+
+列表接口统一用 `offset` / `limit` 查询参数（`limit` 默认 40，最大 100），返回 `{items, total}`；越界值按边界处理，不报错。
 | 其余路径 | 空体 `404` | `httpapi` |
 
 `httpapi` 使用静默错误处理器，不把框架默认错误页暴露给调用方。OpenAPI handler 返回的错误实现 `bizerr.Error` 时，按 §7.2 写成 JSON。
@@ -309,7 +323,9 @@ Redis 约定：
 | --- | --- |
 | `/` | 重定向到 `/platform` |
 | `/platform/login` | 运营登录；已有令牌时直接进入 `/platform` |
-| `/platform` | 运营后台首页；无令牌时去 `/platform/login`，有令牌时请求 `GET /api/platform/me` |
+| `/platform` | 运营后台外壳；无令牌时去 `/platform/login`，有令牌时请求 `GET /api/platform/me`；首页重定向到 `/platform/orgs` |
+| `/platform/orgs` | 组织列表（页码写在 `?page=`）与开通弹窗 |
+| `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、最近 20 条流水 |
 | `/host` | 大屏占位 |
 
 - 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`
@@ -370,6 +386,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `bizerr` | 每个 Code 都有文案；文案句尾无中文句号 |
 | `auth` | 令牌签发与按哈希查找；`typ` 不可互换；过期拒绝；argon2id 往返；限速阈值、等待分钟数与清零 |
 | `platform` | 播种：表空时写入、表非空不覆盖、缺配置或哈希无效拒绝 |
+| `org` | 开通的三行同事务（含回滚）、初始场次为 0 不写流水、调整与 `balance_after` 一致、扣成负数拒绝且余额不变、并发扣减不为负、停用启用幂等且不动配额、分页顺序 |
 | `httpapi` | `/readyz` 成功 200、失败空体 503；未知路径空体 404；安全响应头；不可信 `X-Request-Id` 被丢弃 |
 | `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
 | 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；登录表单的提交参数与错误展示 |
@@ -384,6 +401,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | --- | --- |
 | `001_init.sql` | `schema_migrations`、`settings`、`api_tokens`、`login_attempts` |
 | `002_platform_users.sql` | `platform_users` |
+| `003_org_quota.sql` | `orgs`、`org_quotas`、`credit_ledger` |
 
 仓库尚无生产数据。业务表以新增迁移追加，不改已发布迁移文件。
 

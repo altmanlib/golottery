@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -76,6 +76,81 @@ export const getPlatformMe = <ThrowOnError extends boolean = false>(options?: Op
 export const changePlatformPassword = <ThrowOnError extends boolean = false>(options: Options<ChangePlatformPasswordData, ThrowOnError>): RequestResult<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError> => (options.client ?? client).post<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/platform/password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List organizations, newest first
+ */
+export const listOrgs = <ThrowOnError extends boolean = false>(options?: Options<ListOrgsData, ThrowOnError>): RequestResult<ListOrgsResponses, ListOrgsErrors, ThrowOnError> => (options?.client ?? client).get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs',
+    ...options
+});
+
+/**
+ * Open an organization with its initial quota
+ */
+export const createOrg = <ThrowOnError extends boolean = false>(options: Options<CreateOrgData, ThrowOnError>): RequestResult<CreateOrgResponses, CreateOrgErrors, ThrowOnError> => (options.client ?? client).post<CreateOrgResponses, CreateOrgErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Organization, quota and the latest 20 ledger entries
+ */
+export const getOrg = <ThrowOnError extends boolean = false>(options: Options<GetOrgData, ThrowOnError>): RequestResult<GetOrgResponses, GetOrgErrors, ThrowOnError> => (options.client ?? client).get<GetOrgResponses, GetOrgErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs/{orgId}',
+    ...options
+});
+
+/**
+ * Disable an organization; idempotent
+ */
+export const disableOrg = <ThrowOnError extends boolean = false>(options: Options<DisableOrgData, ThrowOnError>): RequestResult<DisableOrgResponses, DisableOrgErrors, ThrowOnError> => (options.client ?? client).post<DisableOrgResponses, DisableOrgErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs/{orgId}/disable',
+    ...options
+});
+
+/**
+ * Enable an organization; idempotent
+ */
+export const enableOrg = <ThrowOnError extends boolean = false>(options: Options<EnableOrgData, ThrowOnError>): RequestResult<EnableOrgResponses, EnableOrgErrors, ThrowOnError> => (options.client ?? client).post<EnableOrgResponses, EnableOrgErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs/{orgId}/enable',
+    ...options
+});
+
+/**
+ * Add or remove event credits with a reason
+ */
+export const adjustOrgCredits = <ThrowOnError extends boolean = false>(options: Options<AdjustOrgCreditsData, ThrowOnError>): RequestResult<AdjustOrgCreditsResponses, AdjustOrgCreditsErrors, ThrowOnError> => (options.client ?? client).post<AdjustOrgCreditsResponses, AdjustOrgCreditsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs/{orgId}/credits',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Change the default attendee limit for events created afterwards
+ */
+export const setOrgMaxAttendees = <ThrowOnError extends boolean = false>(options: Options<SetOrgMaxAttendeesData, ThrowOnError>): RequestResult<SetOrgMaxAttendeesResponses, SetOrgMaxAttendeesErrors, ThrowOnError> => (options.client ?? client).post<SetOrgMaxAttendeesResponses, SetOrgMaxAttendeesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/orgs/{orgId}/max-attendees',
     ...options,
     headers: {
         'Content-Type': 'application/json',
