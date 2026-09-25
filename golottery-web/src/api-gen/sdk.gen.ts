@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -317,6 +317,199 @@ export const changeOrganizationPassword = <ThrowOnError extends boolean = false>
             type: 'http'
         }],
     url: '/api/organization/password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Events of the current organization, newest first
+ */
+export const listEvents = <ThrowOnError extends boolean = false>(options?: Options<ListEventsData, ThrowOnError>): RequestResult<ListEventsResponses, ListEventsErrors, ThrowOnError> => (options?.client ?? client).get<ListEventsResponses, ListEventsErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events',
+    ...options
+});
+
+/**
+ * Create a draft event; no credit is used
+ */
+export const createEvent = <ThrowOnError extends boolean = false>(options: Options<CreateEventData, ThrowOnError>): RequestResult<CreateEventResponses, CreateEventErrors, ThrowOnError> => (options.client ?? client).post<CreateEventResponses, CreateEventErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Event detail
+ */
+export const getEvent = <ThrowOnError extends boolean = false>(options: Options<GetEventData, ThrowOnError>): RequestResult<GetEventResponses, GetEventErrors, ThrowOnError> => (options.client ?? client).get<GetEventResponses, GetEventErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}',
+    ...options
+});
+
+/**
+ * Change settings or status; the first move to ready uses one credit
+ */
+export const updateEvent = <ThrowOnError extends boolean = false>(options: Options<UpdateEventData, ThrowOnError>): RequestResult<UpdateEventResponses, UpdateEventErrors, ThrowOnError> => (options.client ?? client).patch<UpdateEventResponses, UpdateEventErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Public code and mini program path
+ */
+export const getEventEntry = <ThrowOnError extends boolean = false>(options: Options<GetEventEntryData, ThrowOnError>): RequestResult<GetEventEntryResponses, GetEventEntryErrors, ThrowOnError> => (options.client ?? client).get<GetEventEntryResponses, GetEventEntryErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/entry',
+    ...options
+});
+
+/**
+ * Prizes by sort_no
+ */
+export const listPrizes = <ThrowOnError extends boolean = false>(options: Options<ListPrizesData, ThrowOnError>): RequestResult<ListPrizesResponses, ListPrizesErrors, ThrowOnError> => (options.client ?? client).get<ListPrizesResponses, ListPrizesErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/prizes',
+    ...options
+});
+
+/**
+ * Add a prize
+ */
+export const createPrize = <ThrowOnError extends boolean = false>(options: Options<CreatePrizeData, ThrowOnError>): RequestResult<CreatePrizeResponses, CreatePrizeErrors, ThrowOnError> => (options.client ?? client).post<CreatePrizeResponses, CreatePrizeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/prizes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a prize
+ */
+export const deletePrize = <ThrowOnError extends boolean = false>(options: Options<DeletePrizeData, ThrowOnError>): RequestResult<DeletePrizeResponses, DeletePrizeErrors, ThrowOnError> => (options.client ?? client).delete<DeletePrizeResponses, DeletePrizeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/prizes/{prizeId}',
+    ...options
+});
+
+/**
+ * Change a prize
+ */
+export const updatePrize = <ThrowOnError extends boolean = false>(options: Options<UpdatePrizeData, ThrowOnError>): RequestResult<UpdatePrizeResponses, UpdatePrizeErrors, ThrowOnError> => (options.client ?? client).patch<UpdatePrizeResponses, UpdatePrizeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/prizes/{prizeId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Roster, in the order it was added
+ */
+export const listAttendees = <ThrowOnError extends boolean = false>(options: Options<ListAttendeesData, ThrowOnError>): RequestResult<ListAttendeesResponses, ListAttendeesErrors, ThrowOnError> => (options.client ?? client).get<ListAttendeesResponses, ListAttendeesErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/attendees',
+    ...options
+});
+
+/**
+ * Add one person
+ */
+export const createAttendee = <ThrowOnError extends boolean = false>(options: Options<CreateAttendeeData, ThrowOnError>): RequestResult<CreateAttendeeResponses, CreateAttendeeErrors, ThrowOnError> => (options.client ?? client).post<CreateAttendeeResponses, CreateAttendeeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/attendees',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove a person who has not bound, checked in or won
+ */
+export const deleteAttendee = <ThrowOnError extends boolean = false>(options: Options<DeleteAttendeeData, ThrowOnError>): RequestResult<DeleteAttendeeResponses, DeleteAttendeeErrors, ThrowOnError> => (options.client ?? client).delete<DeleteAttendeeResponses, DeleteAttendeeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/attendees/{attendeeId}',
+    ...options
+});
+
+/**
+ * Change name, department or phone
+ */
+export const updateAttendee = <ThrowOnError extends boolean = false>(options: Options<UpdateAttendeeData, ThrowOnError>): RequestResult<UpdateAttendeeResponses, UpdateAttendeeErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAttendeeResponses, UpdateAttendeeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/attendees/{attendeeId}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

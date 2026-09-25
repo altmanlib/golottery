@@ -16,6 +16,7 @@ import (
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/event"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 	"golottery/api/internal/redisx"
@@ -30,6 +31,7 @@ type Deps struct {
 	Platform *platform.Service
 	Orgs     *org.Service
 	Accounts *org.Accounts
+	Events   *event.Service
 }
 
 // Server implements the generated strict interface.
@@ -39,6 +41,7 @@ type Server struct {
 	platform *platform.Service
 	orgs     *org.Service
 	accounts *org.Accounts
+	events   *event.Service
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -50,7 +53,7 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 		authenticate(deps.Tokens, secured, map[string]principalResolver{
