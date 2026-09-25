@@ -2,7 +2,7 @@
 title: 阶段 4：组织管理员认证
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 阶段 4：组织管理员认证
@@ -73,8 +73,8 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/platform/orgs/:id/users` | 该组织的管理员列表，不含口令哈希 |
-| POST | `/api/platform/orgs/:id/users` | `{name, email}` → `{id, email, password}` |
+| GET | `/api/platform/orgs/:id/users` | 该组织的管理员列表（按创建时间），不含口令哈希 |
+| POST | `/api/platform/orgs/:id/users` | `{name, email}` → `{user: {id, name, email, status, created_at}, password}` |
 | POST | `/api/platform/orgs/:id/users/:userId/reset-password` | 返回一次性新口令 |
 | POST | `/api/platform/orgs/:id/users/:userId/disable` | 停用并删除该账号全部令牌 |
 | POST | `/api/platform/orgs/:id/users/:userId/enable` | 启用，不改口令 |
@@ -87,7 +87,7 @@ updated: 2026-09-24
 | --- | --- | --- | --- |
 | POST | `/api/organization/login` | 无 | `{email, password}` → `{token, expires_at, org_id}` |
 | POST | `/api/organization/logout` | console | 删除当前令牌，`204` |
-| GET | `/api/organization/me` | console | `{name, email, org_id}` |
+| GET | `/api/organization/me` | console | `{name, email, org_id, org_name}`；`org_name` 用于控制台显示本组织名称 |
 | POST | `/api/organization/password` | console | `{current_password, new_password}` → `{token, expires_at}` |
 
 登录按 `org:<email>` 限速，规则与运营登录相同。邮箱不存在、口令错误、账号停用、所属组织停用，对外都返回 `401 E_INVALID_CREDENTIALS`。新口令少于 8 个字符返回 `400 E_PASSWORD_TOO_SHORT`；与当前口令相同返回 `400 E_PASSWORD_UNCHANGED`。
@@ -103,7 +103,7 @@ Web 按令牌类型分两条入口。令牌按主体分开存储：`gl.token.pla
 - 运营的组织详情里可以创建管理员，并一次性展示临时口令
 - 管理员登录后进入 `/organization`，只看到自己的组织
 
-`401` 时按请求 URL 清除对应令牌并回对应登录页：`/api/organization/*` 清 `gl.token.console` 并回 `/organization/login`，`/api/platform/*` 清 `gl.token.platform` 并回 `/platform/login`。登录接口自身的 `401` 不触发跳转，由表单展示错误。本阶段不在 `/organization` 做活动页面。
+`401` 时按请求 URL 清除对应令牌并回对应登录页：`/api/organization/*` 清 `gl.token.console` 并回 `/organization/login`，`/api/platform/*` 清 `gl.token.platform` 并回 `/platform/login`。只在当前页面仍属于该入口时跳转，避免一个迟到的 `401` 把用户从另一个入口拉走；跳转经路由器执行，不直接改 `location.hash`。登录接口自身的 `401` 不触发跳转，由表单展示错误。本阶段不在 `/organization` 做活动页面。
 
 ### 4.5 测试
 

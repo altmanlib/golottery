@@ -26,6 +26,18 @@ type ServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx echo.Context) error
+	// OrganizationLogin Organization admin login
+	// (POST /api/organization/login)
+	OrganizationLogin(ctx echo.Context) error
+	// OrganizationLogout Revoke the current console token
+	// (POST /api/organization/logout)
+	OrganizationLogout(ctx echo.Context) error
+	// GetOrganizationMe Current admin and its organization
+	// (GET /api/organization/me)
+	GetOrganizationMe(ctx echo.Context) error
+	// ChangeOrganizationPassword Change the admin password
+	// (POST /api/organization/password)
+	ChangeOrganizationPassword(ctx echo.Context) error
 	// PlatformLogin Platform operator login
 	// (POST /api/platform/login)
 	PlatformLogin(ctx echo.Context) error
@@ -56,6 +68,21 @@ type ServerInterface interface {
 	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
 	// (POST /api/platform/orgs/{orgId}/max-attendees)
 	SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error
+	// ListOrgUsers Admins of an organization
+	// (GET /api/platform/orgs/{orgId}/users)
+	ListOrgUsers(ctx echo.Context, orgId OrgId) error
+	// CreateOrgUser Create an admin with a one-time password
+	// (POST /api/platform/orgs/{orgId}/users)
+	CreateOrgUser(ctx echo.Context, orgId OrgId) error
+	// DisableOrgUser Disable an admin and revoke its tokens; idempotent
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/disable)
+	DisableOrgUser(ctx echo.Context, orgId OrgId, userId UserId) error
+	// EnableOrgUser Enable an admin without changing its password; idempotent
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/enable)
+	EnableOrgUser(ctx echo.Context, orgId OrgId, userId UserId) error
+	// ResetOrgUserPassword Replace the password and revoke every token of the admin
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/reset-password)
+	ResetOrgUserPassword(ctx echo.Context, orgId OrgId, userId UserId) error
 	// ChangePlatformPassword Change the platform operator password
 	// (POST /api/platform/password)
 	ChangePlatformPassword(ctx echo.Context) error
@@ -81,6 +108,42 @@ func (w *ServerInterfaceWrapper) GetApiInfo(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetApiInfo(ctx)
+	return err
+}
+
+// OrganizationLogin converts echo context to params.
+func (w *ServerInterfaceWrapper) OrganizationLogin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.OrganizationLogin(ctx)
+	return err
+}
+
+// OrganizationLogout converts echo context to params.
+func (w *ServerInterfaceWrapper) OrganizationLogout(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.OrganizationLogout(ctx)
+	return err
+}
+
+// GetOrganizationMe converts echo context to params.
+func (w *ServerInterfaceWrapper) GetOrganizationMe(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetOrganizationMe(ctx)
+	return err
+}
+
+// ChangeOrganizationPassword converts echo context to params.
+func (w *ServerInterfaceWrapper) ChangeOrganizationPassword(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ChangeOrganizationPassword(ctx)
 	return err
 }
 
@@ -225,6 +288,110 @@ func (w *ServerInterfaceWrapper) SetOrgMaxAttendees(ctx echo.Context) error {
 	return err
 }
 
+// ListOrgUsers converts echo context to params.
+func (w *ServerInterfaceWrapper) ListOrgUsers(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListOrgUsers(ctx, orgId)
+	return err
+}
+
+// CreateOrgUser converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateOrgUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateOrgUser(ctx, orgId)
+	return err
+}
+
+// DisableOrgUser converts echo context to params.
+func (w *ServerInterfaceWrapper) DisableOrgUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId UserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", ctx.Param("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DisableOrgUser(ctx, orgId, userId)
+	return err
+}
+
+// EnableOrgUser converts echo context to params.
+func (w *ServerInterfaceWrapper) EnableOrgUser(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId UserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", ctx.Param("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.EnableOrgUser(ctx, orgId, userId)
+	return err
+}
+
+// ResetOrgUserPassword converts echo context to params.
+func (w *ServerInterfaceWrapper) ResetOrgUserPassword(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId UserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", ctx.Param("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ResetOrgUserPassword(ctx, orgId, userId)
+	return err
+}
+
 // ChangePlatformPassword converts echo context to params.
 func (w *ServerInterfaceWrapper) ChangePlatformPassword(ctx echo.Context) error {
 	var err error
@@ -323,6 +490,15 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/enable", wrapper.EnableOrg, options.OperationMiddlewares["enableOrg"]...)
 	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/credits", wrapper.AdjustOrgCredits, options.OperationMiddlewares["adjustOrgCredits"]...)
 	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/max-attendees", wrapper.SetOrgMaxAttendees, options.OperationMiddlewares["setOrgMaxAttendees"]...)
+	router.GET(options.BaseURL+"/api/platform/orgs/:orgId/users", wrapper.ListOrgUsers, options.OperationMiddlewares["listOrgUsers"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/users", wrapper.CreateOrgUser, options.OperationMiddlewares["createOrgUser"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/users/:userId/reset-password", wrapper.ResetOrgUserPassword, options.OperationMiddlewares["resetOrgUserPassword"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/users/:userId/disable", wrapper.DisableOrgUser, options.OperationMiddlewares["disableOrgUser"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/users/:userId/enable", wrapper.EnableOrgUser, options.OperationMiddlewares["enableOrgUser"]...)
+	router.POST(options.BaseURL+"/api/organization/login", wrapper.OrganizationLogin, options.OperationMiddlewares["organizationLogin"]...)
+	router.POST(options.BaseURL+"/api/organization/logout", wrapper.OrganizationLogout, options.OperationMiddlewares["organizationLogout"]...)
+	router.GET(options.BaseURL+"/api/organization/me", wrapper.GetOrganizationMe, options.OperationMiddlewares["getOrganizationMe"]...)
+	router.POST(options.BaseURL+"/api/organization/password", wrapper.ChangeOrganizationPassword, options.OperationMiddlewares["changeOrganizationPassword"]...)
 
 }
 
@@ -345,6 +521,170 @@ func (response GetApiInfo200JSONResponse) VisitGetApiInfoResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrganizationLoginRequestObject struct {
+	Body *OrganizationLoginJSONRequestBody
+}
+
+type OrganizationLoginResponseObject interface {
+	VisitOrganizationLoginResponse(w http.ResponseWriter) error
+}
+
+type OrganizationLogin200JSONResponse OrganizationSession
+
+func (response OrganizationLogin200JSONResponse) VisitOrganizationLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrganizationLogin401JSONResponse struct{ ErrorJSONResponse }
+
+func (response OrganizationLogin401JSONResponse) VisitOrganizationLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrganizationLogin429JSONResponse Error
+
+func (response OrganizationLogin429JSONResponse) VisitOrganizationLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrganizationLogoutRequestObject struct {
+}
+
+type OrganizationLogoutResponseObject interface {
+	VisitOrganizationLogoutResponse(w http.ResponseWriter) error
+}
+
+type OrganizationLogout204Response struct {
+}
+
+func (response OrganizationLogout204Response) VisitOrganizationLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type OrganizationLogout401JSONResponse struct{ ErrorJSONResponse }
+
+func (response OrganizationLogout401JSONResponse) VisitOrganizationLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrganizationMeRequestObject struct {
+}
+
+type GetOrganizationMeResponseObject interface {
+	VisitGetOrganizationMeResponse(w http.ResponseWriter) error
+}
+
+type GetOrganizationMe200JSONResponse OrganizationMe
+
+func (response GetOrganizationMe200JSONResponse) VisitGetOrganizationMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrganizationMe401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetOrganizationMe401JSONResponse) VisitGetOrganizationMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeOrganizationPasswordRequestObject struct {
+	Body *ChangeOrganizationPasswordJSONRequestBody
+}
+
+type ChangeOrganizationPasswordResponseObject interface {
+	VisitChangeOrganizationPasswordResponse(w http.ResponseWriter) error
+}
+
+type ChangeOrganizationPassword200JSONResponse SessionToken
+
+func (response ChangeOrganizationPassword200JSONResponse) VisitChangeOrganizationPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeOrganizationPassword400JSONResponse struct{ ErrorJSONResponse }
+
+func (response ChangeOrganizationPassword400JSONResponse) VisitChangeOrganizationPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeOrganizationPassword401JSONResponse Error
+
+func (response ChangeOrganizationPassword401JSONResponse) VisitChangeOrganizationPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -825,6 +1165,276 @@ func (response SetOrgMaxAttendees404JSONResponse) VisitSetOrgMaxAttendeesRespons
 	return err
 }
 
+type ListOrgUsersRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+}
+
+type ListOrgUsersResponseObject interface {
+	VisitListOrgUsersResponse(w http.ResponseWriter) error
+}
+
+type ListOrgUsers200JSONResponse []OrgUser
+
+func (response ListOrgUsers200JSONResponse) VisitListOrgUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgUsers401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListOrgUsers401JSONResponse) VisitListOrgUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgUsers404JSONResponse Error
+
+func (response ListOrgUsers404JSONResponse) VisitListOrgUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgUserRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+	Body  *CreateOrgUserJSONRequestBody
+}
+
+type CreateOrgUserResponseObject interface {
+	VisitCreateOrgUserResponse(w http.ResponseWriter) error
+}
+
+type CreateOrgUser201JSONResponse OrgUserWithPassword
+
+func (response CreateOrgUser201JSONResponse) VisitCreateOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgUser400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateOrgUser400JSONResponse) VisitCreateOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgUser401JSONResponse Error
+
+func (response CreateOrgUser401JSONResponse) VisitCreateOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgUser404JSONResponse Error
+
+func (response CreateOrgUser404JSONResponse) VisitCreateOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgUser409JSONResponse Error
+
+func (response CreateOrgUser409JSONResponse) VisitCreateOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableOrgUserRequestObject struct {
+	OrgId  OrgId  `json:"orgId"`
+	UserId UserId `json:"userId"`
+}
+
+type DisableOrgUserResponseObject interface {
+	VisitDisableOrgUserResponse(w http.ResponseWriter) error
+}
+
+type DisableOrgUser204Response struct {
+}
+
+func (response DisableOrgUser204Response) VisitDisableOrgUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableOrgUser401JSONResponse struct{ ErrorJSONResponse }
+
+func (response DisableOrgUser401JSONResponse) VisitDisableOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableOrgUser404JSONResponse Error
+
+func (response DisableOrgUser404JSONResponse) VisitDisableOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableOrgUserRequestObject struct {
+	OrgId  OrgId  `json:"orgId"`
+	UserId UserId `json:"userId"`
+}
+
+type EnableOrgUserResponseObject interface {
+	VisitEnableOrgUserResponse(w http.ResponseWriter) error
+}
+
+type EnableOrgUser204Response struct {
+}
+
+func (response EnableOrgUser204Response) VisitEnableOrgUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type EnableOrgUser401JSONResponse struct{ ErrorJSONResponse }
+
+func (response EnableOrgUser401JSONResponse) VisitEnableOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableOrgUser404JSONResponse Error
+
+func (response EnableOrgUser404JSONResponse) VisitEnableOrgUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetOrgUserPasswordRequestObject struct {
+	OrgId  OrgId  `json:"orgId"`
+	UserId UserId `json:"userId"`
+}
+
+type ResetOrgUserPasswordResponseObject interface {
+	VisitResetOrgUserPasswordResponse(w http.ResponseWriter) error
+}
+
+type ResetOrgUserPassword200JSONResponse OneTimePassword
+
+func (response ResetOrgUserPassword200JSONResponse) VisitResetOrgUserPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetOrgUserPassword401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ResetOrgUserPassword401JSONResponse) VisitResetOrgUserPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetOrgUserPassword404JSONResponse Error
+
+func (response ResetOrgUserPassword404JSONResponse) VisitResetOrgUserPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ChangePlatformPasswordRequestObject struct {
 	Body *ChangePlatformPasswordJSONRequestBody
 }
@@ -977,6 +1587,18 @@ type StrictServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx context.Context, request GetApiInfoRequestObject) (GetApiInfoResponseObject, error)
+	// OrganizationLogin Organization admin login
+	// (POST /api/organization/login)
+	OrganizationLogin(ctx context.Context, request OrganizationLoginRequestObject) (OrganizationLoginResponseObject, error)
+	// OrganizationLogout Revoke the current console token
+	// (POST /api/organization/logout)
+	OrganizationLogout(ctx context.Context, request OrganizationLogoutRequestObject) (OrganizationLogoutResponseObject, error)
+	// GetOrganizationMe Current admin and its organization
+	// (GET /api/organization/me)
+	GetOrganizationMe(ctx context.Context, request GetOrganizationMeRequestObject) (GetOrganizationMeResponseObject, error)
+	// ChangeOrganizationPassword Change the admin password
+	// (POST /api/organization/password)
+	ChangeOrganizationPassword(ctx context.Context, request ChangeOrganizationPasswordRequestObject) (ChangeOrganizationPasswordResponseObject, error)
 	// PlatformLogin Platform operator login
 	// (POST /api/platform/login)
 	PlatformLogin(ctx context.Context, request PlatformLoginRequestObject) (PlatformLoginResponseObject, error)
@@ -1007,6 +1629,21 @@ type StrictServerInterface interface {
 	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
 	// (POST /api/platform/orgs/{orgId}/max-attendees)
 	SetOrgMaxAttendees(ctx context.Context, request SetOrgMaxAttendeesRequestObject) (SetOrgMaxAttendeesResponseObject, error)
+	// ListOrgUsers Admins of an organization
+	// (GET /api/platform/orgs/{orgId}/users)
+	ListOrgUsers(ctx context.Context, request ListOrgUsersRequestObject) (ListOrgUsersResponseObject, error)
+	// CreateOrgUser Create an admin with a one-time password
+	// (POST /api/platform/orgs/{orgId}/users)
+	CreateOrgUser(ctx context.Context, request CreateOrgUserRequestObject) (CreateOrgUserResponseObject, error)
+	// DisableOrgUser Disable an admin and revoke its tokens; idempotent
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/disable)
+	DisableOrgUser(ctx context.Context, request DisableOrgUserRequestObject) (DisableOrgUserResponseObject, error)
+	// EnableOrgUser Enable an admin without changing its password; idempotent
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/enable)
+	EnableOrgUser(ctx context.Context, request EnableOrgUserRequestObject) (EnableOrgUserResponseObject, error)
+	// ResetOrgUserPassword Replace the password and revoke every token of the admin
+	// (POST /api/platform/orgs/{orgId}/users/{userId}/reset-password)
+	ResetOrgUserPassword(ctx context.Context, request ResetOrgUserPasswordRequestObject) (ResetOrgUserPasswordResponseObject, error)
 	// ChangePlatformPassword Change the platform operator password
 	// (POST /api/platform/password)
 	ChangePlatformPassword(ctx context.Context, request ChangePlatformPasswordRequestObject) (ChangePlatformPasswordResponseObject, error)
@@ -1050,6 +1687,130 @@ func (sh *strictHandler) GetApiInfo(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GetApiInfoResponseObject); ok {
 		return validResponse.VisitGetApiInfoResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// OrganizationLogin operation middleware
+func (sh *strictHandler) OrganizationLogin(ctx echo.Context) error {
+	var request OrganizationLoginRequestObject
+
+	var body OrganizationLoginJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.OrganizationLogin(ctx.Request().Context(), request.(OrganizationLoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrganizationLogin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(OrganizationLoginResponseObject); ok {
+		return validResponse.VisitOrganizationLoginResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// OrganizationLogout operation middleware
+func (sh *strictHandler) OrganizationLogout(ctx echo.Context) error {
+	var request OrganizationLogoutRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.OrganizationLogout(ctx.Request().Context(), request.(OrganizationLogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrganizationLogout")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(OrganizationLogoutResponseObject); ok {
+		return validResponse.VisitOrganizationLogoutResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetOrganizationMe operation middleware
+func (sh *strictHandler) GetOrganizationMe(ctx echo.Context) error {
+	var request GetOrganizationMeRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrganizationMe(ctx.Request().Context(), request.(GetOrganizationMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrganizationMe")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetOrganizationMeResponseObject); ok {
+		return validResponse.VisitGetOrganizationMeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ChangeOrganizationPassword operation middleware
+func (sh *strictHandler) ChangeOrganizationPassword(ctx echo.Context) error {
+	var request ChangeOrganizationPasswordRequestObject
+
+	var body ChangeOrganizationPasswordJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeOrganizationPassword(ctx.Request().Context(), request.(ChangeOrganizationPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeOrganizationPassword")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ChangeOrganizationPasswordResponseObject); ok {
+		return validResponse.VisitChangeOrganizationPasswordResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -1362,6 +2123,150 @@ func (sh *strictHandler) SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error
 	return nil
 }
 
+// ListOrgUsers operation middleware
+func (sh *strictHandler) ListOrgUsers(ctx echo.Context, orgId OrgId) error {
+	var request ListOrgUsersRequestObject
+
+	request.OrgId = orgId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOrgUsers(ctx.Request().Context(), request.(ListOrgUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOrgUsers")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListOrgUsersResponseObject); ok {
+		return validResponse.VisitListOrgUsersResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateOrgUser operation middleware
+func (sh *strictHandler) CreateOrgUser(ctx echo.Context, orgId OrgId) error {
+	var request CreateOrgUserRequestObject
+
+	request.OrgId = orgId
+
+	var body CreateOrgUserJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOrgUser(ctx.Request().Context(), request.(CreateOrgUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOrgUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateOrgUserResponseObject); ok {
+		return validResponse.VisitCreateOrgUserResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DisableOrgUser operation middleware
+func (sh *strictHandler) DisableOrgUser(ctx echo.Context, orgId OrgId, userId UserId) error {
+	var request DisableOrgUserRequestObject
+
+	request.OrgId = orgId
+	request.UserId = userId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableOrgUser(ctx.Request().Context(), request.(DisableOrgUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableOrgUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DisableOrgUserResponseObject); ok {
+		return validResponse.VisitDisableOrgUserResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// EnableOrgUser operation middleware
+func (sh *strictHandler) EnableOrgUser(ctx echo.Context, orgId OrgId, userId UserId) error {
+	var request EnableOrgUserRequestObject
+
+	request.OrgId = orgId
+	request.UserId = userId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableOrgUser(ctx.Request().Context(), request.(EnableOrgUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableOrgUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(EnableOrgUserResponseObject); ok {
+		return validResponse.VisitEnableOrgUserResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ResetOrgUserPassword operation middleware
+func (sh *strictHandler) ResetOrgUserPassword(ctx echo.Context, orgId OrgId, userId UserId) error {
+	var request ResetOrgUserPasswordRequestObject
+
+	request.OrgId = orgId
+	request.UserId = userId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetOrgUserPassword(ctx.Request().Context(), request.(ResetOrgUserPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetOrgUserPassword")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ResetOrgUserPasswordResponseObject); ok {
+		return validResponse.VisitResetOrgUserPasswordResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // ChangePlatformPassword operation middleware
 func (sh *strictHandler) ChangePlatformPassword(ctx echo.Context) error {
 	var request ChangePlatformPasswordRequestObject
@@ -1475,42 +2380,51 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

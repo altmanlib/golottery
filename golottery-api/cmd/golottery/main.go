@@ -93,6 +93,7 @@ func runServer() error {
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
 		Orgs:     org.NewService(db.Gorm),
+		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 	}); err != nil {
 		_ = db.Close()
 		return err

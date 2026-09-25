@@ -16,7 +16,42 @@ const SCOPE_PREFIXES: [string, TokenScope][] = [
 ]
 
 /** A 401 from these paths means wrong credentials, not an expired session. */
-const LOGIN_PATHS = new Set(['/api/platform/login'])
+const LOGIN_PATHS = new Set(['/api/platform/login', '/api/organization/login'])
+
+/** Where each scope goes after its token is rejected; host joins in phase 7. */
+const LOGIN_ROUTES: Partial<Record<TokenScope, string>> = {
+  platform: '/platform/login',
+  console: '/organization/login',
+}
+
+/** The pages each scope owns. A late 401 must not pull the user out of another entry. */
+const ROUTE_PREFIXES: Record<TokenScope, string> = {
+  platform: '/platform',
+  console: '/organization',
+  host: '/host',
+}
+
+/** Query-key roots owned by each scope, dropped when that scope's session ends. */
+export const QUERY_ROOTS: Record<TokenScope, string> = {
+  platform: 'platform',
+  console: 'organization',
+  host: 'host',
+}
+
+export function loginRouteFor(scope: TokenScope): string | null {
+  return LOGIN_ROUTES[scope] ?? null
+}
+
+/** The route to send the user to after scope's token expired, or null to stay put. */
+export function redirectAfterExpiry(scope: TokenScope, currentPath: string): string | null {
+  const target = loginRouteFor(scope)
+  const prefix = ROUTE_PREFIXES[scope]
+  const inScope = currentPath === prefix || currentPath.startsWith(`${prefix}/`)
+  if (!target || !inScope || currentPath === target) {
+    return null
+  }
+  return target
+}
 
 const NETWORK_ERROR_MESSAGE = '无法连接服务器，请稍后重试'
 

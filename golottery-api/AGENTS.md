@@ -21,7 +21,7 @@ internal/
   httpapi/             # echo、中间件、/readyz、安全响应头
   auth/                # API Token、argon2id、LoginAttempt、LoginLimiter
   platform/            # 平台运营账号：实体、播种、登录 / 登出 / 改密
-  org/                 # 组织、配额、场次流水
+  org/                 # 组织、配额、场次流水；组织管理员账号与 console 会话
   apihttp/             # OpenAPI strict handler
 api/                   # openapi.yaml 与生成物，禁止手改 *.gen.go
 ```
@@ -32,7 +32,7 @@ api/                   # openapi.yaml 与生成物，禁止手改 *.gen.go
 main ──→ 全部
 apihttp ──→ api  auth  bizerr  platform  org  echo
 platform ──→ auth  bizerr  gorm
-org ──→ bizerr  gorm
+org ──→ auth  bizerr  gorm
 auth / settings ──→ gorm
 store ──→ gorm
 config ──→ os  godotenv
@@ -66,7 +66,8 @@ make smoke          # 构建二进制、在临时目录启动并请求 /readyz�
 - 生成配置：`api/models.yaml`、`api/server.yaml`
 - 生成入口：`api/generate.go`
 - 修改契约后必须 `make generate`，并保证工作区里生成物与契约一致
-- 需要令牌的接口在契约里写 `security`（如 `platformBearer`），`apihttp` 据此校验；新增安全方案时同步 `apihttp/security.go` 的 `schemeTokenTypes`，否则启动失败
+- 需要令牌的接口在契约里写 `security`（`platformBearer` / `consoleBearer`），`apihttp` 据此校验；新增安全方案时同步 `apihttp/security.go` 的 `schemeTokenTypes`，否则启动失败
+- `console` 令牌经 `resolveAdmin` 再查账号与组织状态；组织侧处理函数用 `adminFrom(ctx)` 取 `org_id`，不接受客户端传入的组织
 - 业务错误由处理函数返回 `bizerr`，契约里用 `components/responses/Error` 声明
 
 ## 配置分层

@@ -6,9 +6,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/argon2"
 )
+
+// MinPasswordLen is the minimum length, in characters, of a password a user chooses.
+const MinPasswordLen = 8
 
 const (
 	passwordMemory      uint32 = 64 * 1024
@@ -57,4 +61,20 @@ func VerifyPassword(encoded, password string) (bool, error) {
 	}
 	got := argon2.IDKey([]byte(password), salt, iterations, memory, parallelism, uint32(len(want)))
 	return subtle.ConstantTimeCompare(got, want) == 1, nil
+}
+
+var (
+	dummyHashOnce sync.Once
+	dummyHash     string
+)
+
+// VerifyDummy spends the cost of one real VerifyPassword so unknown accounts
+// cannot be told apart from wrong passwords by response time.
+func VerifyDummy(password string) {
+	dummyHashOnce.Do(func() {
+		dummyHash, _ = HashPassword("golottery-dummy-password")
+	})
+	if dummyHash != "" {
+		_, _ = VerifyPassword(dummyHash, password)
+	}
 }

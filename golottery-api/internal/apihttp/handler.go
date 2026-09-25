@@ -26,6 +26,7 @@ type Deps struct {
 	Tokens   *auth.TokenIssuer
 	Platform *platform.Service
 	Orgs     *org.Service
+	Accounts *org.Accounts
 }
 
 // Server implements the generated strict interface.
@@ -33,6 +34,7 @@ type Server struct {
 	db       *gorm.DB
 	platform *platform.Service
 	orgs     *org.Service
+	accounts *org.Accounts
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -44,10 +46,12 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, platform: deps.Platform, orgs: deps.Orgs}
+	server := &Server{db: deps.DB, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
-		authenticate(deps.Tokens, secured),
+		authenticate(deps.Tokens, secured, map[string]principalResolver{
+			auth.TokenTypeConsole: server.resolveAdmin,
+		}),
 		recoverBizErr,
 	})
 	api.RegisterHandlers(engine, handler)

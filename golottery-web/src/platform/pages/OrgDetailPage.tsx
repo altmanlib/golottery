@@ -5,6 +5,7 @@ import { EmptyState } from '#/components/EmptyState'
 import { TableSkeleton } from '#/components/TableSkeleton'
 import { formatDateTime } from '#/lib/format'
 import { AdjustCreditsForm } from '#/platform/components/AdjustCreditsForm'
+import { AdminSection } from '#/platform/components/AdminSection'
 import { LedgerTable } from '#/platform/components/LedgerTable'
 import { MaxAttendeesForm } from '#/platform/components/MaxAttendeesForm'
 import { OrgStatusBadge } from '#/platform/components/OrgStatusBadge'
@@ -83,6 +84,8 @@ export function OrgDetailPage() {
           <MaxAttendeesForm key={org.max_attendees} orgId={org.id} current={org.max_attendees} />
         </Paper>
       </SimpleGrid>
+
+      <AdminSection orgId={org.id} />
 
       <Stack gap={8}>
         <Text fw={500} size="sm">

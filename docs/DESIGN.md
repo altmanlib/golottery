@@ -56,20 +56,24 @@ updated: 2026-09-25
                \   HTTPS       /
                 ▼             ▼
               Nginx（生产，阶段 9）
+           golottery.ioclub.cn
                      │
                      ▼
         golottery-api (Go, echo)  127.0.0.1:5568
           ├── /healthz /readyz          httpapi
           ├── /openapi.json /openapi.yaml
           └── /api/*                    OpenAPI strict handler
-                │ gorm (pgx)       │ go-redis        │ S3 协议
+                │ gorm (pgx)       │ go-redis        │ S3 协议（内网写）
                 ▼                  ▼                 ▼
           PostgreSQL 18         Redis 7        对象存储（RustFS）
+                                                     │
+                                                     ▼ 公网读
+                                          golottery-oss.ioclub.cn
 ```
 
-Nginx 后可以挂多个 API 实例，不需要会话保持。
+生产对外主机名：`golottery.ioclub.cn` 承载 Web 与 API；`golottery-oss.ioclub.cn` 只提供品牌素材的公网读取。Nginx 后可以挂多个 API 实例，不需要会话保持。
 
-对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。它不可用时只影响素材上传与读取，不影响签到与抽奖。
+对象存储只存品牌素材，访问只经过 S3 协议，生产可换任意 S3 兼容存储，见 [阶段 8](phases/phase-8-branding.md)。API 经内网 `S3_ENDPOINT` 读写；对外素材 URL 由 `ASSET_PUBLIC_BASE_URL` 指向 `https://golottery-oss.ioclub.cn`。对象存储不可用时只影响素材上传与读取，不影响签到与抽奖。
 
 没有进程内异步任务。签到与抽奖都是短事务。大屏推送用 SSE，跨实例广播走 Redis。定期清理做成 `golottery` 子命令，由宿主机定时器调用。
 
@@ -110,7 +114,7 @@ golottery/
       httpapi/                  echo 根路由、中间件、/readyz、安全响应头、请求关联 ID
       auth/                     API Token、argon2id、LoginAttempt 实体、登录限速
       platform/                 平台运营账号：实体、播种、登录 / 登出 / 改密
-      org/                      组织、配额、场次流水
+      org/                      组织、配额、场次流水；组织管理员账号与 console 会话
       apihttp/                  实现 api.StrictServerInterface，注册生成路由
     api/                        openapi.yaml、生成配置、*.gen.go（禁止手改生成物）
     Makefile  Dockerfile  compose.yml  .env.example  .golangci.yml  VERSION
@@ -118,6 +122,7 @@ golottery/
     src/api-gen/                openapi-ts 生成物，禁止手改
     src/api.ts                  按路径前缀附加令牌、401、ApiError
     src/platform/               运营后台（路由前缀 /platform，懒加载）
+    src/organization/           组织控制台（路由前缀 /organization，懒加载）
     src/components/             跨入口复用的视图壳：TableSkeleton、EmptyState
   golottery-mp/                 微信小程序，不在工程基线交付内
   docs/
@@ -130,7 +135,7 @@ main ──→ 全部
 
 apihttp ──→ api  auth  bizerr  platform  org  echo
 platform ──→ auth  bizerr  gorm
-org ──→ bizerr  gorm
+org ──→ auth  bizerr  gorm
 auth / settings ──→ gorm
 store ──→ gorm                 （只被 main 与测试辅助 import）
 redisx ──→ go-redis           （客户端装配、Ping、测试辅助；阶段 5 起）
@@ -240,6 +245,10 @@ Redis 约定：
 - 调整场次用一条带条件的 `UPDATE ... WHERE event_credits + delta >= 0 RETURNING`，与流水写入同一事务；并发扣减不会把余额打成负数
 - 流水只追加；`operator_type` / `operator_id` 取自操作令牌
 
+### 5.6 `org_users`（`org.User`）
+
+表结构见 [阶段 4 §4.1](phases/phase-4-org-admin-auth.md#41-数据)。邮箱保存前去首尾空白并转小写，全局唯一；一个邮箱只属于一个组织。临时口令由服务端生成（10 位，去掉 `0 O o 1 l I`），明文只在创建与重置的响应里出现一次。
+
 ## 6. 认证与会话
 
 ### 6.1 令牌
@@ -248,7 +257,8 @@ Redis 约定：
 - `typ`：`console`（组织管理员）、`host`（主持人）、`platform`（平台运营）
 - 校验按 `typ` 分开，三种令牌不可互换
 - 有效期来自 `CONSOLE_SESSION_TTL` / `HOST_SESSION_TTL` / `PLATFORM_SESSION_TTL`
-- 需要令牌的接口在 `openapi.yaml` 中用 `security` 声明（`platformBearer`）；`apihttp` 启动时从内嵌契约读出这些接口，校验 `Authorization: Bearer` 且类型匹配，失败统一 `401 E_UNAUTHORIZED`
+- 需要令牌的接口在 `openapi.yaml` 中用 `security` 声明（`platformBearer` → `platform`，`consoleBearer` → `console`）；`apihttp` 启动时从内嵌契约读出这些接口，校验 `Authorization: Bearer` 且类型匹配，失败统一 `401 E_UNAUTHORIZED`
+- `console` 令牌每次请求再查 `org_users` 与 `orgs`：账号或组织已停用即 `401`。组织以账号行的 `org_id` 为准，放进请求上下文，不接受客户端传入
 - 登出只删除当前令牌；改密删除该主体全部令牌并签发一把新令牌
 
 ### 6.2 口令
@@ -281,6 +291,9 @@ Redis 约定：
 | `POST /api/platform/login` | 无 | `apihttp` → `platform` |
 | `POST /api/platform/logout` · `GET /api/platform/me` · `POST /api/platform/password` | platform 令牌 | `apihttp` → `platform` |
 | `/api/platform/orgs` 下的组织与配额接口（[阶段 3 §4.2](phases/phase-3-org-quota.md#42-接口)） | platform 令牌 | `apihttp` → `org` |
+| `/api/platform/orgs/:id/users` 下的管理员接口（[阶段 4 §4.2](phases/phase-4-org-admin-auth.md#42-运营接口)） | platform 令牌 | `apihttp` → `org` |
+| `POST /api/organization/login` | 无 | `apihttp` → `org` |
+| `/api/organization/*` 其余接口（[阶段 4 §4.3](phases/phase-4-org-admin-auth.md#43-管理员接口)） | console 令牌 | `apihttp` → `org` |
 
 列表接口统一用 `offset` / `limit` 查询参数（`limit` 默认 40，最大 100），返回 `{items, total}`；越界值按边界处理，不报错。
 | 其余路径 | 空体 `404` | `httpapi` |
@@ -325,7 +338,9 @@ Redis 约定：
 | `/platform/login` | 运营登录；已有令牌时直接进入 `/platform` |
 | `/platform` | 运营后台外壳；无令牌时去 `/platform/login`，有令牌时请求 `GET /api/platform/me`；首页重定向到 `/platform/orgs` |
 | `/platform/orgs` | 组织列表（页码写在 `?page=`）与开通弹窗 |
-| `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、最近 20 条流水 |
+| `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、管理员（创建、重置口令、停用 / 启用）、最近 20 条流水 |
+| `/organization/login` | 组织管理员登录；已有令牌时直接进入 `/organization` |
+| `/organization` | 组织控制台首页，显示本组织名称；无令牌时去 `/organization/login` |
 | `/host` | 大屏占位 |
 
 - 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`
@@ -333,7 +348,9 @@ Redis 约定：
 - 样式用 CSS Modules；结构用 Mantine 布局组件
 - 业务请求只从 `#/api-gen/sdk.gen` 与 `#/api-gen/types.gen` 引用
 - `src/api.ts` 按路径前缀附加 Bearer：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
-- `401` 删除对应令牌并跳到该入口的登录页（目前只有 `/platform/login`）；登录接口自身的 `401` 只展示错误，不跳转
+- `401` 删除对应令牌，只清该入口的查询缓存；当前页面仍在该入口内时，经 `router.navigate` 跳到它的登录页（`/platform/login`、`/organization/login`），已离开该入口则不跳。登录接口自身的 `401` 只展示错误，不跳转
+- 同一浏览器可同时登录运营后台与组织控制台，令牌与缓存互不影响
+- 临时口令只放在组件状态里展示一次，关闭即丢弃，不进查询缓存
 - 前端只请求相对路径；开发时由 Vite 代理
 
 ## 9. 启动与关闭
@@ -386,10 +403,11 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `bizerr` | 每个 Code 都有文案；文案句尾无中文句号 |
 | `auth` | 令牌签发与按哈希查找；`typ` 不可互换；过期拒绝；argon2id 往返；限速阈值、等待分钟数与清零 |
 | `platform` | 播种：表空时写入、表非空不覆盖、缺配置或哈希无效拒绝 |
+| `org`（账号） | 临时口令只在响应里且哈希可校验、重复邮箱 `409`、跨组织操作 `404`、`console` 令牌不能当 `platform` 用、停用账号删令牌、停用组织令牌立即失效、重置与改密后旧令牌失效、邮箱限速 |
 | `org` | 开通的三行同事务（含回滚）、初始场次为 0 不写流水、调整与 `balance_after` 一致、扣成负数拒绝且余额不变、并发扣减不为负、停用启用幂等且不动配额、分页顺序 |
 | `httpapi` | `/readyz` 成功 200、失败空体 503；未知路径空体 404；安全响应头；不可信 `X-Request-Id` 被丢弃 |
 | `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
-| 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；登录表单的提交参数与错误展示 |
+| 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；`401` 跳转目标只在本入口内；登录表单的提交参数与错误展示；临时口令只展示一次 |
 
 `make test` 即 `go test -p=1 ./...`。禁止用 SQLite 证明持久化路径。
 
@@ -402,6 +420,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `001_init.sql` | `schema_migrations`、`settings`、`api_tokens`、`login_attempts` |
 | `002_platform_users.sql` | `platform_users` |
 | `003_org_quota.sql` | `orgs`、`org_quotas`、`credit_ledger` |
+| `004_org_users.sql` | `org_users` |
 
 仓库尚无生产数据。业务表以新增迁移追加，不改已发布迁移文件。
 

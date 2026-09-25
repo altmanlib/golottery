@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -54,7 +54,11 @@ export const platformLogin = <ThrowOnError extends boolean = false>(options: Opt
  * Revoke the current platform token
  */
 export const platformLogout = <ThrowOnError extends boolean = false>(options?: Options<PlatformLogoutData, ThrowOnError>): RequestResult<PlatformLogoutResponses, PlatformLogoutErrors, ThrowOnError> => (options?.client ?? client).post<PlatformLogoutResponses, PlatformLogoutErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/logout',
     ...options
 });
@@ -63,7 +67,11 @@ export const platformLogout = <ThrowOnError extends boolean = false>(options?: O
  * Current platform operator
  */
 export const getPlatformMe = <ThrowOnError extends boolean = false>(options?: Options<GetPlatformMeData, ThrowOnError>): RequestResult<GetPlatformMeResponses, GetPlatformMeErrors, ThrowOnError> => (options?.client ?? client).get<GetPlatformMeResponses, GetPlatformMeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/me',
     ...options
 });
@@ -74,7 +82,11 @@ export const getPlatformMe = <ThrowOnError extends boolean = false>(options?: Op
  * Revokes every token of the operator and returns a new one.
  */
 export const changePlatformPassword = <ThrowOnError extends boolean = false>(options: Options<ChangePlatformPasswordData, ThrowOnError>): RequestResult<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError> => (options.client ?? client).post<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/password',
     ...options,
     headers: {
@@ -87,7 +99,11 @@ export const changePlatformPassword = <ThrowOnError extends boolean = false>(opt
  * List organizations, newest first
  */
 export const listOrgs = <ThrowOnError extends boolean = false>(options?: Options<ListOrgsData, ThrowOnError>): RequestResult<ListOrgsResponses, ListOrgsErrors, ThrowOnError> => (options?.client ?? client).get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs',
     ...options
 });
@@ -96,7 +112,11 @@ export const listOrgs = <ThrowOnError extends boolean = false>(options?: Options
  * Open an organization with its initial quota
  */
 export const createOrg = <ThrowOnError extends boolean = false>(options: Options<CreateOrgData, ThrowOnError>): RequestResult<CreateOrgResponses, CreateOrgErrors, ThrowOnError> => (options.client ?? client).post<CreateOrgResponses, CreateOrgErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs',
     ...options,
     headers: {
@@ -109,7 +129,11 @@ export const createOrg = <ThrowOnError extends boolean = false>(options: Options
  * Organization, quota and the latest 20 ledger entries
  */
 export const getOrg = <ThrowOnError extends boolean = false>(options: Options<GetOrgData, ThrowOnError>): RequestResult<GetOrgResponses, GetOrgErrors, ThrowOnError> => (options.client ?? client).get<GetOrgResponses, GetOrgErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs/{orgId}',
     ...options
 });
@@ -118,7 +142,11 @@ export const getOrg = <ThrowOnError extends boolean = false>(options: Options<Ge
  * Disable an organization; idempotent
  */
 export const disableOrg = <ThrowOnError extends boolean = false>(options: Options<DisableOrgData, ThrowOnError>): RequestResult<DisableOrgResponses, DisableOrgErrors, ThrowOnError> => (options.client ?? client).post<DisableOrgResponses, DisableOrgErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs/{orgId}/disable',
     ...options
 });
@@ -127,7 +155,11 @@ export const disableOrg = <ThrowOnError extends boolean = false>(options: Option
  * Enable an organization; idempotent
  */
 export const enableOrg = <ThrowOnError extends boolean = false>(options: Options<EnableOrgData, ThrowOnError>): RequestResult<EnableOrgResponses, EnableOrgErrors, ThrowOnError> => (options.client ?? client).post<EnableOrgResponses, EnableOrgErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs/{orgId}/enable',
     ...options
 });
@@ -136,7 +168,11 @@ export const enableOrg = <ThrowOnError extends boolean = false>(options: Options
  * Add or remove event credits with a reason
  */
 export const adjustOrgCredits = <ThrowOnError extends boolean = false>(options: Options<AdjustOrgCreditsData, ThrowOnError>): RequestResult<AdjustOrgCreditsResponses, AdjustOrgCreditsErrors, ThrowOnError> => (options.client ?? client).post<AdjustOrgCreditsResponses, AdjustOrgCreditsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs/{orgId}/credits',
     ...options,
     headers: {
@@ -149,8 +185,138 @@ export const adjustOrgCredits = <ThrowOnError extends boolean = false>(options: 
  * Change the default attendee limit for events created afterwards
  */
 export const setOrgMaxAttendees = <ThrowOnError extends boolean = false>(options: Options<SetOrgMaxAttendeesData, ThrowOnError>): RequestResult<SetOrgMaxAttendeesResponses, SetOrgMaxAttendeesErrors, ThrowOnError> => (options.client ?? client).post<SetOrgMaxAttendeesResponses, SetOrgMaxAttendeesErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
     url: '/api/platform/orgs/{orgId}/max-attendees',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Admins of an organization
+ */
+export const listOrgUsers = <ThrowOnError extends boolean = false>(options: Options<ListOrgUsersData, ThrowOnError>): RequestResult<ListOrgUsersResponses, ListOrgUsersErrors, ThrowOnError> => (options.client ?? client).get<ListOrgUsersResponses, ListOrgUsersErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/users',
+    ...options
+});
+
+/**
+ * Create an admin with a one-time password
+ */
+export const createOrgUser = <ThrowOnError extends boolean = false>(options: Options<CreateOrgUserData, ThrowOnError>): RequestResult<CreateOrgUserResponses, CreateOrgUserErrors, ThrowOnError> => (options.client ?? client).post<CreateOrgUserResponses, CreateOrgUserErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/users',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Replace the password and revoke every token of the admin
+ */
+export const resetOrgUserPassword = <ThrowOnError extends boolean = false>(options: Options<ResetOrgUserPasswordData, ThrowOnError>): RequestResult<ResetOrgUserPasswordResponses, ResetOrgUserPasswordErrors, ThrowOnError> => (options.client ?? client).post<ResetOrgUserPasswordResponses, ResetOrgUserPasswordErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/users/{userId}/reset-password',
+    ...options
+});
+
+/**
+ * Disable an admin and revoke its tokens; idempotent
+ */
+export const disableOrgUser = <ThrowOnError extends boolean = false>(options: Options<DisableOrgUserData, ThrowOnError>): RequestResult<DisableOrgUserResponses, DisableOrgUserErrors, ThrowOnError> => (options.client ?? client).post<DisableOrgUserResponses, DisableOrgUserErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/users/{userId}/disable',
+    ...options
+});
+
+/**
+ * Enable an admin without changing its password; idempotent
+ */
+export const enableOrgUser = <ThrowOnError extends boolean = false>(options: Options<EnableOrgUserData, ThrowOnError>): RequestResult<EnableOrgUserResponses, EnableOrgUserErrors, ThrowOnError> => (options.client ?? client).post<EnableOrgUserResponses, EnableOrgUserErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/users/{userId}/enable',
+    ...options
+});
+
+/**
+ * Organization admin login
+ */
+export const organizationLogin = <ThrowOnError extends boolean = false>(options: Options<OrganizationLoginData, ThrowOnError>): RequestResult<OrganizationLoginResponses, OrganizationLoginErrors, ThrowOnError> => (options.client ?? client).post<OrganizationLoginResponses, OrganizationLoginErrors, ThrowOnError>({
+    url: '/api/organization/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke the current console token
+ */
+export const organizationLogout = <ThrowOnError extends boolean = false>(options?: Options<OrganizationLogoutData, ThrowOnError>): RequestResult<OrganizationLogoutResponses, OrganizationLogoutErrors, ThrowOnError> => (options?.client ?? client).post<OrganizationLogoutResponses, OrganizationLogoutErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/logout',
+    ...options
+});
+
+/**
+ * Current admin and its organization
+ */
+export const getOrganizationMe = <ThrowOnError extends boolean = false>(options?: Options<GetOrganizationMeData, ThrowOnError>): RequestResult<GetOrganizationMeResponses, GetOrganizationMeErrors, ThrowOnError> => (options?.client ?? client).get<GetOrganizationMeResponses, GetOrganizationMeErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/me',
+    ...options
+});
+
+/**
+ * Change the admin password
+ *
+ * Revokes every token of the admin and returns a new one.
+ */
+export const changeOrganizationPassword = <ThrowOnError extends boolean = false>(options: Options<ChangeOrganizationPasswordData, ThrowOnError>): RequestResult<ChangeOrganizationPasswordResponses, ChangeOrganizationPasswordErrors, ThrowOnError> => (options.client ?? client).post<ChangeOrganizationPasswordResponses, ChangeOrganizationPasswordErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/password',
     ...options,
     headers: {
         'Content-Type': 'application/json',

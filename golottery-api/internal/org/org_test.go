@@ -17,7 +17,7 @@ var ops = Operator{Type: "platform", ID: "operator-1"}
 func newService(t *testing.T) (*Service, *store.DB) {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &LedgerEntry{}, &Quota{}, &Org{})
+	store.Reset(t, db, &User{}, &LedgerEntry{}, &Quota{}, &Org{})
 	return NewService(db.Gorm), db
 }
 
