@@ -11,19 +11,40 @@ import (
 
 // Defines values for HealthzDb.
 const (
-	Down    HealthzDb = "down"
-	Skipped HealthzDb = "skipped"
-	Up      HealthzDb = "up"
+	HealthzDbDown    HealthzDb = "down"
+	HealthzDbSkipped HealthzDb = "skipped"
+	HealthzDbUp      HealthzDb = "up"
 )
 
 // Valid indicates whether the value is a known member of the HealthzDb enum.
 func (e HealthzDb) Valid() bool {
 	switch e {
-	case Down:
+	case HealthzDbDown:
 		return true
-	case Skipped:
+	case HealthzDbSkipped:
 		return true
-	case Up:
+	case HealthzDbUp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HealthzRedis.
+const (
+	HealthzRedisDown    HealthzRedis = "down"
+	HealthzRedisSkipped HealthzRedis = "skipped"
+	HealthzRedisUp      HealthzRedis = "up"
+)
+
+// Valid indicates whether the value is a known member of the HealthzRedis enum.
+func (e HealthzRedis) Valid() bool {
+	switch e {
+	case HealthzRedisDown:
+		return true
+	case HealthzRedisSkipped:
+		return true
+	case HealthzRedisUp:
 		return true
 	default:
 		return false
@@ -121,6 +142,9 @@ type Healthz struct {
 	Db *HealthzDb `json:"db,omitempty"`
 	Ok bool       `json:"ok"`
 
+	// Redis Redis status; informational, it does not change ok
+	Redis *HealthzRedis `json:"redis,omitempty"`
+
 	// Service Example: golottery-api
 	Service string    `json:"service"`
 	Ts      time.Time `json:"ts"`
@@ -128,6 +152,9 @@ type Healthz struct {
 
 // HealthzDb Database status
 type HealthzDb string
+
+// HealthzRedis Redis status; informational, it does not change ok
+type HealthzRedis string
 
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {

@@ -547,6 +547,10 @@ components:
           type: string
           description: Database status
           enum: [up, down, skipped]
+        redis:
+          type: string
+          description: Redis status; informational, it does not change ok
+          enum: [up, down, skipped]
     ApiInfo:
       type: object
       required: [name, phase, stack, docs]

@@ -22,6 +22,7 @@ internal/
   auth/                # API Token、argon2id、LoginAttempt、LoginLimiter
   platform/            # 平台运营账号：实体、播种、登录 / 登出 / 改密
   org/                 # 组织、配额、场次流水；组织管理员账号与 console 会话
+  redisx/              # Redis 客户端、Ping、测试辅助（db 15）
   apihttp/             # OpenAPI strict handler
 api/                   # openapi.yaml 与生成物，禁止手改 *.gen.go
 ```
@@ -49,7 +50,7 @@ httpapi ──→ echo
 make tidy
 make fmt
 make lint
-make test           # 需可达的 PostgreSQL；默认 127.0.0.1:15436/golottery_test
+make test           # 需可达的 PostgreSQL 与 Redis；默认 127.0.0.1:15436/golottery_test 与 127.0.0.1:57379/15
 make run
 make dev            # 加载 .env 后运行
 make build
@@ -72,7 +73,7 @@ make smoke          # 构建二进制、在临时目录启动并请求 /readyz�
 
 ## 配置分层
 
-- ScopeInfra：`DATABASE_URL`、`APP_HOST`、`APP_PORT`、`SESSION_SECRET`、`TRUSTED_PROXIES`、`PLATFORM_USER`、`PLATFORM_PASSWORD_HASH`
+- ScopeInfra：`DATABASE_URL`、`REDIS_URL`、`APP_HOST`、`APP_PORT`、`SESSION_SECRET`、`TRUSTED_PROXIES`、`PLATFORM_USER`、`PLATFORM_PASSWORD_HASH`
 - `platform_users` 为空时必须配 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH`（哈希含 `$`，`.env` 里用单引号）
 - ScopeApp：`CONSOLE_SESSION_TTL`、`HOST_SESSION_TTL`、`PLATFORM_SESSION_TTL`、`LOGIN_MAX_FAILURES`、`LOGIN_WINDOW`
 - 优先级：`settings > .env > 环境变量 > 默认值`（仅 ScopeApp）

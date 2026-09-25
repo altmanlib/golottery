@@ -18,6 +18,10 @@ export type Healthz = {
      * Database status
      */
     db?: 'up' | 'down' | 'skipped';
+    /**
+     * Redis status; informational, it does not change ok
+     */
+    redis?: 'up' | 'down' | 'skipped';
 };
 
 export type ApiInfo = {

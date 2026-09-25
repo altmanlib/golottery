@@ -36,7 +36,7 @@ docker compose up -d
 
 ```bash
 cd golottery-api
-cp .env.example .env   # 填 SESSION_SECRET（≥32）、PLATFORM_USER 与 PLATFORM_PASSWORD_HASH（首次启动播种运营账号）
+cp .env.example .env   # REDIS_URL 已按 compose 填好；填 SESSION_SECRET（≥32）、PLATFORM_USER 与 PLATFORM_PASSWORD_HASH（首次启动播种运营账号）
 make dev               # 加载 .env，监听 127.0.0.1:5568
 curl -s 127.0.0.1:5568/healthz
 curl -s 127.0.0.1:5568/readyz

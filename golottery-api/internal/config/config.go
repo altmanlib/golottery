@@ -14,6 +14,7 @@ const minSessionSecretLen = 32
 // Config holds the resolved runtime configuration.
 type Config struct {
 	DatabaseURL          string
+	RedisURL             string
 	AppHost              string
 	AppPort              int
 	SessionSecret        string
@@ -120,6 +121,9 @@ func (c *Config) Validate() error {
 	var missing []string
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		missing = append(missing, "DATABASE_URL")
+	}
+	if strings.TrimSpace(c.RedisURL) == "" {
+		missing = append(missing, "REDIS_URL")
 	}
 	if strings.TrimSpace(c.SessionSecret) == "" {
 		missing = append(missing, "SESSION_SECRET")

@@ -31,6 +31,7 @@ func chdirTemp(t *testing.T) {
 func writeRequiredEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("DATABASE_URL", "postgres://postgres:secret@127.0.0.1:15436/golottery?sslmode=disable")
+	t.Setenv("REDIS_URL", "redis://127.0.0.1:57379/0")
 	t.Setenv("SESSION_SECRET", "0123456789abcdef0123456789abcdef")
 }
 
@@ -40,8 +41,8 @@ func TestBootstrapMissingRequiredNamesTheKey(t *testing.T) {
 	t.Setenv("SESSION_SECRET", "0123456789abcdef0123456789abcdef")
 
 	_, err := Bootstrap()
-	if err == nil || !strings.Contains(err.Error(), "DATABASE_URL") {
-		t.Fatalf("error = %v, want DATABASE_URL", err)
+	if err == nil || !strings.Contains(err.Error(), "DATABASE_URL") || !strings.Contains(err.Error(), "REDIS_URL") {
+		t.Fatalf("error = %v, want DATABASE_URL and REDIS_URL", err)
 	}
 }
 
@@ -49,6 +50,7 @@ func TestBootstrapRejectsShortSessionSecret(t *testing.T) {
 	clearConfigEnv(t)
 	chdirTemp(t)
 	t.Setenv("DATABASE_URL", "postgres://postgres:secret@127.0.0.1:15436/golottery?sslmode=disable")
+	t.Setenv("REDIS_URL", "redis://127.0.0.1:57379/0")
 	t.Setenv("SESSION_SECRET", "too-short")
 
 	_, err := Bootstrap()

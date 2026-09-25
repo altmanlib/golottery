@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
@@ -17,12 +18,14 @@ import (
 	"golottery/api/internal/bizerr"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/redisx"
 )
 
 // Deps are the collaborators behind the generated routes.
 // A nil DB reports the database as down.
 type Deps struct {
 	DB       *gorm.DB
+	Redis    *redis.Client
 	Tokens   *auth.TokenIssuer
 	Platform *platform.Service
 	Orgs     *org.Service
@@ -32,6 +35,7 @@ type Deps struct {
 // Server implements the generated strict interface.
 type Server struct {
 	db       *gorm.DB
+	redis    *redis.Client
 	platform *platform.Service
 	orgs     *org.Service
 	accounts *org.Accounts
@@ -46,7 +50,7 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 		authenticate(deps.Tokens, secured, map[string]principalResolver{
@@ -83,7 +87,7 @@ func writeBizErr(c echo.Context, be *bizerr.Error) error {
 
 // GetHealthz reports liveness and whether the database answers a ping.
 func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) (api.GetHealthzResponseObject, error) {
-	dbStatus := api.Down
+	dbStatus := api.HealthzDbDown
 	ok := false
 	if s.db != nil {
 		sqlDB, err := s.db.DB()
@@ -93,8 +97,15 @@ func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) 
 			cancel()
 		}
 		if err == nil {
-			dbStatus = api.Up
+			dbStatus = api.HealthzDbUp
 			ok = true
+		}
+	}
+	redisStatus := api.HealthzRedisSkipped
+	if s.redis != nil {
+		redisStatus = api.HealthzRedisUp
+		if err := redisx.Ping(ctx, s.redis); err != nil {
+			redisStatus = api.HealthzRedisDown
 		}
 	}
 	body := api.Healthz{
@@ -102,6 +113,7 @@ func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) 
 		Service: "golottery-api",
 		Ts:      time.Now().UTC(),
 		Db:      &dbStatus,
+		Redis:   &redisStatus,
 	}
 	if !ok {
 		return api.GetHealthz503JSONResponse(body), nil

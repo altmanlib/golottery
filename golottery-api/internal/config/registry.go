@@ -54,6 +54,11 @@ var Registry = []Spec{
 		Set: func(c *Config, v string) error { c.DatabaseURL = v; return nil },
 	},
 	{
+		Key: "REDIS_URL", Kind: KindString, Group: GroupServer,
+		Scope: ScopeInfra, Secret: true, Required: true,
+		Set: func(c *Config, v string) error { c.RedisURL = v; return nil },
+	},
+	{
 		Key: "APP_HOST", Kind: KindString, Group: GroupServer,
 		Default: "127.0.0.1", Scope: ScopeInfra,
 		Set: func(c *Config, v string) error { c.AppHost = v; return nil },
