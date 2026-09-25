@@ -5,7 +5,7 @@ VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 BUILD_DIR := build
 BINARY := $(BUILD_DIR)/$(APP_NAME)
 
-.PHONY: all build run dev test fmt lint tidy generate clean help
+.PHONY: all build run dev test fmt lint tidy generate check-generate smoke clean help
 
 all: build
 
@@ -34,6 +34,16 @@ tidy:
 generate:
 	go generate ./...
 
+check-generate:
+	@snap=$$(mktemp -d); cp api/*.gen.go $$snap/; \
+	go generate ./... || { rm -rf $$snap; exit 1; }; \
+	for f in api/*.gen.go; do \
+	  cmp -s $$f $$snap/$$(basename $$f) || { rm -rf $$snap; echo "$$f 与 openapi.yaml 不一致，已重新生成，请提交"; exit 1; }; \
+	done; rm -rf $$snap
+
+smoke: build
+	./scripts/smoke.sh $(BINARY)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
@@ -46,4 +56,6 @@ help:
 	@echo "  make fmt        Format Go sources"
 	@echo "  make lint       Run golangci-lint"
 	@echo "  make generate   Regenerate OpenAPI server code"
+	@echo "  make check-generate  Fail if generated code is out of date"
+	@echo "  make smoke      Build, start the binary and probe /readyz"
 	@echo "  make tidy       Tidy go.mod"
