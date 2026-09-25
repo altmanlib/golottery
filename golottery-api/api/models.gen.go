@@ -5,6 +5,8 @@ package api
 
 import (
 	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for HealthzDb.
@@ -28,6 +30,31 @@ func (e HealthzDb) Valid() bool {
 	}
 }
 
+// Defines values for OrgStatus.
+const (
+	Active   OrgStatus = "active"
+	Disabled OrgStatus = "disabled"
+)
+
+// Valid indicates whether the value is a known member of the OrgStatus enum.
+func (e OrgStatus) Valid() bool {
+	switch e {
+	case Active:
+		return true
+	case Disabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// AdjustCreditsRequest defines model for AdjustCreditsRequest.
+type AdjustCreditsRequest struct {
+	// Delta Non-zero; negative removes credits
+	Delta  int    `json:"delta"`
+	Reason string `json:"reason"`
+}
+
 // ApiInfo defines model for ApiInfo.
 type ApiInfo struct {
 	Docs []string `json:"docs"`
@@ -46,6 +73,14 @@ type ApiInfo struct {
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
+}
+
+// CreateOrgRequest defines model for CreateOrgRequest.
+type CreateOrgRequest struct {
+	Contact      *string `json:"contact,omitempty"`
+	EventCredits int     `json:"event_credits"`
+	MaxAttendees int     `json:"max_attendees"`
+	Name         string  `json:"name"`
 }
 
 // Error defines model for Error.
@@ -70,6 +105,51 @@ type Healthz struct {
 // HealthzDb Database status
 type HealthzDb string
 
+// LedgerEntry defines model for LedgerEntry.
+type LedgerEntry struct {
+	BalanceAfter int                 `json:"balance_after"`
+	CreatedAt    time.Time           `json:"created_at"`
+	Delta        int                 `json:"delta"`
+	EventId      *openapi_types.UUID `json:"event_id,omitempty"`
+	Id           openapi_types.UUID  `json:"id"`
+	OperatorId   string              `json:"operator_id"`
+
+	// OperatorType principal_type of the token that made the change
+	OperatorType string `json:"operator_type"`
+	Reason       string `json:"reason"`
+}
+
+// OrgDetail defines model for OrgDetail.
+type OrgDetail struct {
+	// Ledger Latest 20 entries, newest first
+	Ledger []LedgerEntry `json:"ledger"`
+	Org    OrgSummary    `json:"org"`
+}
+
+// OrgPage defines model for OrgPage.
+type OrgPage struct {
+	Items []OrgSummary `json:"items"`
+	Total int          `json:"total"`
+}
+
+// OrgStatus defines model for OrgStatus.
+type OrgStatus string
+
+// OrgSummary defines model for OrgSummary.
+type OrgSummary struct {
+	Contact   string    `json:"contact"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// EventCredits Remaining event credits
+	EventCredits int                `json:"event_credits"`
+	Id           openapi_types.UUID `json:"id"`
+
+	// MaxAttendees Default attendee limit copied into new events
+	MaxAttendees int       `json:"max_attendees"`
+	Name         string    `json:"name"`
+	Status       OrgStatus `json:"status"`
+}
+
 // PlatformLoginRequest defines model for PlatformLoginRequest.
 type PlatformLoginRequest struct {
 	Password string `json:"password"`
@@ -89,8 +169,37 @@ type SessionToken struct {
 	Token string `json:"token"`
 }
 
+// SetMaxAttendeesRequest defines model for SetMaxAttendeesRequest.
+type SetMaxAttendeesRequest struct {
+	MaxAttendees int `json:"max_attendees"`
+}
+
+// Limit defines model for Limit.
+type Limit = int
+
+// Offset defines model for Offset.
+type Offset = int
+
+// OrgId defines model for OrgId.
+type OrgId = openapi_types.UUID
+
+// ListOrgsParams defines parameters for ListOrgs.
+type ListOrgsParams struct {
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // PlatformLoginJSONRequestBody defines body for PlatformLogin for application/json ContentType.
 type PlatformLoginJSONRequestBody = PlatformLoginRequest
+
+// CreateOrgJSONRequestBody defines body for CreateOrg for application/json ContentType.
+type CreateOrgJSONRequestBody = CreateOrgRequest
+
+// AdjustOrgCreditsJSONRequestBody defines body for AdjustOrgCredits for application/json ContentType.
+type AdjustOrgCreditsJSONRequestBody = AdjustCreditsRequest
+
+// SetOrgMaxAttendeesJSONRequestBody defines body for SetOrgMaxAttendees for application/json ContentType.
+type SetOrgMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest
 
 // ChangePlatformPasswordJSONRequestBody defines body for ChangePlatformPassword for application/json ContentType.
 type ChangePlatformPasswordJSONRequestBody = ChangePasswordRequest

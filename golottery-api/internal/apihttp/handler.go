@@ -15,6 +15,7 @@ import (
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 )
 
@@ -24,12 +25,14 @@ type Deps struct {
 	DB       *gorm.DB
 	Tokens   *auth.TokenIssuer
 	Platform *platform.Service
+	Orgs     *org.Service
 }
 
 // Server implements the generated strict interface.
 type Server struct {
 	db       *gorm.DB
 	platform *platform.Service
+	orgs     *org.Service
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -41,7 +44,7 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, platform: deps.Platform}
+	server := &Server{db: deps.DB, platform: deps.Platform, orgs: deps.Orgs}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 		authenticate(deps.Tokens, secured),

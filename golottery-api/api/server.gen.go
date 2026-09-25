@@ -18,6 +18,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
@@ -34,6 +35,27 @@ type ServerInterface interface {
 	// GetPlatformMe Current platform operator
 	// (GET /api/platform/me)
 	GetPlatformMe(ctx echo.Context) error
+	// ListOrgs List organizations, newest first
+	// (GET /api/platform/orgs)
+	ListOrgs(ctx echo.Context, params ListOrgsParams) error
+	// CreateOrg Open an organization with its initial quota
+	// (POST /api/platform/orgs)
+	CreateOrg(ctx echo.Context) error
+	// GetOrg Organization, quota and the latest 20 ledger entries
+	// (GET /api/platform/orgs/{orgId})
+	GetOrg(ctx echo.Context, orgId OrgId) error
+	// AdjustOrgCredits Add or remove event credits with a reason
+	// (POST /api/platform/orgs/{orgId}/credits)
+	AdjustOrgCredits(ctx echo.Context, orgId OrgId) error
+	// DisableOrg Disable an organization; idempotent
+	// (POST /api/platform/orgs/{orgId}/disable)
+	DisableOrg(ctx echo.Context, orgId OrgId) error
+	// EnableOrg Enable an organization; idempotent
+	// (POST /api/platform/orgs/{orgId}/enable)
+	EnableOrg(ctx echo.Context, orgId OrgId) error
+	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
+	// (POST /api/platform/orgs/{orgId}/max-attendees)
+	SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error
 	// ChangePlatformPassword Change the platform operator password
 	// (POST /api/platform/password)
 	ChangePlatformPassword(ctx echo.Context) error
@@ -86,6 +108,120 @@ func (w *ServerInterfaceWrapper) GetPlatformMe(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetPlatformMe(ctx)
+	return err
+}
+
+// ListOrgs converts echo context to params.
+func (w *ServerInterfaceWrapper) ListOrgs(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOrgsParams
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", ctx.QueryParams(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter offset: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", ctx.QueryParams(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListOrgs(ctx, params)
+	return err
+}
+
+// CreateOrg converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateOrg(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateOrg(ctx)
+	return err
+}
+
+// GetOrg converts echo context to params.
+func (w *ServerInterfaceWrapper) GetOrg(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetOrg(ctx, orgId)
+	return err
+}
+
+// AdjustOrgCredits converts echo context to params.
+func (w *ServerInterfaceWrapper) AdjustOrgCredits(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.AdjustOrgCredits(ctx, orgId)
+	return err
+}
+
+// DisableOrg converts echo context to params.
+func (w *ServerInterfaceWrapper) DisableOrg(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DisableOrg(ctx, orgId)
+	return err
+}
+
+// EnableOrg converts echo context to params.
+func (w *ServerInterfaceWrapper) EnableOrg(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.EnableOrg(ctx, orgId)
+	return err
+}
+
+// SetOrgMaxAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) SetOrgMaxAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SetOrgMaxAttendees(ctx, orgId)
 	return err
 }
 
@@ -180,6 +316,13 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/platform/logout", wrapper.PlatformLogout, options.OperationMiddlewares["platformLogout"]...)
 	router.GET(options.BaseURL+"/api/platform/me", wrapper.GetPlatformMe, options.OperationMiddlewares["getPlatformMe"]...)
 	router.POST(options.BaseURL+"/api/platform/password", wrapper.ChangePlatformPassword, options.OperationMiddlewares["changePlatformPassword"]...)
+	router.GET(options.BaseURL+"/api/platform/orgs", wrapper.ListOrgs, options.OperationMiddlewares["listOrgs"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs", wrapper.CreateOrg, options.OperationMiddlewares["createOrg"]...)
+	router.GET(options.BaseURL+"/api/platform/orgs/:orgId", wrapper.GetOrg, options.OperationMiddlewares["getOrg"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/disable", wrapper.DisableOrg, options.OperationMiddlewares["disableOrg"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/enable", wrapper.EnableOrg, options.OperationMiddlewares["enableOrg"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/credits", wrapper.AdjustOrgCredits, options.OperationMiddlewares["adjustOrgCredits"]...)
+	router.POST(options.BaseURL+"/api/platform/orgs/:orgId/max-attendees", wrapper.SetOrgMaxAttendees, options.OperationMiddlewares["setOrgMaxAttendees"]...)
 
 }
 
@@ -316,6 +459,368 @@ func (response GetPlatformMe401JSONResponse) VisitGetPlatformMeResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgsRequestObject struct {
+	Params ListOrgsParams
+}
+
+type ListOrgsResponseObject interface {
+	VisitListOrgsResponse(w http.ResponseWriter) error
+}
+
+type ListOrgs200JSONResponse OrgPage
+
+func (response ListOrgs200JSONResponse) VisitListOrgsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgs401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListOrgs401JSONResponse) VisitListOrgsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrgRequestObject struct {
+	Body *CreateOrgJSONRequestBody
+}
+
+type CreateOrgResponseObject interface {
+	VisitCreateOrgResponse(w http.ResponseWriter) error
+}
+
+type CreateOrg201JSONResponse OrgSummary
+
+func (response CreateOrg201JSONResponse) VisitCreateOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrg400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateOrg400JSONResponse) VisitCreateOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrg401JSONResponse Error
+
+func (response CreateOrg401JSONResponse) VisitCreateOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrgRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+}
+
+type GetOrgResponseObject interface {
+	VisitGetOrgResponse(w http.ResponseWriter) error
+}
+
+type GetOrg200JSONResponse OrgDetail
+
+func (response GetOrg200JSONResponse) VisitGetOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrg401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetOrg401JSONResponse) VisitGetOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrg404JSONResponse Error
+
+func (response GetOrg404JSONResponse) VisitGetOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdjustOrgCreditsRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+	Body  *AdjustOrgCreditsJSONRequestBody
+}
+
+type AdjustOrgCreditsResponseObject interface {
+	VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error
+}
+
+type AdjustOrgCredits200JSONResponse LedgerEntry
+
+func (response AdjustOrgCredits200JSONResponse) VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdjustOrgCredits400JSONResponse struct{ ErrorJSONResponse }
+
+func (response AdjustOrgCredits400JSONResponse) VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdjustOrgCredits401JSONResponse Error
+
+func (response AdjustOrgCredits401JSONResponse) VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdjustOrgCredits404JSONResponse Error
+
+func (response AdjustOrgCredits404JSONResponse) VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdjustOrgCredits409JSONResponse Error
+
+func (response AdjustOrgCredits409JSONResponse) VisitAdjustOrgCreditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableOrgRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+}
+
+type DisableOrgResponseObject interface {
+	VisitDisableOrgResponse(w http.ResponseWriter) error
+}
+
+type DisableOrg204Response struct {
+}
+
+func (response DisableOrg204Response) VisitDisableOrgResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableOrg401JSONResponse struct{ ErrorJSONResponse }
+
+func (response DisableOrg401JSONResponse) VisitDisableOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableOrg404JSONResponse Error
+
+func (response DisableOrg404JSONResponse) VisitDisableOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableOrgRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+}
+
+type EnableOrgResponseObject interface {
+	VisitEnableOrgResponse(w http.ResponseWriter) error
+}
+
+type EnableOrg204Response struct {
+}
+
+func (response EnableOrg204Response) VisitEnableOrgResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type EnableOrg401JSONResponse struct{ ErrorJSONResponse }
+
+func (response EnableOrg401JSONResponse) VisitEnableOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableOrg404JSONResponse Error
+
+func (response EnableOrg404JSONResponse) VisitEnableOrgResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetOrgMaxAttendeesRequestObject struct {
+	OrgId OrgId `json:"orgId"`
+	Body  *SetOrgMaxAttendeesJSONRequestBody
+}
+
+type SetOrgMaxAttendeesResponseObject interface {
+	VisitSetOrgMaxAttendeesResponse(w http.ResponseWriter) error
+}
+
+type SetOrgMaxAttendees204Response struct {
+}
+
+func (response SetOrgMaxAttendees204Response) VisitSetOrgMaxAttendeesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SetOrgMaxAttendees400JSONResponse struct{ ErrorJSONResponse }
+
+func (response SetOrgMaxAttendees400JSONResponse) VisitSetOrgMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetOrgMaxAttendees401JSONResponse Error
+
+func (response SetOrgMaxAttendees401JSONResponse) VisitSetOrgMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetOrgMaxAttendees404JSONResponse Error
+
+func (response SetOrgMaxAttendees404JSONResponse) VisitSetOrgMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -481,6 +986,27 @@ type StrictServerInterface interface {
 	// GetPlatformMe Current platform operator
 	// (GET /api/platform/me)
 	GetPlatformMe(ctx context.Context, request GetPlatformMeRequestObject) (GetPlatformMeResponseObject, error)
+	// ListOrgs List organizations, newest first
+	// (GET /api/platform/orgs)
+	ListOrgs(ctx context.Context, request ListOrgsRequestObject) (ListOrgsResponseObject, error)
+	// CreateOrg Open an organization with its initial quota
+	// (POST /api/platform/orgs)
+	CreateOrg(ctx context.Context, request CreateOrgRequestObject) (CreateOrgResponseObject, error)
+	// GetOrg Organization, quota and the latest 20 ledger entries
+	// (GET /api/platform/orgs/{orgId})
+	GetOrg(ctx context.Context, request GetOrgRequestObject) (GetOrgResponseObject, error)
+	// AdjustOrgCredits Add or remove event credits with a reason
+	// (POST /api/platform/orgs/{orgId}/credits)
+	AdjustOrgCredits(ctx context.Context, request AdjustOrgCreditsRequestObject) (AdjustOrgCreditsResponseObject, error)
+	// DisableOrg Disable an organization; idempotent
+	// (POST /api/platform/orgs/{orgId}/disable)
+	DisableOrg(ctx context.Context, request DisableOrgRequestObject) (DisableOrgResponseObject, error)
+	// EnableOrg Enable an organization; idempotent
+	// (POST /api/platform/orgs/{orgId}/enable)
+	EnableOrg(ctx context.Context, request EnableOrgRequestObject) (EnableOrgResponseObject, error)
+	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
+	// (POST /api/platform/orgs/{orgId}/max-attendees)
+	SetOrgMaxAttendees(ctx context.Context, request SetOrgMaxAttendeesRequestObject) (SetOrgMaxAttendeesResponseObject, error)
 	// ChangePlatformPassword Change the platform operator password
 	// (POST /api/platform/password)
 	ChangePlatformPassword(ctx context.Context, request ChangePlatformPasswordRequestObject) (ChangePlatformPasswordResponseObject, error)
@@ -615,6 +1141,227 @@ func (sh *strictHandler) GetPlatformMe(ctx echo.Context) error {
 	return nil
 }
 
+// ListOrgs operation middleware
+func (sh *strictHandler) ListOrgs(ctx echo.Context, params ListOrgsParams) error {
+	var request ListOrgsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOrgs(ctx.Request().Context(), request.(ListOrgsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOrgs")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListOrgsResponseObject); ok {
+		return validResponse.VisitListOrgsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateOrg operation middleware
+func (sh *strictHandler) CreateOrg(ctx echo.Context) error {
+	var request CreateOrgRequestObject
+
+	var body CreateOrgJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOrg(ctx.Request().Context(), request.(CreateOrgRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOrg")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateOrgResponseObject); ok {
+		return validResponse.VisitCreateOrgResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetOrg operation middleware
+func (sh *strictHandler) GetOrg(ctx echo.Context, orgId OrgId) error {
+	var request GetOrgRequestObject
+
+	request.OrgId = orgId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrg(ctx.Request().Context(), request.(GetOrgRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrg")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetOrgResponseObject); ok {
+		return validResponse.VisitGetOrgResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdjustOrgCredits operation middleware
+func (sh *strictHandler) AdjustOrgCredits(ctx echo.Context, orgId OrgId) error {
+	var request AdjustOrgCreditsRequestObject
+
+	request.OrgId = orgId
+
+	var body AdjustOrgCreditsJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.AdjustOrgCredits(ctx.Request().Context(), request.(AdjustOrgCreditsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdjustOrgCredits")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdjustOrgCreditsResponseObject); ok {
+		return validResponse.VisitAdjustOrgCreditsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DisableOrg operation middleware
+func (sh *strictHandler) DisableOrg(ctx echo.Context, orgId OrgId) error {
+	var request DisableOrgRequestObject
+
+	request.OrgId = orgId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableOrg(ctx.Request().Context(), request.(DisableOrgRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableOrg")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DisableOrgResponseObject); ok {
+		return validResponse.VisitDisableOrgResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// EnableOrg operation middleware
+func (sh *strictHandler) EnableOrg(ctx echo.Context, orgId OrgId) error {
+	var request EnableOrgRequestObject
+
+	request.OrgId = orgId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableOrg(ctx.Request().Context(), request.(EnableOrgRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableOrg")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(EnableOrgResponseObject); ok {
+		return validResponse.VisitEnableOrgResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SetOrgMaxAttendees operation middleware
+func (sh *strictHandler) SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error {
+	var request SetOrgMaxAttendeesRequestObject
+
+	request.OrgId = orgId
+
+	var body SetOrgMaxAttendeesJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SetOrgMaxAttendees(ctx.Request().Context(), request.(SetOrgMaxAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetOrgMaxAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SetOrgMaxAttendeesResponseObject); ok {
+		return validResponse.VisitSetOrgMaxAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // ChangePlatformPassword operation middleware
 func (sh *strictHandler) ChangePlatformPassword(ctx echo.Context) error {
 	var request ChangePlatformPasswordRequestObject
@@ -728,27 +1475,42 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

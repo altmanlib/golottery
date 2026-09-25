@@ -15,6 +15,7 @@ import (
 
 	"golottery/api/internal/auth"
 	"golottery/api/internal/httpapi"
+	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 	"golottery/api/internal/store"
 )
@@ -33,7 +34,7 @@ type platformEnv struct {
 func newPlatformEnv(t *testing.T) platformEnv {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{})
+	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &org.LedgerEntry{}, &org.Quota{}, &org.Org{})
 	hash, err := auth.HashPassword(testPassword)
 	if err != nil {
 		t.Fatal(err)
@@ -48,6 +49,7 @@ func newPlatformEnv(t *testing.T) platformEnv {
 		DB:       db.Gorm,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
+		Orgs:     org.NewService(db.Gorm),
 	})
 	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens}
 }
@@ -257,6 +259,13 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 		"PlatformLogout":         auth.TokenTypePlatform,
 		"GetPlatformMe":          auth.TokenTypePlatform,
 		"ChangePlatformPassword": auth.TokenTypePlatform,
+		"ListOrgs":               auth.TokenTypePlatform,
+		"CreateOrg":              auth.TokenTypePlatform,
+		"GetOrg":                 auth.TokenTypePlatform,
+		"DisableOrg":             auth.TokenTypePlatform,
+		"EnableOrg":              auth.TokenTypePlatform,
+		"AdjustOrgCredits":       auth.TokenTypePlatform,
+		"SetOrgMaxAttendees":     auth.TokenTypePlatform,
 	}
 	if len(secured) != len(want) {
 		t.Fatalf("secured = %v, want %v", secured, want)

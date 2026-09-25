@@ -2,7 +2,7 @@
 title: 阶段 3：组织与配额
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 阶段 3：组织与配额
@@ -96,12 +96,13 @@ updated: 2026-09-24
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/platform/orgs` | 列表。项含名称、状态、剩余场次、人数上限 |
+| GET | `/api/platform/orgs` | 列表，按开通时间倒序；`offset` / `limit` 分页（默认 40，最大 100），返回 `{items, total}`。项含名称、联系人、状态、剩余场次、人数上限 |
 | POST | `/api/platform/orgs` | `{name, contact, event_credits, max_attendees}` |
 | GET | `/api/platform/orgs/:id` | 组织、配额、最近 20 条流水 |
 | POST | `/api/platform/orgs/:id/disable` | 停用 |
 | POST | `/api/platform/orgs/:id/enable` | 启用 |
-| POST | `/api/platform/orgs/:id/credits` | `{delta, reason}` |
+| POST | `/api/platform/orgs/:id/credits` | `{delta, reason}`，返回写入的流水 |
+| POST | `/api/platform/orgs/:id/max-attendees` | `{max_attendees}`，只影响之后创建的活动 |
 
 校验：
 
@@ -109,6 +110,7 @@ updated: 2026-09-24
 | --- | --- |
 | 名称为空 | `400 E_NAME_REQUIRED` |
 | `event_credits < 0` 或 `max_attendees <= 0` | `400 E_BAD_REQUEST` |
+| 名称或联系人超过 100 字、原因超过 200 字 | `400 E_BAD_REQUEST` |
 | `delta = 0` 或 `reason` 为空 | `400 E_BAD_REQUEST` |
 | 扣减后余额小于 0 | `409 E_CONFLICT` |
 | 组织不存在 | `404 E_NOT_FOUND` |
@@ -121,7 +123,7 @@ updated: 2026-09-24
 
 - 列表显示名称、状态、剩余场次、人数上限
 - 开通时填写名称、联系人、初始场次、人数上限
-- 详情里可以停用、启用、按正负整数调整场次并填写原因
+- 详情里可以停用（需确认）、启用、按正负整数调整场次并填写原因、修改人数上限
 - 流水只读
 
 不新增登录和账号管理界面。

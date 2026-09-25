@@ -10,6 +10,7 @@ import (
 	"golottery/api/internal/auth"
 	"golottery/api/internal/config"
 	"golottery/api/internal/httpapi"
+	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 	"golottery/api/internal/settings"
 	"golottery/api/internal/store"
@@ -91,6 +92,7 @@ func runServer() error {
 		DB:       db.Gorm,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
+		Orgs:     org.NewService(db.Gorm),
 	}); err != nil {
 		_ = db.Close()
 		return err

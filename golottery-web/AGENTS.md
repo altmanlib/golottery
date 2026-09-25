@@ -30,7 +30,7 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 - 列表页不出现整页滚动，表格区撑满剩余高度并内部滚动（表头 sticky）
 - 列表走后端 `offset`/`limit` 分页（默认 40），页码写在 URL；底栏用 `Pagination`
 - 动效只做 CSS 微交互：路由淡入写在对应壳的 CSS Module；弹层用 Mantine `Modal`（默认 portal 到 `body`）；尊重 `prefers-reduced-motion`
-- 加载用 `TableSkeleton`；空列表用 `EmptyState` 并带 CTA
+- 加载用 `TableSkeleton`；空列表用 `EmptyState` 并带 CTA（二者在 `src/components/`）
 - toast 右下角
 - 运营后台在 `src/platform/`，路由前缀 `/platform`；组织端在 `src/organization/`，路由前缀 `/organization`；大屏在 `src/host/`，路由前缀 `/host`。三块都懒加载
 - 分层：查询、变更与表单状态放各自目录的 `hooks/`，可复用视图块放 `components/`，页面只做装配；query key 集中在该目录的 `queryKeys.ts`

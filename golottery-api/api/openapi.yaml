@@ -144,7 +144,178 @@ paths:
           $ref: "#/components/responses/Error"
         "401":
           $ref: "#/components/responses/Error"
+  /api/platform/orgs:
+    get:
+      operationId: listOrgs
+      summary: List organizations, newest first
+      tags: [platform]
+      security:
+        - platformBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: One page of organizations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgPage"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createOrg
+      summary: Open an organization with its initial quota
+      tags: [platform]
+      security:
+        - platformBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrgRequest"
+      responses:
+        "201":
+          description: Organization opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgSummary"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    get:
+      operationId: getOrg
+      summary: Organization, quota and the latest 20 ledger entries
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "200":
+          description: Organization detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgDetail"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/disable:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    post:
+      operationId: disableOrg
+      summary: Disable an organization; idempotent
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "204":
+          description: Organization is disabled
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/enable:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    post:
+      operationId: enableOrg
+      summary: Enable an organization; idempotent
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "204":
+          description: Organization is active
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/credits:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    post:
+      operationId: adjustOrgCredits
+      summary: Add or remove event credits with a reason
+      tags: [platform]
+      security:
+        - platformBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustCreditsRequest"
+      responses:
+        "200":
+          description: The ledger entry written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/platform/orgs/{orgId}/max-attendees:
+    parameters:
+      - $ref: "#/components/parameters/OrgId"
+    post:
+      operationId: setOrgMaxAttendees
+      summary: Change the default attendee limit for events created afterwards
+      tags: [platform]
+      security:
+        - platformBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetMaxAttendeesRequest"
+      responses:
+        "204":
+          description: Limit updated
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 40
   securitySchemes:
     platformBearer:
       type: http
@@ -237,3 +408,107 @@ components:
       properties:
         username:
           type: string
+    OrgStatus:
+      type: string
+      enum: [active, disabled]
+    OrgSummary:
+      type: object
+      required: [id, name, contact, status, event_credits, max_attendees, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        contact:
+          type: string
+        status:
+          $ref: "#/components/schemas/OrgStatus"
+        event_credits:
+          type: integer
+          description: Remaining event credits
+        max_attendees:
+          type: integer
+          description: Default attendee limit copied into new events
+        created_at:
+          type: string
+          format: date-time
+    OrgPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrgSummary"
+        total:
+          type: integer
+    OrgDetail:
+      type: object
+      required: [org, ledger]
+      properties:
+        org:
+          $ref: "#/components/schemas/OrgSummary"
+        ledger:
+          type: array
+          description: Latest 20 entries, newest first
+          items:
+            $ref: "#/components/schemas/LedgerEntry"
+    LedgerEntry:
+      type: object
+      required: [id, delta, balance_after, reason, operator_type, operator_id, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        delta:
+          type: integer
+        balance_after:
+          type: integer
+        reason:
+          type: string
+        event_id:
+          type: string
+          format: uuid
+          nullable: true
+        operator_type:
+          type: string
+          description: principal_type of the token that made the change
+        operator_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    CreateOrgRequest:
+      type: object
+      required: [name, event_credits, max_attendees]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        contact:
+          type: string
+          maxLength: 100
+        event_credits:
+          type: integer
+          minimum: 0
+        max_attendees:
+          type: integer
+          minimum: 1
+    AdjustCreditsRequest:
+      type: object
+      required: [delta, reason]
+      properties:
+        delta:
+          type: integer
+          description: Non-zero; negative removes credits
+        reason:
+          type: string
+          maxLength: 200
+    SetMaxAttendeesRequest:
+      type: object
+      required: [max_attendees]
+      properties:
+        max_attendees:
+          type: integer
+          minimum: 1

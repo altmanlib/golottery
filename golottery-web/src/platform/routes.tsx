@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router-dom'
 
 export const platformRoutes: RouteObject[] = [
   {
@@ -9,9 +9,14 @@ export const platformRoutes: RouteObject[] = [
     path: '/platform',
     lazy: async () => ({ Component: (await import('#/platform/components/PlatformShell')).PlatformShell }),
     children: [
+      { index: true, element: <Navigate to="orgs" replace /> },
       {
-        index: true,
-        lazy: async () => ({ Component: (await import('#/platform/pages/HomePage')).HomePage }),
+        path: 'orgs',
+        lazy: async () => ({ Component: (await import('#/platform/pages/OrgListPage')).OrgListPage }),
+      },
+      {
+        path: 'orgs/:orgId',
+        lazy: async () => ({ Component: (await import('#/platform/pages/OrgDetailPage')).OrgDetailPage }),
       },
     ],
   },

@@ -21,6 +21,7 @@ internal/
   httpapi/             # echo、中间件、/readyz、安全响应头
   auth/                # API Token、argon2id、LoginAttempt、LoginLimiter
   platform/            # 平台运营账号：实体、播种、登录 / 登出 / 改密
+  org/                 # 组织、配额、场次流水
   apihttp/             # OpenAPI strict handler
 api/                   # openapi.yaml 与生成物，禁止手改 *.gen.go
 ```
@@ -29,8 +30,9 @@ api/                   # openapi.yaml 与生成物，禁止手改 *.gen.go
 
 ```text
 main ──→ 全部
-apihttp ──→ api  auth  bizerr  platform  echo
+apihttp ──→ api  auth  bizerr  platform  org  echo
 platform ──→ auth  bizerr  gorm
+org ──→ bizerr  gorm
 auth / settings ──→ gorm
 store ──→ gorm
 config ──→ os  godotenv
