@@ -42,6 +42,30 @@ type ServerInterface interface {
 	// GuestLogin Sign in a guest for one event
 	// (POST /api/guest/session)
 	GuestLogin(ctx echo.Context) error
+	// SearchStaffAttendees Find roster people by name, at most 20
+	// (GET /api/guest/staff/attendees)
+	SearchStaffAttendees(ctx echo.Context, params SearchStaffAttendeesParams) error
+	// UpdateStaffSettings Switch check-in mode or move the fence (admin role only)
+	// (PATCH /api/guest/staff/checkin-settings)
+	UpdateStaffSettings(ctx echo.Context) error
+	// ProxyCheckin Check a roster person in on their behalf
+	// (POST /api/guest/staff/checkins/proxy)
+	ProxyCheckin(ctx echo.Context) error
+	// JoinStaff Become staff of the event with an invite code
+	// (POST /api/guest/staff/join)
+	JoinStaff(ctx echo.Context) error
+	// ListPendingRequests Open help requests, oldest first
+	// (GET /api/guest/staff/manual-requests)
+	ListPendingRequests(ctx echo.Context) error
+	// ApproveRequest Bind when needed and check the person in
+	// (POST /api/guest/staff/manual-requests/{requestId}/approve)
+	ApproveRequest(ctx echo.Context, requestId RequestId) error
+	// RejectRequest Close a help request
+	// (POST /api/guest/staff/manual-requests/{requestId}/reject)
+	RejectRequest(ctx echo.Context, requestId RequestId) error
+	// GetStaffSummary Roster size, check-ins and open help requests
+	// (GET /api/guest/staff/summary)
+	GetStaffSummary(ctx echo.Context) error
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx echo.Context, params ListEventsParams) error
@@ -90,6 +114,15 @@ type ServerInterface interface {
 	// UpdatePrize Change a prize
 	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
 	UpdatePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error
+	// ListEventStaff On-site staff of an event
+	// (GET /api/organization/events/{eventId}/staff)
+	ListEventStaff(ctx echo.Context, eventId EventId) error
+	// CreateStaffInvite Create a one-time invite for a role, valid 24 hours
+	// (POST /api/organization/events/{eventId}/staff)
+	CreateStaffInvite(ctx echo.Context, eventId EventId) error
+	// RemoveEventStaff Revoke a staff member
+	// (DELETE /api/organization/events/{eventId}/staff/{staffId})
+	RemoveEventStaff(ctx echo.Context, eventId EventId, staffId StaffId) error
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx echo.Context) error
@@ -223,6 +256,101 @@ func (w *ServerInterfaceWrapper) GuestLogin(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GuestLogin(ctx)
+	return err
+}
+
+// SearchStaffAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) SearchStaffAttendees(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchStaffAttendeesParams
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", ctx.QueryParams(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter q: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SearchStaffAttendees(ctx, params)
+	return err
+}
+
+// UpdateStaffSettings converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateStaffSettings(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateStaffSettings(ctx)
+	return err
+}
+
+// ProxyCheckin converts echo context to params.
+func (w *ServerInterfaceWrapper) ProxyCheckin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ProxyCheckin(ctx)
+	return err
+}
+
+// JoinStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) JoinStaff(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.JoinStaff(ctx)
+	return err
+}
+
+// ListPendingRequests converts echo context to params.
+func (w *ServerInterfaceWrapper) ListPendingRequests(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListPendingRequests(ctx)
+	return err
+}
+
+// ApproveRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) ApproveRequest(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", ctx.Param("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter requestId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ApproveRequest(ctx, requestId)
+	return err
+}
+
+// RejectRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) RejectRequest(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", ctx.Param("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter requestId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RejectRequest(ctx, requestId)
+	return err
+}
+
+// GetStaffSummary converts echo context to params.
+func (w *ServerInterfaceWrapper) GetStaffSummary(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetStaffSummary(ctx)
 	return err
 }
 
@@ -529,6 +657,62 @@ func (w *ServerInterfaceWrapper) UpdatePrize(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdatePrize(ctx, eventId, prizeId)
+	return err
+}
+
+// ListEventStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) ListEventStaff(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListEventStaff(ctx, eventId)
+	return err
+}
+
+// CreateStaffInvite converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateStaffInvite(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateStaffInvite(ctx, eventId)
+	return err
+}
+
+// RemoveEventStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveEventStaff(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "staffId" -------------
+	var staffId StaffId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "staffId", ctx.Param("staffId"), &staffId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter staffId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RemoveEventStaff(ctx, eventId, staffId)
 	return err
 }
 
@@ -999,6 +1183,17 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/api/guest/checkin", wrapper.GetGuestStatus, options.OperationMiddlewares["getGuestStatus"]...)
 	router.POST(options.BaseURL+"/api/guest/checkin", wrapper.GuestCheckin, options.OperationMiddlewares["guestCheckin"]...)
 	router.POST(options.BaseURL+"/api/guest/manual-requests", wrapper.SubmitManualRequest, options.OperationMiddlewares["submitManualRequest"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/staff", wrapper.ListEventStaff, options.OperationMiddlewares["listEventStaff"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/staff", wrapper.CreateStaffInvite, options.OperationMiddlewares["createStaffInvite"]...)
+	router.DELETE(options.BaseURL+"/api/organization/events/:eventId/staff/:staffId", wrapper.RemoveEventStaff, options.OperationMiddlewares["removeEventStaff"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/join", wrapper.JoinStaff, options.OperationMiddlewares["joinStaff"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/summary", wrapper.GetStaffSummary, options.OperationMiddlewares["getStaffSummary"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/manual-requests", wrapper.ListPendingRequests, options.OperationMiddlewares["listPendingRequests"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/manual-requests/:requestId/approve", wrapper.ApproveRequest, options.OperationMiddlewares["approveRequest"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/manual-requests/:requestId/reject", wrapper.RejectRequest, options.OperationMiddlewares["rejectRequest"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/checkins/proxy", wrapper.ProxyCheckin, options.OperationMiddlewares["proxyCheckin"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/attendees", wrapper.SearchStaffAttendees, options.OperationMiddlewares["searchStaffAttendees"]...)
+	router.PATCH(options.BaseURL+"/api/guest/staff/checkin-settings", wrapper.UpdateStaffSettings, options.OperationMiddlewares["updateStaffSettings"]...)
 
 }
 
@@ -1354,6 +1549,463 @@ func (response GuestLogin503JSONResponse) VisitGuestLoginResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendeesRequestObject struct {
+	Params SearchStaffAttendeesParams
+}
+
+type SearchStaffAttendeesResponseObject interface {
+	VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error
+}
+
+type SearchStaffAttendees200JSONResponse []StaffAttendee
+
+func (response SearchStaffAttendees200JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response SearchStaffAttendees401JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendees404JSONResponse Error
+
+func (response SearchStaffAttendees404JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettingsRequestObject struct {
+	Body *UpdateStaffSettingsJSONRequestBody
+}
+
+type UpdateStaffSettingsResponseObject interface {
+	VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateStaffSettings200JSONResponse GuestStatus
+
+func (response UpdateStaffSettings200JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings400JSONResponse struct{ ErrorJSONResponse }
+
+func (response UpdateStaffSettings400JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings401JSONResponse Error
+
+func (response UpdateStaffSettings401JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings404JSONResponse Error
+
+func (response UpdateStaffSettings404JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings409JSONResponse Error
+
+func (response UpdateStaffSettings409JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckinRequestObject struct {
+	Body *ProxyCheckinJSONRequestBody
+}
+
+type ProxyCheckinResponseObject interface {
+	VisitProxyCheckinResponse(w http.ResponseWriter) error
+}
+
+type ProxyCheckin200JSONResponse StaffAttendee
+
+func (response ProxyCheckin200JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ProxyCheckin401JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin404JSONResponse Error
+
+func (response ProxyCheckin404JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin409JSONResponse Error
+
+func (response ProxyCheckin409JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaffRequestObject struct {
+	Body *JoinStaffJSONRequestBody
+}
+
+type JoinStaffResponseObject interface {
+	VisitJoinStaffResponse(w http.ResponseWriter) error
+}
+
+type JoinStaff200JSONResponse GuestStatus
+
+func (response JoinStaff200JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaff400JSONResponse struct{ ErrorJSONResponse }
+
+func (response JoinStaff400JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaff401JSONResponse Error
+
+func (response JoinStaff401JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequestsRequestObject struct {
+}
+
+type ListPendingRequestsResponseObject interface {
+	VisitListPendingRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListPendingRequests200JSONResponse []PendingRequest
+
+func (response ListPendingRequests200JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequests401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListPendingRequests401JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequests404JSONResponse Error
+
+func (response ListPendingRequests404JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Body      *ApproveRequestJSONRequestBody
+}
+
+type ApproveRequestResponseObject interface {
+	VisitApproveRequestResponse(w http.ResponseWriter) error
+}
+
+type ApproveRequest204Response struct {
+}
+
+func (response ApproveRequest204Response) VisitApproveRequestResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ApproveRequest400JSONResponse struct{ ErrorJSONResponse }
+
+func (response ApproveRequest400JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest401JSONResponse Error
+
+func (response ApproveRequest401JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest404JSONResponse Error
+
+func (response ApproveRequest404JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest409JSONResponse Error
+
+func (response ApproveRequest409JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+}
+
+type RejectRequestResponseObject interface {
+	VisitRejectRequestResponse(w http.ResponseWriter) error
+}
+
+type RejectRequest204Response struct {
+}
+
+func (response RejectRequest204Response) VisitRejectRequestResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RejectRequest401JSONResponse struct{ ErrorJSONResponse }
+
+func (response RejectRequest401JSONResponse) VisitRejectRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRequest404JSONResponse Error
+
+func (response RejectRequest404JSONResponse) VisitRejectRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummaryRequestObject struct {
+}
+
+type GetStaffSummaryResponseObject interface {
+	VisitGetStaffSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetStaffSummary200JSONResponse StaffSummary
+
+func (response GetStaffSummary200JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummary401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetStaffSummary401JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummary404JSONResponse Error
+
+func (response GetStaffSummary404JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2391,6 +3043,180 @@ func (response UpdatePrize409JSONResponse) VisitUpdatePrizeResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaffRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ListEventStaffResponseObject interface {
+	VisitListEventStaffResponse(w http.ResponseWriter) error
+}
+
+type ListEventStaff200JSONResponse []StaffMember
+
+func (response ListEventStaff200JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaff401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListEventStaff401JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaff404JSONResponse Error
+
+func (response ListEventStaff404JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInviteRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *CreateStaffInviteJSONRequestBody
+}
+
+type CreateStaffInviteResponseObject interface {
+	VisitCreateStaffInviteResponse(w http.ResponseWriter) error
+}
+
+type CreateStaffInvite201JSONResponse StaffInvite
+
+func (response CreateStaffInvite201JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateStaffInvite400JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite401JSONResponse Error
+
+func (response CreateStaffInvite401JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite404JSONResponse Error
+
+func (response CreateStaffInvite404JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite409JSONResponse Error
+
+func (response CreateStaffInvite409JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveEventStaffRequestObject struct {
+	EventId EventId `json:"eventId"`
+	StaffId StaffId `json:"staffId"`
+}
+
+type RemoveEventStaffResponseObject interface {
+	VisitRemoveEventStaffResponse(w http.ResponseWriter) error
+}
+
+type RemoveEventStaff204Response struct {
+}
+
+func (response RemoveEventStaff204Response) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveEventStaff401JSONResponse struct{ ErrorJSONResponse }
+
+func (response RemoveEventStaff401JSONResponse) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveEventStaff404JSONResponse Error
+
+func (response RemoveEventStaff404JSONResponse) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3603,6 +4429,30 @@ type StrictServerInterface interface {
 	// GuestLogin Sign in a guest for one event
 	// (POST /api/guest/session)
 	GuestLogin(ctx context.Context, request GuestLoginRequestObject) (GuestLoginResponseObject, error)
+	// SearchStaffAttendees Find roster people by name, at most 20
+	// (GET /api/guest/staff/attendees)
+	SearchStaffAttendees(ctx context.Context, request SearchStaffAttendeesRequestObject) (SearchStaffAttendeesResponseObject, error)
+	// UpdateStaffSettings Switch check-in mode or move the fence (admin role only)
+	// (PATCH /api/guest/staff/checkin-settings)
+	UpdateStaffSettings(ctx context.Context, request UpdateStaffSettingsRequestObject) (UpdateStaffSettingsResponseObject, error)
+	// ProxyCheckin Check a roster person in on their behalf
+	// (POST /api/guest/staff/checkins/proxy)
+	ProxyCheckin(ctx context.Context, request ProxyCheckinRequestObject) (ProxyCheckinResponseObject, error)
+	// JoinStaff Become staff of the event with an invite code
+	// (POST /api/guest/staff/join)
+	JoinStaff(ctx context.Context, request JoinStaffRequestObject) (JoinStaffResponseObject, error)
+	// ListPendingRequests Open help requests, oldest first
+	// (GET /api/guest/staff/manual-requests)
+	ListPendingRequests(ctx context.Context, request ListPendingRequestsRequestObject) (ListPendingRequestsResponseObject, error)
+	// ApproveRequest Bind when needed and check the person in
+	// (POST /api/guest/staff/manual-requests/{requestId}/approve)
+	ApproveRequest(ctx context.Context, request ApproveRequestRequestObject) (ApproveRequestResponseObject, error)
+	// RejectRequest Close a help request
+	// (POST /api/guest/staff/manual-requests/{requestId}/reject)
+	RejectRequest(ctx context.Context, request RejectRequestRequestObject) (RejectRequestResponseObject, error)
+	// GetStaffSummary Roster size, check-ins and open help requests
+	// (GET /api/guest/staff/summary)
+	GetStaffSummary(ctx context.Context, request GetStaffSummaryRequestObject) (GetStaffSummaryResponseObject, error)
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx context.Context, request ListEventsRequestObject) (ListEventsResponseObject, error)
@@ -3651,6 +4501,15 @@ type StrictServerInterface interface {
 	// UpdatePrize Change a prize
 	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
 	UpdatePrize(ctx context.Context, request UpdatePrizeRequestObject) (UpdatePrizeResponseObject, error)
+	// ListEventStaff On-site staff of an event
+	// (GET /api/organization/events/{eventId}/staff)
+	ListEventStaff(ctx context.Context, request ListEventStaffRequestObject) (ListEventStaffResponseObject, error)
+	// CreateStaffInvite Create a one-time invite for a role, valid 24 hours
+	// (POST /api/organization/events/{eventId}/staff)
+	CreateStaffInvite(ctx context.Context, request CreateStaffInviteRequestObject) (CreateStaffInviteResponseObject, error)
+	// RemoveEventStaff Revoke a staff member
+	// (DELETE /api/organization/events/{eventId}/staff/{staffId})
+	RemoveEventStaff(ctx context.Context, request RemoveEventStaffRequestObject) (RemoveEventStaffResponseObject, error)
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx context.Context, request OrganizationLoginRequestObject) (OrganizationLoginResponseObject, error)
@@ -3936,6 +4795,260 @@ func (sh *strictHandler) GuestLogin(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GuestLoginResponseObject); ok {
 		return validResponse.VisitGuestLoginResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SearchStaffAttendees operation middleware
+func (sh *strictHandler) SearchStaffAttendees(ctx echo.Context, params SearchStaffAttendeesParams) error {
+	var request SearchStaffAttendeesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchStaffAttendees(ctx.Request().Context(), request.(SearchStaffAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchStaffAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SearchStaffAttendeesResponseObject); ok {
+		return validResponse.VisitSearchStaffAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdateStaffSettings operation middleware
+func (sh *strictHandler) UpdateStaffSettings(ctx echo.Context) error {
+	var request UpdateStaffSettingsRequestObject
+
+	var body UpdateStaffSettingsJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateStaffSettings(ctx.Request().Context(), request.(UpdateStaffSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateStaffSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdateStaffSettingsResponseObject); ok {
+		return validResponse.VisitUpdateStaffSettingsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ProxyCheckin operation middleware
+func (sh *strictHandler) ProxyCheckin(ctx echo.Context) error {
+	var request ProxyCheckinRequestObject
+
+	var body ProxyCheckinJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ProxyCheckin(ctx.Request().Context(), request.(ProxyCheckinRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ProxyCheckin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ProxyCheckinResponseObject); ok {
+		return validResponse.VisitProxyCheckinResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// JoinStaff operation middleware
+func (sh *strictHandler) JoinStaff(ctx echo.Context) error {
+	var request JoinStaffRequestObject
+
+	var body JoinStaffJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.JoinStaff(ctx.Request().Context(), request.(JoinStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "JoinStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(JoinStaffResponseObject); ok {
+		return validResponse.VisitJoinStaffResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListPendingRequests operation middleware
+func (sh *strictHandler) ListPendingRequests(ctx echo.Context) error {
+	var request ListPendingRequestsRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPendingRequests(ctx.Request().Context(), request.(ListPendingRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPendingRequests")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListPendingRequestsResponseObject); ok {
+		return validResponse.VisitListPendingRequestsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ApproveRequest operation middleware
+func (sh *strictHandler) ApproveRequest(ctx echo.Context, requestId RequestId) error {
+	var request ApproveRequestRequestObject
+
+	request.RequestId = requestId
+
+	var body ApproveRequestJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRequest(ctx.Request().Context(), request.(ApproveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ApproveRequestResponseObject); ok {
+		return validResponse.VisitApproveRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// RejectRequest operation middleware
+func (sh *strictHandler) RejectRequest(ctx echo.Context, requestId RequestId) error {
+	var request RejectRequestRequestObject
+
+	request.RequestId = requestId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectRequest(ctx.Request().Context(), request.(RejectRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(RejectRequestResponseObject); ok {
+		return validResponse.VisitRejectRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetStaffSummary operation middleware
+func (sh *strictHandler) GetStaffSummary(ctx echo.Context) error {
+	var request GetStaffSummaryRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaffSummary(ctx.Request().Context(), request.(GetStaffSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaffSummary")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetStaffSummaryResponseObject); ok {
+		return validResponse.VisitGetStaffSummaryResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -4441,6 +5554,98 @@ func (sh *strictHandler) UpdatePrize(ctx echo.Context, eventId EventId, prizeId 
 		return err
 	} else if validResponse, ok := response.(UpdatePrizeResponseObject); ok {
 		return validResponse.VisitUpdatePrizeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListEventStaff operation middleware
+func (sh *strictHandler) ListEventStaff(ctx echo.Context, eventId EventId) error {
+	var request ListEventStaffRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEventStaff(ctx.Request().Context(), request.(ListEventStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEventStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListEventStaffResponseObject); ok {
+		return validResponse.VisitListEventStaffResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateStaffInvite operation middleware
+func (sh *strictHandler) CreateStaffInvite(ctx echo.Context, eventId EventId) error {
+	var request CreateStaffInviteRequestObject
+
+	request.EventId = eventId
+
+	var body CreateStaffInviteJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStaffInvite(ctx.Request().Context(), request.(CreateStaffInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStaffInvite")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateStaffInviteResponseObject); ok {
+		return validResponse.VisitCreateStaffInviteResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// RemoveEventStaff operation middleware
+func (sh *strictHandler) RemoveEventStaff(ctx echo.Context, eventId EventId, staffId StaffId) error {
+	var request RemoveEventStaffRequestObject
+
+	request.EventId = eventId
+	request.StaffId = staffId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveEventStaff(ctx.Request().Context(), request.(RemoveEventStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveEventStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(RemoveEventStaffResponseObject); ok {
+		return validResponse.VisitRemoveEventStaffResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -5202,94 +6407,108 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"kPyXAQA=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

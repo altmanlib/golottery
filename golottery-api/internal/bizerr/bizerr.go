@@ -36,6 +36,7 @@ const (
 	CodeWindowClosed         Code = "E_WINDOW_CLOSED"
 	CodeLowAccuracy          Code = "E_LOW_ACCURACY"
 	CodeOutOfRange           Code = "E_OUT_OF_RANGE"
+	CodeInviteInvalid        Code = "E_INVITE_INVALID"
 	CodeInternal             Code = "E_INTERNAL"
 	CodeStoreUnavailable     Code = "E_STORE_UNAVAILABLE"
 )
@@ -65,6 +66,7 @@ var messages = map[Code]string{
 	CodeWindowClosed:         "当前不在签到时间内",
 	CodeLowAccuracy:          "定位精度不足，请到开阔处重试或联系现场工作人员",
 	CodeOutOfRange:           "不在签到范围内，距离约 %d 米",
+	CodeInviteInvalid:        "邀请链接无效、已使用或已过期",
 	CodeInternal:             "系统出错了，请稍后重试",
 	CodeStoreUnavailable:     "系统暂时不可用，请稍后重试",
 }

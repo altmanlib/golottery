@@ -228,6 +228,12 @@ type ApiInfo struct {
 	Stack string `json:"stack"`
 }
 
+// ApproveRequest Empty for a bound guest; otherwise link an existing person or create one.
+type ApproveRequest struct {
+	AttendeeId *openapi_types.UUID `json:"attendee_id,omitempty"`
+	Create     *AttendeeInput      `json:"create,omitempty"`
+}
+
 // Attendee defines model for Attendee.
 type Attendee struct {
 	CreatedAt  time.Time          `json:"created_at"`
@@ -446,6 +452,11 @@ type ImportRowError struct {
 	Row int `json:"row"`
 }
 
+// JoinStaffRequest defines model for JoinStaffRequest.
+type JoinStaffRequest struct {
+	Invite string `json:"invite"`
+}
+
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {
 	BalanceAfter int                 `json:"balance_after"`
@@ -552,6 +563,16 @@ type OrganizationSession struct {
 	Token string `json:"token"`
 }
 
+// PendingRequest defines model for PendingRequest.
+type PendingRequest struct {
+	Attendee          *StaffAttendee     `json:"attendee,omitempty"`
+	ClaimedName       string             `json:"claimed_name"`
+	ClaimedPhoneLast4 string             `json:"claimed_phone_last4"`
+	CreatedAt         time.Time          `json:"created_at"`
+	Id                openapi_types.UUID `json:"id"`
+	Reason            string             `json:"reason"`
+}
+
 // PlatformLoginRequest defines model for PlatformLoginRequest.
 type PlatformLoginRequest struct {
 	Password string `json:"password"`
@@ -588,6 +609,11 @@ type PrizeUpdate struct {
 	SortNo *int    `json:"sort_no,omitempty"`
 }
 
+// ProxyCheckinRequest defines model for ProxyCheckinRequest.
+type ProxyCheckinRequest struct {
+	AttendeeId openapi_types.UUID `json:"attendee_id"`
+}
+
 // SessionToken defines model for SessionToken.
 type SessionToken struct {
 	ExpiresAt time.Time `json:"expires_at"`
@@ -601,8 +627,59 @@ type SetMaxAttendeesRequest struct {
 	MaxAttendees int `json:"max_attendees"`
 }
 
+// StaffAttendee defines model for StaffAttendee.
+type StaffAttendee struct {
+	Bound         bool               `json:"bound"`
+	CheckedIn     bool               `json:"checked_in"`
+	CheckinMethod *CheckinMethod     `json:"checkin_method,omitempty"`
+	Dept          string             `json:"dept"`
+	Id            openapi_types.UUID `json:"id"`
+	Name          string             `json:"name"`
+	PhoneLast4    string             `json:"phone_last4"`
+}
+
+// StaffInvite defines model for StaffInvite.
+type StaffInvite struct {
+	// Code One-time invite code; returned only once
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Path Web path that opens the invite, relative to the site root
+	Path string    `json:"path"`
+	Role StaffRole `json:"role"`
+}
+
+// StaffInviteRequest defines model for StaffInviteRequest.
+type StaffInviteRequest struct {
+	Role StaffRole `json:"role"`
+}
+
+// StaffMember defines model for StaffMember.
+type StaffMember struct {
+	// AttendeeName Roster name the staff identity is bound to, if any
+	AttendeeName *string            `json:"attendee_name,omitempty"`
+	CreatedAt    time.Time          `json:"created_at"`
+	Id           openapi_types.UUID `json:"id"`
+	Role         StaffRole          `json:"role"`
+}
+
 // StaffRole defines model for StaffRole.
 type StaffRole string
+
+// StaffSettingsRequest defines model for StaffSettingsRequest.
+type StaffSettingsRequest struct {
+	CenterLat   *float64     `json:"center_lat,omitempty"`
+	CenterLng   *float64     `json:"center_lng,omitempty"`
+	CheckinMode *CheckinMode `json:"checkin_mode,omitempty"`
+	RadiusM     *int         `json:"radius_m,omitempty"`
+}
+
+// StaffSummary defines model for StaffSummary.
+type StaffSummary struct {
+	CheckedIn       int `json:"checked_in"`
+	PendingRequests int `json:"pending_requests"`
+	Total           int `json:"total"`
+}
 
 // UpdateEventRequest Only the fields present change.
 type UpdateEventRequest struct {
@@ -635,8 +712,22 @@ type OrgId = openapi_types.UUID
 // PrizeId defines model for PrizeId.
 type PrizeId = openapi_types.UUID
 
+// Query defines model for Query.
+type Query = string
+
+// RequestId defines model for RequestId.
+type RequestId = openapi_types.UUID
+
+// StaffId defines model for StaffId.
+type StaffId = openapi_types.UUID
+
 // UserId defines model for UserId.
 type UserId = openapi_types.UUID
+
+// SearchStaffAttendeesParams defines parameters for SearchStaffAttendees.
+type SearchStaffAttendeesParams struct {
+	Q *Query `form:"q,omitempty" json:"q,omitempty"`
+}
 
 // ListEventsParams defines parameters for ListEvents.
 type ListEventsParams struct {
@@ -679,6 +770,18 @@ type SubmitManualRequestJSONRequestBody = ManualRequestInput
 // GuestLoginJSONRequestBody defines body for GuestLogin for application/json ContentType.
 type GuestLoginJSONRequestBody = GuestLoginRequest
 
+// UpdateStaffSettingsJSONRequestBody defines body for UpdateStaffSettings for application/json ContentType.
+type UpdateStaffSettingsJSONRequestBody = StaffSettingsRequest
+
+// ProxyCheckinJSONRequestBody defines body for ProxyCheckin for application/json ContentType.
+type ProxyCheckinJSONRequestBody = ProxyCheckinRequest
+
+// JoinStaffJSONRequestBody defines body for JoinStaff for application/json ContentType.
+type JoinStaffJSONRequestBody = JoinStaffRequest
+
+// ApproveRequestJSONRequestBody defines body for ApproveRequest for application/json ContentType.
+type ApproveRequestJSONRequestBody = ApproveRequest
+
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody = CreateEventRequest
 
@@ -699,6 +802,9 @@ type CreatePrizeJSONRequestBody = PrizeInput
 
 // UpdatePrizeJSONRequestBody defines body for UpdatePrize for application/json ContentType.
 type UpdatePrizeJSONRequestBody = PrizeUpdate
+
+// CreateStaffInviteJSONRequestBody defines body for CreateStaffInvite for application/json ContentType.
+type CreateStaffInviteJSONRequestBody = StaffInviteRequest
 
 // OrganizationLoginJSONRequestBody defines body for OrganizationLogin for application/json ContentType.
 type OrganizationLoginJSONRequestBody = OrganizationLoginRequest

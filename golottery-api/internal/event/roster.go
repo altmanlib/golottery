@@ -140,30 +140,49 @@ func (s *Service) ListAttendees(ctx context.Context, orgID, eventID uuid.UUID, o
 
 // AddAttendee appends one person; the roster may not grow beyond the event limit.
 func (s *Service) AddAttendee(ctx context.Context, orgID, eventID uuid.UUID, in AttendeeInput) (Attendee, error) {
+	var row Attendee
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		row, err = AddAttendeeTx(ctx, tx, orgID, eventID, in, s.now().UTC())
+		return err
+	})
+	if err != nil {
+		return Attendee{}, err
+	}
+	return row, nil
+}
+
+// AddAttendeeTx adds one person inside tx with the same checks as AddAttendee, for callers
+// that must add and act on the person atomically (on-site staff adding a walk-in).
+func AddAttendeeTx(ctx context.Context, tx *gorm.DB, orgID, eventID uuid.UUID, in AttendeeInput, at time.Time) (Attendee, error) {
 	in, err := cleanAttendee(in)
 	if err != nil {
 		return Attendee{}, err
 	}
-	var row Attendee
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		ev, err := editableEvent(ctx, tx, orgID, eventID)
-		if err != nil {
-			return err
-		}
-		if err := checkRoom(ctx, tx, ev, 1); err != nil {
-			return err
-		}
-		row = Attendee{
-			ID: uuid.New(), OrgID: orgID, EventID: eventID,
-			Name: in.Name, Dept: in.Dept, PhoneLast4: in.Phone,
-			Status: AttendeePending, CreatedAt: s.now().UTC(),
-		}
-		return tx.Create(&row).Error
-	})
-	if isUniqueViolation(err) {
-		return Attendee{}, bizerr.New(bizerr.CodeConflict)
+	ev, err := editableEvent(ctx, tx, orgID, eventID)
+	if err != nil {
+		return Attendee{}, asBizErr(err)
 	}
-	return row, asBizErr(err)
+	if err := checkRoom(ctx, tx, ev, 1); err != nil {
+		return Attendee{}, asBizErr(err)
+	}
+	row := Attendee{
+		ID: uuid.New(), OrgID: orgID, EventID: eventID,
+		Name: in.Name, Dept: in.Dept, PhoneLast4: in.Phone,
+		Status: AttendeePending, CreatedAt: at,
+	}
+	// A savepoint keeps a duplicate from aborting the caller's transaction.
+	if err := tx.SavePoint("add_attendee").Error; err != nil {
+		return Attendee{}, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	if err := tx.Create(&row).Error; err != nil {
+		if isUniqueViolation(err) {
+			_ = tx.RollbackTo("add_attendee").Error
+			return Attendee{}, bizerr.New(bizerr.CodeConflict)
+		}
+		return Attendee{}, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	return row, nil
 }
 
 // UpdateAttendee changes a roster row; a bound WeChat account stays bound.

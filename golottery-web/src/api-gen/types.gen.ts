@@ -378,6 +378,87 @@ export type GuestStatus = {
     staff_role?: StaffRole;
 };
 
+export type StaffInviteRequest = {
+    role: StaffRole;
+};
+
+export type StaffInvite = {
+    /**
+     * One-time invite code; returned only once
+     */
+    code: string;
+    role: StaffRole;
+    expires_at: string;
+    /**
+     * Web path that opens the invite, relative to the site root
+     */
+    path: string;
+};
+
+export type StaffMember = {
+    id: string;
+    role: StaffRole;
+    /**
+     * Roster name the staff identity is bound to, if any
+     */
+    attendee_name?: string | null;
+    created_at: string;
+};
+
+export type JoinStaffRequest = {
+    invite: string;
+};
+
+export type StaffSummary = {
+    total: number;
+    checked_in: number;
+    pending_requests: number;
+};
+
+export type StaffAttendee = {
+    id: string;
+    name: string;
+    dept: string;
+    phone_last4: string;
+    checked_in: boolean;
+    bound: boolean;
+    checkin_method?: CheckinMethod;
+};
+
+export type PendingRequest = {
+    id: string;
+    attendee?: StaffAttendee;
+    claimed_name: string;
+    claimed_phone_last4: string;
+    reason: string;
+    created_at: string;
+};
+
+/**
+ * Empty for a bound guest; otherwise link an existing person or create one.
+ */
+export type ApproveRequest = {
+    attendee_id?: string;
+    create?: AttendeeInput;
+};
+
+export type ProxyCheckinRequest = {
+    attendee_id: string;
+};
+
+export type StaffSettingsRequest = {
+    checkin_mode?: CheckinMode;
+    center_lat?: number;
+    center_lng?: number;
+    radius_m?: number;
+};
+
+export type StaffId = string;
+
+export type RequestId = string;
+
+export type Query = string;
+
 export type EventId = string;
 
 export type PrizeId = string;
@@ -1883,3 +1964,363 @@ export type SubmitManualRequestResponses = {
 };
 
 export type SubmitManualRequestResponse = SubmitManualRequestResponses[keyof SubmitManualRequestResponses];
+
+export type ListEventStaffData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/staff';
+};
+
+export type ListEventStaffErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListEventStaffError = ListEventStaffErrors[keyof ListEventStaffErrors];
+
+export type ListEventStaffResponses = {
+    /**
+     * OK
+     */
+    200: Array<StaffMember>;
+};
+
+export type ListEventStaffResponse = ListEventStaffResponses[keyof ListEventStaffResponses];
+
+export type CreateStaffInviteData = {
+    body: StaffInviteRequest;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/staff';
+};
+
+export type CreateStaffInviteErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type CreateStaffInviteError = CreateStaffInviteErrors[keyof CreateStaffInviteErrors];
+
+export type CreateStaffInviteResponses = {
+    /**
+     * OK
+     */
+    201: StaffInvite;
+};
+
+export type CreateStaffInviteResponse = CreateStaffInviteResponses[keyof CreateStaffInviteResponses];
+
+export type RemoveEventStaffData = {
+    body?: never;
+    path: {
+        eventId: string;
+        staffId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/staff/{staffId}';
+};
+
+export type RemoveEventStaffErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type RemoveEventStaffError = RemoveEventStaffErrors[keyof RemoveEventStaffErrors];
+
+export type RemoveEventStaffResponses = {
+    /**
+     * Done
+     */
+    204: void;
+};
+
+export type RemoveEventStaffResponse = RemoveEventStaffResponses[keyof RemoveEventStaffResponses];
+
+export type JoinStaffData = {
+    body: JoinStaffRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/staff/join';
+};
+
+export type JoinStaffErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type JoinStaffError = JoinStaffErrors[keyof JoinStaffErrors];
+
+export type JoinStaffResponses = {
+    /**
+     * OK
+     */
+    200: GuestStatus;
+};
+
+export type JoinStaffResponse = JoinStaffResponses[keyof JoinStaffResponses];
+
+export type GetStaffSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/guest/staff/summary';
+};
+
+export type GetStaffSummaryErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type GetStaffSummaryError = GetStaffSummaryErrors[keyof GetStaffSummaryErrors];
+
+export type GetStaffSummaryResponses = {
+    /**
+     * OK
+     */
+    200: StaffSummary;
+};
+
+export type GetStaffSummaryResponse = GetStaffSummaryResponses[keyof GetStaffSummaryResponses];
+
+export type ListPendingRequestsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/guest/staff/manual-requests';
+};
+
+export type ListPendingRequestsErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListPendingRequestsError = ListPendingRequestsErrors[keyof ListPendingRequestsErrors];
+
+export type ListPendingRequestsResponses = {
+    /**
+     * OK
+     */
+    200: Array<PendingRequest>;
+};
+
+export type ListPendingRequestsResponse = ListPendingRequestsResponses[keyof ListPendingRequestsResponses];
+
+export type ApproveRequestData = {
+    body: ApproveRequest;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/guest/staff/manual-requests/{requestId}/approve';
+};
+
+export type ApproveRequestErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type ApproveRequestError = ApproveRequestErrors[keyof ApproveRequestErrors];
+
+export type ApproveRequestResponses = {
+    /**
+     * Done
+     */
+    204: void;
+};
+
+export type ApproveRequestResponse = ApproveRequestResponses[keyof ApproveRequestResponses];
+
+export type RejectRequestData = {
+    body?: never;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/guest/staff/manual-requests/{requestId}/reject';
+};
+
+export type RejectRequestErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type RejectRequestError = RejectRequestErrors[keyof RejectRequestErrors];
+
+export type RejectRequestResponses = {
+    /**
+     * Done
+     */
+    204: void;
+};
+
+export type RejectRequestResponse = RejectRequestResponses[keyof RejectRequestResponses];
+
+export type ProxyCheckinData = {
+    body: ProxyCheckinRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/staff/checkins/proxy';
+};
+
+export type ProxyCheckinErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type ProxyCheckinError = ProxyCheckinErrors[keyof ProxyCheckinErrors];
+
+export type ProxyCheckinResponses = {
+    /**
+     * OK
+     */
+    200: StaffAttendee;
+};
+
+export type ProxyCheckinResponse = ProxyCheckinResponses[keyof ProxyCheckinResponses];
+
+export type SearchStaffAttendeesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string;
+    };
+    url: '/api/guest/staff/attendees';
+};
+
+export type SearchStaffAttendeesErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type SearchStaffAttendeesError = SearchStaffAttendeesErrors[keyof SearchStaffAttendeesErrors];
+
+export type SearchStaffAttendeesResponses = {
+    /**
+     * OK
+     */
+    200: Array<StaffAttendee>;
+};
+
+export type SearchStaffAttendeesResponse = SearchStaffAttendeesResponses[keyof SearchStaffAttendeesResponses];
+
+export type UpdateStaffSettingsData = {
+    body: StaffSettingsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/staff/checkin-settings';
+};
+
+export type UpdateStaffSettingsErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type UpdateStaffSettingsError = UpdateStaffSettingsErrors[keyof UpdateStaffSettingsErrors];
+
+export type UpdateStaffSettingsResponses = {
+    /**
+     * OK
+     */
+    200: GuestStatus;
+};
+
+export type UpdateStaffSettingsResponse = UpdateStaffSettingsResponses[keyof UpdateStaffSettingsResponses];

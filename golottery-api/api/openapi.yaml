@@ -1043,8 +1043,273 @@ paths:
           $ref: "#/components/responses/Error"
         "409":
           $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/staff:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: listEventStaff
+      summary: On-site staff of an event
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createStaffInvite
+      summary: Create a one-time invite for a role, valid 24 hours
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInviteRequest"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffInvite"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/staff/{staffId}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+      - $ref: "#/components/parameters/StaffId"
+    delete:
+      operationId: removeEventStaff
+      summary: Revoke a staff member
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/join:
+    post:
+      operationId: joinStaff
+      summary: Become staff of the event with an invite code
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinStaffRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/summary:
+    get:
+      operationId: getStaffSummary
+      summary: Roster size, check-ins and open help requests
+      tags: [guest]
+      security:
+        - guestBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffSummary"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/manual-requests:
+    get:
+      operationId: listPendingRequests
+      summary: Open help requests, oldest first
+      tags: [guest]
+      security:
+        - guestBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingRequest"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/manual-requests/{requestId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      operationId: approveRequest
+      summary: Bind when needed and check the person in
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRequest"
+      responses:
+        "204":
+          description: Done
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/manual-requests/{requestId}/reject:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      operationId: rejectRequest
+      summary: Close a help request
+      tags: [guest]
+      security:
+        - guestBearer: []
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/checkins/proxy:
+    post:
+      operationId: proxyCheckin
+      summary: Check a roster person in on their behalf
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProxyCheckinRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAttendee"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/attendees:
+    get:
+      operationId: searchStaffAttendees
+      summary: Find roster people by name, at most 20
+      tags: [guest]
+      security:
+        - guestBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Query"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffAttendee"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/guest/staff/checkin-settings:
+    patch:
+      operationId: updateStaffSettings
+      summary: Switch check-in mode or move the fence (admin role only)
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffSettingsRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
+    StaffId:
+      name: staffId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Query:
+      name: q
+      in: query
+      schema:
+        type: string
     EventId:
       name: eventId
       in: path
@@ -1731,3 +1996,122 @@ components:
           $ref: "#/components/schemas/GuestRequest"
         staff_role:
           $ref: "#/components/schemas/StaffRole"
+    StaffInviteRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          $ref: "#/components/schemas/StaffRole"
+    StaffInvite:
+      type: object
+      required: [code, role, expires_at, path]
+      properties:
+        code:
+          type: string
+          description: One-time invite code; returned only once
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        expires_at:
+          type: string
+          format: date-time
+        path:
+          type: string
+          description: Web path that opens the invite, relative to the site root
+    StaffMember:
+      type: object
+      required: [id, role, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        attendee_name:
+          type: string
+          nullable: true
+          description: Roster name the staff identity is bound to, if any
+        created_at:
+          type: string
+          format: date-time
+    JoinStaffRequest:
+      type: object
+      required: [invite]
+      properties:
+        invite:
+          type: string
+    StaffSummary:
+      type: object
+      required: [total, checked_in, pending_requests]
+      properties:
+        total:
+          type: integer
+        checked_in:
+          type: integer
+        pending_requests:
+          type: integer
+    StaffAttendee:
+      type: object
+      required: [id, name, dept, phone_last4, checked_in, bound]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dept:
+          type: string
+        phone_last4:
+          type: string
+        checked_in:
+          type: boolean
+        bound:
+          type: boolean
+        checkin_method:
+          $ref: "#/components/schemas/CheckinMethod"
+    PendingRequest:
+      type: object
+      required: [id, claimed_name, claimed_phone_last4, reason, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        attendee:
+          $ref: "#/components/schemas/StaffAttendee"
+        claimed_name:
+          type: string
+        claimed_phone_last4:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ApproveRequest:
+      type: object
+      description: Empty for a bound guest; otherwise link an existing person or create one.
+      properties:
+        attendee_id:
+          type: string
+          format: uuid
+        create:
+          $ref: "#/components/schemas/AttendeeInput"
+    ProxyCheckinRequest:
+      type: object
+      required: [attendee_id]
+      properties:
+        attendee_id:
+          type: string
+          format: uuid
+    StaffSettingsRequest:
+      type: object
+      properties:
+        checkin_mode:
+          $ref: "#/components/schemas/CheckinMode"
+        center_lat:
+          type: number
+          format: double
+        center_lng:
+          type: number
+          format: double
+        radius_m:
+          type: integer
