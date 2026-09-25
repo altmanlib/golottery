@@ -1,8 +1,8 @@
-import { createHashRouter, Navigate } from 'react-router-dom';
-import { AppLayout } from '#/layouts/AppLayout';
-import { ConsoleHomeView } from '#/views/ConsoleHomeView';
-import { HostView } from '#/views/HostView';
-import { LoginView } from '#/views/LoginView';
+import { createHashRouter, Navigate } from 'react-router-dom'
+import { AppLayout } from '#/layouts/AppLayout'
+import { ConsoleHomeView } from '#/views/ConsoleHomeView'
+import { HostView } from '#/views/HostView'
+import { LoginView } from '#/views/LoginView'
 
 export const router = createHashRouter([
   {
@@ -24,4 +24,4 @@ export const router = createHashRouter([
       },
     ],
   },
-]);
+])

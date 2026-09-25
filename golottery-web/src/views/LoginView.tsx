@@ -1,8 +1,8 @@
-import { Button, Card, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
-import { useNavigate } from 'react-router-dom';
+import { Button, Card, PasswordInput, Stack, TextInput, Title } from '@mantine/core'
+import { useNavigate } from 'react-router-dom'
 
 export function LoginView() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   return (
     <Stack maw={420} mx="auto" mt={80} gap="lg">
@@ -13,13 +13,12 @@ export function LoginView() {
           <PasswordInput label="口令" placeholder="••••••••" />
           <Button
             onClick={() => {
-              navigate('/console');
-            }}
-          >
+              navigate('/console')
+            }}>
             进入控制台（骨架）
           </Button>
         </Stack>
       </Card>
     </Stack>
-  );
+  )
 }
