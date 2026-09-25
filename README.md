@@ -2,7 +2,7 @@
 
 面向线下活动的多租户 SaaS：组织方自助开活动，宾客用微信小程序在地理围栏内签到入池，主持人在电脑大屏完成可追溯的现场抽奖。
 
-文档索引：[docs/README.md](docs/README.md) · 进度：[docs/ROADMAP.md](docs/ROADMAP.md)
+文档索引：[docs/README.md](docs/README.md) · 进度：[docs/ROADMAP.md](docs/ROADMAP.md) · 协作流程与完成定义：[AGENTS.md](AGENTS.md)
 
 ## 仓库结构
 
@@ -15,7 +15,7 @@
 
 ## 前置条件
 
-- Go 1.27、golangci-lint、Bun
+- Go 1.27、golangci-lint（用 Go 1.27 编译）、Bun ≥ 1.4
 - Docker（本机数据库用 `golottery-api/compose.yml`）
 
 ## 本机依赖
@@ -41,8 +41,8 @@ make dev               # 加载 .env，监听 127.0.0.1:5568
 curl -s 127.0.0.1:5568/healthz
 curl -s 127.0.0.1:5568/readyz
 
-make fmt && make lint && make test
-make build
+make fmt && make lint && make check-generate && make test
+make smoke             # 构建并启动二进制，请求 /readyz
 ```
 
 口令哈希：`printf '%s' 'your-password' | go run ./cmd/golottery hash-password`
@@ -53,9 +53,11 @@ make build
 cd golottery-web
 bun install
 bun run dev            # http://localhost:3000
-bun run format && bun run test:run && bun run typecheck
+bun run format && bun run test:run && bun run typecheck && bun run build
 ```
 
 Vite 把 `/api`、`/healthz`、`/readyz`、`/openapi.json`、`/openapi.yaml` 代理到 `127.0.0.1:5568`。
 
 小程序：用微信开发者工具打开 `golottery-mp/`。
+
+文档规范检查（仓库根目录）：`bun scripts/check-docs.ts`

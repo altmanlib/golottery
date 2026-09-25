@@ -50,6 +50,8 @@ make run
 make dev            # 加载 .env 后运行
 make build
 make generate       # 根据 api/openapi.yaml 生成 api/*.gen.go
+make check-generate # 生成物与契约不一致时失败（会顺带重新生成）
+make smoke          # 构建二进制、在临时目录启动并请求 /readyz、/healthz、/openapi.json
 ```
 
 本机依赖：`docker compose up -d`（见 `compose.yml`）
@@ -74,4 +76,6 @@ make generate       # 根据 api/openapi.yaml 生成 api/*.gen.go
 
 ## 质量门禁
 
-完成需求前必须 `make fmt && make lint && make test` 全绿
+完成需求前必须 `make fmt && make lint && make check-generate && make test && make smoke` 全绿；改动 `Dockerfile` 或依赖时再真实构建一次镜像。完整清单见仓库根目录 `AGENTS.md`
+
+`golangci-lint` 须用不低于 `go.mod` 的 Go 版本编译：`go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0`
