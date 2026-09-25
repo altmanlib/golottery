@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses } from './types.gen';
+import type { ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, GetApiInfoData, GetApiInfoResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -37,3 +37,48 @@ export const getOpenApiYaml = <ThrowOnError extends boolean = false>(options?: O
  * OpenAPI document (JSON)
  */
 export const getOpenApijson = <ThrowOnError extends boolean = false>(options?: Options<GetOpenApijsonData, ThrowOnError>): RequestResult<GetOpenApijsonResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOpenApijsonResponses, unknown, ThrowOnError>({ url: '/openapi.json', ...options });
+
+/**
+ * Platform operator login
+ */
+export const platformLogin = <ThrowOnError extends boolean = false>(options: Options<PlatformLoginData, ThrowOnError>): RequestResult<PlatformLoginResponses, PlatformLoginErrors, ThrowOnError> => (options.client ?? client).post<PlatformLoginResponses, PlatformLoginErrors, ThrowOnError>({
+    url: '/api/platform/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke the current platform token
+ */
+export const platformLogout = <ThrowOnError extends boolean = false>(options?: Options<PlatformLogoutData, ThrowOnError>): RequestResult<PlatformLogoutResponses, PlatformLogoutErrors, ThrowOnError> => (options?.client ?? client).post<PlatformLogoutResponses, PlatformLogoutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/logout',
+    ...options
+});
+
+/**
+ * Current platform operator
+ */
+export const getPlatformMe = <ThrowOnError extends boolean = false>(options?: Options<GetPlatformMeData, ThrowOnError>): RequestResult<GetPlatformMeResponses, GetPlatformMeErrors, ThrowOnError> => (options?.client ?? client).get<GetPlatformMeResponses, GetPlatformMeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/me',
+    ...options
+});
+
+/**
+ * Change the platform operator password
+ *
+ * Revokes every token of the operator and returns a new one.
+ */
+export const changePlatformPassword = <ThrowOnError extends boolean = false>(options: Options<ChangePlatformPasswordData, ThrowOnError>): RequestResult<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError> => (options.client ?? client).post<ChangePlatformPasswordResponses, ChangePlatformPasswordErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/platform/password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});

@@ -45,7 +45,8 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 - 源契约：`golottery-api/api/openapi.yaml`
 - 生成产物：`src/api-gen/`（勿手改）
 - 运行时：入口 `import '#/api'`。`src/api.ts` 把 `baseUrl` 覆写为空字符串，按请求路径前缀附加对应令牌：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
-- `401` 删除对应令牌：`/api/platform/*` 跳 `/platform/login`，`/api/organization/*` 跳 `/organization/login`，`/api/host/*` 回当前活动的 `/host/:publicId`；登录接口自身的 `401` 不跳转
+- `401` 删除对应令牌并跳到该入口：`/api/platform/*` 跳 `/platform/login`（已接入）；`/api/organization/*` 跳 `/organization/login`（阶段 4），`/api/host/*` 回当前活动的 `/host/:publicId`（阶段 7），跳转表在 `main.tsx` 的 `LOGIN_ROUTES`；登录接口自身的 `401` 不跳转
+- SDK 调用用 `unwrap(...)` 取数据，失败抛 `ApiError`（`code` / `message` 来自接口错误体）
 
 业务代码只从 `#/api-gen/sdk.gen` / `#/api-gen/types.gen` 引用 API，禁止手写 fetch 封装重复描述同一接口。
 

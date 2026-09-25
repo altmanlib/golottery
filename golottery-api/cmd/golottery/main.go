@@ -7,8 +7,10 @@ import (
 	"os"
 
 	"golottery/api/internal/apihttp"
+	"golottery/api/internal/auth"
 	"golottery/api/internal/config"
 	"golottery/api/internal/httpapi"
+	"golottery/api/internal/platform"
 	"golottery/api/internal/settings"
 	"golottery/api/internal/store"
 )
@@ -68,12 +70,31 @@ func runServer() error {
 		return fmt.Errorf("settings apply error: %w", err)
 	}
 
+	seeded, err := platform.Seed(ctx, db.Gorm, cfg.PlatformUser, cfg.PlatformPasswordHash)
+	if err != nil {
+		_ = db.Close()
+		return fmt.Errorf("platform seed error: %w", err)
+	}
+	if seeded {
+		logger.Info("seeded platform operator", "username", cfg.PlatformUser)
+	}
+
+	tokens := auth.NewTokenIssuer(db.Gorm, cfg.ConsoleSessionTTL, cfg.HostSessionTTL, cfg.PlatformSessionTTL)
+	limiter := auth.NewLoginLimiter(db.Gorm, cfg.LoginMaxFailures, cfg.LoginWindow)
+
 	router := httpapi.NewRouter(httpapi.Deps{
 		Logger:         logger,
 		TrustedProxies: cfg.TrustedProxies,
 		Readiness:      db.Ping,
 	})
-	apihttp.Register(router, db.Gorm)
+	if err := apihttp.Register(router, apihttp.Deps{
+		DB:       db.Gorm,
+		Tokens:   tokens,
+		Platform: platform.NewService(db.Gorm, tokens, limiter),
+	}); err != nil {
+		_ = db.Close()
+		return err
+	}
 
 	return run(ctx, runDeps{
 		Addr:       cfg.Addr(),

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: golottery API
   version: 0.1.0
-  description: Positioning check-in and on-site lottery API (M0 scaffold).
+  description: Positioning check-in and on-site lottery API.
 servers:
   - url: http://127.0.0.1:5568
     description: Local development
@@ -69,7 +69,94 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+  /api/platform/login:
+    post:
+      operationId: platformLogin
+      summary: Platform operator login
+      tags: [platform]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformLoginRequest"
+      responses:
+        "200":
+          description: Login succeeded; the token is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/platform/logout:
+    post:
+      operationId: platformLogout
+      summary: Revoke the current platform token
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "204":
+          description: Token revoked
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/platform/me:
+    get:
+      operationId: getPlatformMe
+      summary: Current platform operator
+      tags: [platform]
+      security:
+        - platformBearer: []
+      responses:
+        "200":
+          description: Current operator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformMe"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/platform/password:
+    post:
+      operationId: changePlatformPassword
+      summary: Change the platform operator password
+      description: Revokes every token of the operator and returns a new one.
+      tags: [platform]
+      security:
+        - platformBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed; the new token is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
 components:
+  securitySchemes:
+    platformBearer:
+      type: http
+      scheme: bearer
+      description: Platform operator token from platformLogin
+  responses:
+    Error:
+      description: Business error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     Error:
       type: object
@@ -116,3 +203,37 @@ components:
           type: array
           items:
             type: string
+    PlatformLoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          maxLength: 64
+        password:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+    SessionToken:
+      type: object
+      required: [token, expires_at]
+      properties:
+        token:
+          type: string
+          description: Bearer token plaintext; returned only once
+        expires_at:
+          type: string
+          format: date-time
+    PlatformMe:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string

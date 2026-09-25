@@ -16,16 +16,22 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
-import { setUnauthorizedHandler } from '#/api'
+import { setUnauthorizedHandler, type TokenScope } from '#/api'
 import { queryClient } from '#/lib/queryClient'
 import { router } from '#/router'
 import { cssVariablesResolver, theme } from '#/theme'
 
-setUnauthorizedHandler(() => {
+/** Where each scope goes after its token is rejected; console and host join in later phases. */
+const LOGIN_ROUTES: Partial<Record<TokenScope, string>> = {
+  platform: '/platform/login',
+}
+
+setUnauthorizedHandler((scope) => {
   void queryClient.cancelQueries()
   queryClient.clear()
-  if (!window.location.hash.startsWith('#/login')) {
-    window.location.hash = '#/login'
+  const target = LOGIN_ROUTES[scope]
+  if (target && !window.location.hash.startsWith(`#${target}`)) {
+    window.location.hash = `#${target}`
   }
 })
 

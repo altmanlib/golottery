@@ -42,6 +42,12 @@ type ApiInfo struct {
 	Stack string `json:"stack"`
 }
 
+// ChangePasswordRequest defines model for ChangePasswordRequest.
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	// Code Example: INTERNAL_ERROR
@@ -63,3 +69,28 @@ type Healthz struct {
 
 // HealthzDb Database status
 type HealthzDb string
+
+// PlatformLoginRequest defines model for PlatformLoginRequest.
+type PlatformLoginRequest struct {
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+// PlatformMe defines model for PlatformMe.
+type PlatformMe struct {
+	Username string `json:"username"`
+}
+
+// SessionToken defines model for SessionToken.
+type SessionToken struct {
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Token Bearer token plaintext; returned only once
+	Token string `json:"token"`
+}
+
+// PlatformLoginJSONRequestBody defines body for PlatformLogin for application/json ContentType.
+type PlatformLoginJSONRequestBody = PlatformLoginRequest
+
+// ChangePlatformPasswordJSONRequestBody defines body for ChangePlatformPassword for application/json ContentType.
+type ChangePlatformPasswordJSONRequestBody = ChangePasswordRequest

@@ -113,6 +113,22 @@ func (s *TokenIssuer) Lookup(ctx context.Context, typ, plain string) (APIToken, 
 	return row, nil
 }
 
+// WithDB returns a copy of the issuer bound to db, typically a transaction.
+func (s *TokenIssuer) WithDB(db *gorm.DB) *TokenIssuer {
+	clone := *s
+	clone.db = db
+	return &clone
+}
+
+// DeleteByPrincipal removes every token of one principal.
+func (s *TokenIssuer) DeleteByPrincipal(ctx context.Context, typ, principalID string) error {
+	err := s.db.WithContext(ctx).Where("principal_type = ? AND principal_id = ?", typ, principalID).Delete(&APIToken{}).Error
+	if err != nil {
+		return fmt.Errorf("auth: delete principal tokens: %w", err)
+	}
+	return nil
+}
+
 // Delete removes one token row by id.
 func (s *TokenIssuer) Delete(ctx context.Context, id uuid.UUID) error {
 	if err := s.db.WithContext(ctx).Delete(&APIToken{}, "id = ?", id).Error; err != nil {

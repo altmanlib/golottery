@@ -2,7 +2,7 @@
 title: 定位签到抽奖 · 技术方案
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # 定位签到抽奖 · 技术方案
@@ -108,13 +108,15 @@ golottery/
       store/migrations/         embed 的 NNN_*.sql
       bizerr/                   错误码与中文文案
       httpapi/                  echo 根路由、中间件、/readyz、安全响应头、请求关联 ID
-      auth/                     API Token、argon2id、LoginAttempt 实体
+      auth/                     API Token、argon2id、LoginAttempt 实体、登录限速
+      platform/                 平台运营账号：实体、播种、登录 / 登出 / 改密
       apihttp/                  实现 api.StrictServerInterface，注册生成路由
     api/                        openapi.yaml、生成配置、*.gen.go（禁止手改生成物）
     Makefile  Dockerfile  compose.yml  .env.example  .golangci.yml  VERSION
   golottery-web/                控制台与大屏（独立项目）
     src/api-gen/                openapi-ts 生成物，禁止手改
-    src/api.ts                  令牌、401、ApiError
+    src/api.ts                  按路径前缀附加令牌、401、ApiError
+    src/platform/               运营后台（路由前缀 /platform，懒加载）
   golottery-mp/                 微信小程序，不在工程基线交付内
   docs/
 ```
@@ -124,7 +126,8 @@ golottery/
 ```text
 main ──→ 全部
 
-apihttp ──→ api  auth  bizerr  echo
+apihttp ──→ api  auth  bizerr  platform  echo
+platform ──→ auth  bizerr  gorm
 auth / settings ──→ gorm
 store ──→ gorm                 （只被 main 与测试辅助 import）
 redisx ──→ go-redis           （客户端装配、Ping、测试辅助；阶段 5 起）
@@ -213,7 +216,18 @@ Redis 约定：
 | `Key` | varchar(128) | 与 `CreatedAt` 联合索引 |
 | `CreatedAt` | timestamptz | |
 
-基线只建表。限速判定在登录接口阶段实现。
+限速判定在 `auth.LoginLimiter`：窗口内失败次数达到阈值即拒绝，等待分钟数向上取整且至少为 1；登录成功删除该键的记录。键的格式为 `<主体类型>:<用户名>`，如 `platform:ops`。
+
+### 5.4 `platform_users`（`platform.User`）
+
+| 字段 | 类型 | 约束 |
+| --- | --- | --- |
+| `ID` | uuid | 主键，应用生成；即 platform 令牌的 `PrincipalID` |
+| `Username` | varchar(64) | 唯一 |
+| `PasswordHash` | text | argon2id PHC |
+| `CreatedAt` / `UpdatedAt` | timestamptz | |
+
+启动时表为空则用 `PLATFORM_USER` 与 `PLATFORM_PASSWORD_HASH` 播种一行；表为空且缺任一键，或哈希格式无效时拒绝启动。表非空时不改已有行。
 
 ## 6. 认证与会话
 
@@ -223,7 +237,8 @@ Redis 约定：
 - `typ`：`console`（组织管理员）、`host`（主持人）、`platform`（平台运营）
 - 校验按 `typ` 分开，三种令牌不可互换
 - 有效期来自 `CONSOLE_SESSION_TTL` / `HOST_SESSION_TTL` / `PLATFORM_SESSION_TTL`
-- 基线只提供签发、按哈希查找、删除；登录路由在后续阶段挂上
+- 需要令牌的接口在 `openapi.yaml` 中用 `security` 声明（`platformBearer`）；`apihttp` 启动时从内嵌契约读出这些接口，校验 `Authorization: Bearer` 且类型匹配，失败统一 `401 E_UNAUTHORIZED`
+- 登出只删除当前令牌；改密删除该主体全部令牌并签发一把新令牌
 
 ### 6.2 口令
 
@@ -252,6 +267,8 @@ Redis 约定：
 | `GET /readyz` | 无；数据库可达 `200 ok`，否则空体 `503` | `httpapi` |
 | `GET /api` | 无；服务元数据 | `apihttp` |
 | `GET /openapi.json` · `GET /openapi.yaml` | 无 | `apihttp` |
+| `POST /api/platform/login` | 无 | `apihttp` → `platform` |
+| `POST /api/platform/logout` · `GET /api/platform/me` · `POST /api/platform/password` | platform 令牌 | `apihttp` → `platform` |
 | 其余路径 | 空体 `404` | `httpapi` |
 
 `httpapi` 使用静默错误处理器，不把框架默认错误页暴露给调用方。OpenAPI handler 返回的错误实现 `bizerr.Error` 时，按 §7.2 写成 JSON。
@@ -267,6 +284,8 @@ Redis 约定：
 | 400 | `E_BAD_REQUEST` | 请求格式不正确 |
 | 400 | `E_NAME_REQUIRED` | 请填写名称 |
 | 400 | `E_PASSWORD_TOO_SHORT` | 密码至少 8 位 |
+| 400 | `E_PASSWORD_UNCHANGED` | 新口令不能与当前口令相同 |
+| 400 | `E_CURRENT_PASSWORD_WRONG` | 当前口令不正确 |
 | 401 | `E_UNAUTHORIZED` | 登录已失效，请重新登录 |
 | 401 | `E_INVALID_CREDENTIALS` | 账号或口令错误 |
 | 403 | `E_FORBIDDEN` | 无权执行此操作 |
@@ -284,19 +303,21 @@ Redis 约定：
 
 ## 8. 前端结构
 
-一个 SPA，控制台与大屏两条入口。业务页在后续阶段替换占位内容。
+一个 SPA，运营后台、组织端与大屏三条入口，各自懒加载。组织端在阶段 4 加入，大屏在阶段 7 替换占位。
 
 | 路由 | 页面 |
 | --- | --- |
-| `/login` | 组织登录占位 |
-| `/console` | 控制台占位，展示 `GET /healthz` |
+| `/` | 重定向到 `/platform` |
+| `/platform/login` | 运营登录；已有令牌时直接进入 `/platform` |
+| `/platform` | 运营后台首页；无令牌时去 `/platform/login`，有令牌时请求 `GET /api/platform/me` |
 | `/host` | 大屏占位 |
 
 - 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`
 - 字体 `@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500），自托管
 - 样式用 CSS Modules；结构用 Mantine 布局组件
 - 业务请求只从 `#/api-gen/sdk.gen` 与 `#/api-gen/types.gen` 引用
-- `src/api.ts` 按路径附加 Bearer；`401` 删除 `gl.token` 并跳 `/login`
+- `src/api.ts` 按路径前缀附加 Bearer：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
+- `401` 删除对应令牌并跳到该入口的登录页（目前只有 `/platform/login`）；登录接口自身的 `401` 只展示错误，不跳转
 - 前端只请求相对路径；开发时由 Vite 代理
 
 ## 9. 启动与关闭
@@ -306,14 +327,15 @@ Redis 约定：
   config.Bootstrap（.env / 环境变量 / 默认值）→ 校验必填项
   store.Open → store.Migrate → store.Ping
   settings.Snapshot → config.Apply（ScopeApp 覆盖）
-  httpapi.NewRouter → apihttp.Register
+  platform.Seed（platform_users 为空时播种）
+  httpapi.NewRouter → apihttp.Register（从内嵌契约读出受保护接口）
   启动 http.Server（ReadHeaderTimeout 5s）
 
 关闭（SIGINT / SIGTERM）：
   server.Shutdown（5s）→ store.Close
 ```
 
-`DATABASE_URL` 缺失、`SESSION_SECRET` 不足 32 字符、数据库不可达时拒绝启动。
+`DATABASE_URL` 缺失、`SESSION_SECRET` 不足 32 字符、数据库不可达、`platform_users` 为空却缺播种配置时拒绝启动。
 
 ## 10. 配置
 
@@ -328,6 +350,8 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `APP_PORT` | Infra | `5568` | | 监听端口 |
 | `SESSION_SECRET` | Infra | （必填） | ✅ | 预留给后续签名，≥ 32 字符 |
 | `TRUSTED_PROXIES` | Infra | 空 | | 信任其 `X-Forwarded-For` / `X-Request-Id` 的 CIDR，逗号分隔 |
+| `PLATFORM_USER` | Infra | 空 | | 播种的运营账号；仅 `platform_users` 为空时必填 |
+| `PLATFORM_PASSWORD_HASH` | Infra | 空 | ✅ | 播种账号的 argon2id 哈希，由 `golottery hash-password` 生成；仅表为空时必填 |
 | `CONSOLE_SESSION_TTL` | App | `12h` | | 控制台令牌有效期 |
 | `HOST_SESSION_TTL` | App | `12h` | | 主持人令牌有效期 |
 | `PLATFORM_SESSION_TTL` | App | `8h` | | 运营令牌有效期 |
@@ -344,10 +368,11 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `settings` | 读写删；未知键与 ScopeInfra 键拒绝 |
 | `store` | 真实库 `Ping` / `Migrate` / `Reset`；默认 `postgres://postgres:secret@127.0.0.1:15436/golottery_test?sslmode=disable` |
 | `bizerr` | 每个 Code 都有文案；文案句尾无中文句号 |
-| `auth` | 令牌签发与按哈希查找；`typ` 不可互换；过期拒绝；argon2id 往返 |
+| `auth` | 令牌签发与按哈希查找；`typ` 不可互换；过期拒绝；argon2id 往返；限速阈值、等待分钟数与清零 |
+| `platform` | 播种：表空时写入、表非空不覆盖、缺配置或哈希无效拒绝 |
 | `httpapi` | `/readyz` 成功 200、失败空体 503；未知路径空体 404；安全响应头；不可信 `X-Request-Id` 被丢弃 |
-| `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503 |
-| 前端 | `ApiError` 解析；`401` 清令牌并给出 `/login` |
+| `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
+| 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；登录表单的提交参数与错误展示 |
 
 `make test` 即 `go test -p=1 ./...`。禁止用 SQLite 证明持久化路径。
 
@@ -358,6 +383,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | 迁移 | 内容 |
 | --- | --- |
 | `001_init.sql` | `schema_migrations`、`settings`、`api_tokens`、`login_attempts` |
+| `002_platform_users.sql` | `platform_users` |
 
 仓库尚无生产数据。业务表以新增迁移追加，不改已发布迁移文件。
 
