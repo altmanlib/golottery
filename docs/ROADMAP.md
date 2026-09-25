@@ -70,7 +70,7 @@ updated: 2026-09-25
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
-| P-6 | 待回填 | api, web | 阶段 4 组织管理员认证：`org_users`，运营创建管理员（一次性临时口令）、重置口令、停用启用；管理员登录 / 登出 / me / 改密，`console` 令牌每次请求校验账号与组织状态；组织控制台入口与按入口隔离的 `401` 处理。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
+| P-6 | d5b5dcf | api, web | 阶段 4 组织管理员认证：`org_users`，运营创建管理员（一次性临时口令）、重置口令、停用启用；管理员登录 / 登出 / me / 改密，`console` 令牌每次请求校验账号与组织状态；组织控制台入口与按入口隔离的 `401` 处理。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
 | P-2 | 706787a | api, web | 阶段 3 组织与配额：`orgs` / `org_quotas` / `credit_ledger`，开通、停用启用、调整场次（并发安全）、人数上限，运营后台组织列表与详情。见 [phases/phase-3-org-quota.md](phases/phase-3-org-quota.md) |
 | P-5 | 928d946 | api, web | 阶段 2 运营认证：`platform_users` 与播种、登录限速、`/api/platform` 登录 / 登出 / me / 改密、按契约 `security` 校验令牌、运营登录页与按前缀分开的令牌。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |
 | P-22 | 97b01fc | ops | 工程流程：`agent/develop` 分支工作流、CI、文档规范检查、真实产物验证（`make smoke`、镜像构建、SDK 一致性）。见仓库根目录 `AGENTS.md` |
