@@ -70,7 +70,7 @@ squash 之后 `main` 上的提交号才确定，[ROADMAP](docs/ROADMAP.md) 的�
 
 - 验证真实产物，不只跑测试：Go 二进制要真实构建并启动后请求 `/readyz`（`make smoke`），前端要跑 `vite build`，Dockerfile 改动要真实构建镜像
 - 写完测试后故意改坏实现，确认测试会失败，再恢复；不会失败的测试不算数
-- 本机依赖用 `golottery-api/compose.yml` 启动；`make test` 与 `make smoke` 需要可达的 PostgreSQL
+- 本机依赖用 `golottery-api/compose.yml` 启动；`make test` 与 `make smoke` 需要可达的 PostgreSQL 与 Redis
 
 ## 4. 文档与路线图
 

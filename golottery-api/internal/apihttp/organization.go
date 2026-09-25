@@ -60,7 +60,11 @@ func (s *Server) GetOrganizationMe(ctx context.Context, _ api.GetOrganizationMeR
 	if err != nil {
 		return nil, err
 	}
-	return api.GetOrganizationMe200JSONResponse{Name: admin.Name, Email: admin.Email, OrgId: admin.OrgID, OrgName: admin.OrgName}, nil
+	credits, err := org.Credits(ctx, s.db, admin.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	return api.GetOrganizationMe200JSONResponse{Name: admin.Name, Email: admin.Email, OrgId: admin.OrgID, OrgName: admin.OrgName, EventCredits: credits}, nil
 }
 
 // ChangeOrganizationPassword changes the password and returns the only token left for the admin.

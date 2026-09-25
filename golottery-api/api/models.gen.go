@@ -9,21 +9,81 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CheckinMode.
+const (
+	Direct CheckinMode = "direct"
+	Geo    CheckinMode = "geo"
+)
+
+// Valid indicates whether the value is a known member of the CheckinMode enum.
+func (e CheckinMode) Valid() bool {
+	switch e {
+	case Direct:
+		return true
+	case Geo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EventStatus.
+const (
+	Closed EventStatus = "closed"
+	Draft  EventStatus = "draft"
+	Ready  EventStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the EventStatus enum.
+func (e EventStatus) Valid() bool {
+	switch e {
+	case Closed:
+		return true
+	case Draft:
+		return true
+	case Ready:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthzDb.
 const (
-	Down    HealthzDb = "down"
-	Skipped HealthzDb = "skipped"
-	Up      HealthzDb = "up"
+	HealthzDbDown    HealthzDb = "down"
+	HealthzDbSkipped HealthzDb = "skipped"
+	HealthzDbUp      HealthzDb = "up"
 )
 
 // Valid indicates whether the value is a known member of the HealthzDb enum.
 func (e HealthzDb) Valid() bool {
 	switch e {
-	case Down:
+	case HealthzDbDown:
 		return true
-	case Skipped:
+	case HealthzDbSkipped:
 		return true
-	case Up:
+	case HealthzDbUp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HealthzRedis.
+const (
+	HealthzRedisDown    HealthzRedis = "down"
+	HealthzRedisSkipped HealthzRedis = "skipped"
+	HealthzRedisUp      HealthzRedis = "up"
+)
+
+// Valid indicates whether the value is a known member of the HealthzRedis enum.
+func (e HealthzRedis) Valid() bool {
+	switch e {
+	case HealthzRedisDown:
+		return true
+	case HealthzRedisSkipped:
+		return true
+	case HealthzRedisUp:
 		return true
 	default:
 		return false
@@ -87,10 +147,50 @@ type ApiInfo struct {
 	Stack string `json:"stack"`
 }
 
+// Attendee defines model for Attendee.
+type Attendee struct {
+	CreatedAt  time.Time          `json:"created_at"`
+	Dept       string             `json:"dept"`
+	Id         openapi_types.UUID `json:"id"`
+	Name       string             `json:"name"`
+	PhoneLast4 string             `json:"phone_last4"`
+	Status     string             `json:"status"`
+}
+
+// AttendeeInput defines model for AttendeeInput.
+type AttendeeInput struct {
+	Dept *string `json:"dept,omitempty"`
+	Name string  `json:"name"`
+
+	// Phone Full phone or its last four digits; only the last four are stored
+	Phone string `json:"phone"`
+}
+
+// AttendeePage defines model for AttendeePage.
+type AttendeePage struct {
+	Items []Attendee `json:"items"`
+	Total int        `json:"total"`
+}
+
+// AttendeeUpdate defines model for AttendeeUpdate.
+type AttendeeUpdate struct {
+	Dept  *string `json:"dept,omitempty"`
+	Name  *string `json:"name,omitempty"`
+	Phone *string `json:"phone,omitempty"`
+}
+
 // ChangePasswordRequest defines model for ChangePasswordRequest.
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
+}
+
+// CheckinMode defines model for CheckinMode.
+type CheckinMode string
+
+// CreateEventRequest defines model for CreateEventRequest.
+type CreateEventRequest struct {
+	Name string `json:"name"`
 }
 
 // CreateOrgRequest defines model for CreateOrgRequest.
@@ -115,11 +215,56 @@ type Error struct {
 	RequestId *string `json:"requestId,omitempty"`
 }
 
+// Event defines model for Event.
+type Event struct {
+	AllowMultiWin bool `json:"allow_multi_win"`
+	AttendeeCount int  `json:"attendee_count"`
+
+	// CenterLat GCJ-02 latitude
+	CenterLat *float64 `json:"center_lat,omitempty"`
+
+	// CenterLng GCJ-02 longitude
+	CenterLng    *float64    `json:"center_lng,omitempty"`
+	CheckinEnd   *time.Time  `json:"checkin_end,omitempty"`
+	CheckinMode  CheckinMode `json:"checkin_mode"`
+	CheckinStart *time.Time  `json:"checkin_start,omitempty"`
+	CreatedAt    time.Time   `json:"created_at"`
+
+	// CreditConsumed Whether this event has already used its credit
+	CreditConsumed bool               `json:"credit_consumed"`
+	Id             openapi_types.UUID `json:"id"`
+	MaxAttendees   int                `json:"max_attendees"`
+	Name           string             `json:"name"`
+	PrizeCount     int                `json:"prize_count"`
+	PublicId       string             `json:"public_id"`
+	RadiusM        int                `json:"radius_m"`
+	Status         EventStatus        `json:"status"`
+}
+
+// EventEntry defines model for EventEntry.
+type EventEntry struct {
+	// Path Example: pages/index/index?e=V1StGXR8_Z5jdHi6B-myT
+	Path     string `json:"path"`
+	PublicId string `json:"public_id"`
+}
+
+// EventPage defines model for EventPage.
+type EventPage struct {
+	Items []Event `json:"items"`
+	Total int     `json:"total"`
+}
+
+// EventStatus defines model for EventStatus.
+type EventStatus string
+
 // Healthz defines model for Healthz.
 type Healthz struct {
 	// Db Database status
 	Db *HealthzDb `json:"db,omitempty"`
 	Ok bool       `json:"ok"`
+
+	// Redis Redis status; informational, it does not change ok
+	Redis *HealthzRedis `json:"redis,omitempty"`
 
 	// Service Example: golottery-api
 	Service string    `json:"service"`
@@ -128,6 +273,29 @@ type Healthz struct {
 
 // HealthzDb Database status
 type HealthzDb string
+
+// HealthzRedis Redis status; informational, it does not change ok
+type HealthzRedis string
+
+// ImportError defines model for ImportError.
+type ImportError struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Rows    []ImportRowError `json:"rows"`
+}
+
+// ImportResult defines model for ImportResult.
+type ImportResult struct {
+	Imported int `json:"imported"`
+}
+
+// ImportRowError defines model for ImportRowError.
+type ImportRowError struct {
+	Reason string `json:"reason"`
+
+	// Row Spreadsheet row number; the header is row 1
+	Row int `json:"row"`
+}
 
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {
@@ -207,10 +375,13 @@ type OrganizationLoginRequest struct {
 
 // OrganizationMe defines model for OrganizationMe.
 type OrganizationMe struct {
-	Email   string             `json:"email"`
-	Name    string             `json:"name"`
-	OrgId   openapi_types.UUID `json:"org_id"`
-	OrgName string             `json:"org_name"`
+	Email string `json:"email"`
+
+	// EventCredits Remaining event credits of the organization
+	EventCredits int                `json:"event_credits"`
+	Name         string             `json:"name"`
+	OrgId        openapi_types.UUID `json:"org_id"`
+	OrgName      string             `json:"org_name"`
 }
 
 // OrganizationSession defines model for OrganizationSession.
@@ -233,6 +404,31 @@ type PlatformMe struct {
 	Username string `json:"username"`
 }
 
+// Prize defines model for Prize.
+type Prize struct {
+	Gift   string             `json:"gift"`
+	Id     openapi_types.UUID `json:"id"`
+	Name   string             `json:"name"`
+	Quota  int                `json:"quota"`
+	SortNo int                `json:"sort_no"`
+}
+
+// PrizeInput defines model for PrizeInput.
+type PrizeInput struct {
+	Gift   *string `json:"gift,omitempty"`
+	Name   string  `json:"name"`
+	Quota  int     `json:"quota"`
+	SortNo int     `json:"sort_no"`
+}
+
+// PrizeUpdate defines model for PrizeUpdate.
+type PrizeUpdate struct {
+	Gift   *string `json:"gift,omitempty"`
+	Name   *string `json:"name,omitempty"`
+	Quota  *int    `json:"quota,omitempty"`
+	SortNo *int    `json:"sort_no,omitempty"`
+}
+
 // SessionToken defines model for SessionToken.
 type SessionToken struct {
 	ExpiresAt time.Time `json:"expires_at"`
@@ -246,6 +442,25 @@ type SetMaxAttendeesRequest struct {
 	MaxAttendees int `json:"max_attendees"`
 }
 
+// UpdateEventRequest Only the fields present change.
+type UpdateEventRequest struct {
+	AllowMultiWin *bool        `json:"allow_multi_win,omitempty"`
+	CenterLat     *float64     `json:"center_lat,omitempty"`
+	CenterLng     *float64     `json:"center_lng,omitempty"`
+	CheckinEnd    *time.Time   `json:"checkin_end,omitempty"`
+	CheckinMode   *CheckinMode `json:"checkin_mode,omitempty"`
+	CheckinStart  *time.Time   `json:"checkin_start,omitempty"`
+	Name          *string      `json:"name,omitempty"`
+	RadiusM       *int         `json:"radius_m,omitempty"`
+	Status        *EventStatus `json:"status,omitempty"`
+}
+
+// AttendeeId defines model for AttendeeId.
+type AttendeeId = openapi_types.UUID
+
+// EventId defines model for EventId.
+type EventId = openapi_types.UUID
+
 // Limit defines model for Limit.
 type Limit = int
 
@@ -255,14 +470,55 @@ type Offset = int
 // OrgId defines model for OrgId.
 type OrgId = openapi_types.UUID
 
+// PrizeId defines model for PrizeId.
+type PrizeId = openapi_types.UUID
+
 // UserId defines model for UserId.
 type UserId = openapi_types.UUID
+
+// ListEventsParams defines parameters for ListEvents.
+type ListEventsParams struct {
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAttendeesParams defines parameters for ListAttendees.
+type ListAttendeesParams struct {
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ImportAttendeesMultipartBody defines parameters for ImportAttendees.
+type ImportAttendeesMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
 
 // ListOrgsParams defines parameters for ListOrgs.
 type ListOrgsParams struct {
 	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
+type CreateEventJSONRequestBody = CreateEventRequest
+
+// UpdateEventJSONRequestBody defines body for UpdateEvent for application/json ContentType.
+type UpdateEventJSONRequestBody = UpdateEventRequest
+
+// CreateAttendeeJSONRequestBody defines body for CreateAttendee for application/json ContentType.
+type CreateAttendeeJSONRequestBody = AttendeeInput
+
+// ImportAttendeesMultipartRequestBody defines body for ImportAttendees for multipart/form-data ContentType.
+type ImportAttendeesMultipartRequestBody ImportAttendeesMultipartBody
+
+// UpdateAttendeeJSONRequestBody defines body for UpdateAttendee for application/json ContentType.
+type UpdateAttendeeJSONRequestBody = AttendeeUpdate
+
+// CreatePrizeJSONRequestBody defines body for CreatePrize for application/json ContentType.
+type CreatePrizeJSONRequestBody = PrizeInput
+
+// UpdatePrizeJSONRequestBody defines body for UpdatePrize for application/json ContentType.
+type UpdatePrizeJSONRequestBody = PrizeUpdate
 
 // OrganizationLoginJSONRequestBody defines body for OrganizationLogin for application/json ContentType.
 type OrganizationLoginJSONRequestBody = OrganizationLoginRequest

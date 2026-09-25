@@ -88,6 +88,7 @@ updated: 2026-09-25
 | 数据库 | PostgreSQL 18（`postgres:18-alpine`） | 本机 Compose；生产与 api 同机 |
 | 共享状态 | Redis 7（`redis:7-alpine`）+ `github.com/redis/go-redis/v9` | 限流、SSE 广播、微信凭据缓存；封装在 `internal/redisx`，阶段 5 引入 |
 | 对象存储 | RustFS（`rustfs/rustfs:1.0.0`）+ `github.com/minio/minio-go/v7` | 只用 S3 协议；封装在 `internal/objectstore`，阶段 8 引入 |
+| Excel | `github.com/xuri/excelize/v2` | 名单导入导出；导入读单元格原始值，避免数字格式改写手机号 |
 | 令牌 | Bearer API Token，库内只存 SHA-256 | 标准库 `crypto/sha256`；明文只在签发时返回一次 |
 | 配置 | `github.com/joho/godotenv` + 自有 registry | 分层解析见 §10 |
 | 口令 | `golang.org/x/crypto/argon2` | argon2id，PHC 字符串 |
@@ -115,6 +116,9 @@ golottery/
       auth/                     API Token、argon2id、LoginAttempt 实体、登录限速
       platform/                 平台运营账号：实体、播种、登录 / 登出 / 改密
       org/                      组织、配额、场次流水；组织管理员账号与 console 会话
+      redisx/                   Redis 客户端装配、Ping、测试辅助
+      event/                    活动、名单、奖项、Excel 导入导出
+      wechat/                   微信 access_token 与小程序码；wechattest 为测试替身
       apihttp/                  实现 api.StrictServerInterface，注册生成路由
     api/                        openapi.yaml、生成配置、*.gen.go（禁止手改生成物）
     Makefile  Dockerfile  compose.yml  .env.example  .golangci.yml  VERSION
@@ -133,9 +137,11 @@ golottery/
 ```text
 main ──→ 全部
 
-apihttp ──→ api  auth  bizerr  platform  org  echo
+apihttp ──→ api  auth  bizerr  platform  org  event  wechat  echo
 platform ──→ auth  bizerr  gorm
 org ──→ auth  bizerr  gorm
+event ──→ org  bizerr  gorm  excelize
+wechat ──→ go-redis  net/http
 auth / settings ──→ gorm
 store ──→ gorm                 （只被 main 与测试辅助 import）
 redisx ──→ go-redis           （客户端装配、Ping、测试辅助；阶段 5 起）
@@ -284,7 +290,7 @@ Redis 约定：
 
 | 路由 | 鉴权 | 归属 |
 | --- | --- | --- |
-| `GET /healthz` | 无；JSON，含数据库状态 | `apihttp`（OpenAPI `getHealthz`） |
+| `GET /healthz` | 无；JSON，含数据库与 Redis 状态；`ok` 只看数据库 | `apihttp`（OpenAPI `getHealthz`） |
 | `GET /readyz` | 无；数据库可达 `200 ok`，否则空体 `503` | `httpapi` |
 | `GET /api` | 无；服务元数据 | `apihttp` |
 | `GET /openapi.json` · `GET /openapi.yaml` | 无 | `apihttp` |
@@ -294,6 +300,7 @@ Redis 约定：
 | `/api/platform/orgs/:id/users` 下的管理员接口（[阶段 4 §4.2](phases/phase-4-org-admin-auth.md#42-运营接口)） | platform 令牌 | `apihttp` → `org` |
 | `POST /api/organization/login` | 无 | `apihttp` → `org` |
 | `/api/organization/*` 其余接口（[阶段 4 §4.3](phases/phase-4-org-admin-auth.md#43-管理员接口)） | console 令牌 | `apihttp` → `org` |
+| `/api/organization/events` 下的活动、名单、奖项、导入导出、活动码（[阶段 5 §4.2](phases/phase-5-event-setup.md#42-接口)） | console 令牌 | `apihttp` → `event`、`wechat` |
 
 列表接口统一用 `offset` / `limit` 查询参数（`limit` 默认 40，最大 100），返回 `{items, total}`；越界值按边界处理，不报错。
 | 其余路径 | 空体 `404` | `httpapi` |
@@ -321,8 +328,16 @@ Redis 约定：
 | 429 | `E_TOO_MANY_ATTEMPTS` | 尝试次数过多，请 %d 分钟后再试 |
 | 500 | `E_INTERNAL` | 系统出错了，请稍后重试 |
 | 503 | `E_STORE_UNAVAILABLE` | 系统暂时不可用，请稍后重试 |
+| 409 | `E_NO_EVENT_CREDITS` | 剩余场次不足，请联系运营开通 |
+| 400 | `E_EVENT_INCOMPLETE` | 就绪前请补全：%s |
+| 400 | `E_ROSTER_FULL` | 名单不能超过人数上限 %d 人 |
+| 400 | `E_IMPORT_FILE` | 无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx |
+| 400 | `E_IMPORT_INVALID` | 有 %d 行需要修正，整份文件未导入 |
+| 503 | `E_WECHAT_NOT_CONFIGURED` | 微信小程序尚未配置，暂时无法生成小程序码 |
 
-面向用户的文案句尾不用中文句号 `。`。带 `%d` 的文案由调用方传入数字。
+面向用户的文案句尾不用中文句号 `。`。带 `%d` / `%s` 的文案由调用方传入参数。名单导入的 400 响应另带 `rows: [{row, reason}]`，行号按表格计，表头为第 1 行。
+
+5xx 错误的原始原因只写日志（含操作名与错误码，例如微信 `errcode`），不出现在响应里。
 
 ### 7.3 请求关联 ID
 
@@ -359,16 +374,17 @@ Redis 约定：
 启动：
   config.Bootstrap（.env / 环境变量 / 默认值）→ 校验必填项
   store.Open → store.Migrate → store.Ping
+  redisx.Open（连接并 Ping，不可达则拒绝启动）
   settings.Snapshot → config.Apply（ScopeApp 覆盖）
   platform.Seed（platform_users 为空时播种）
   httpapi.NewRouter → apihttp.Register（从内嵌契约读出受保护接口）
   启动 http.Server（ReadHeaderTimeout 5s）
 
 关闭（SIGINT / SIGTERM）：
-  server.Shutdown（5s）→ store.Close
+  server.Shutdown（5s）→ Redis Close → store.Close
 ```
 
-`DATABASE_URL` 缺失、`SESSION_SECRET` 不足 32 字符、数据库不可达、`platform_users` 为空却缺播种配置时拒绝启动。
+`DATABASE_URL` 或 `REDIS_URL` 缺失、`SESSION_SECRET` 不足 32 字符、数据库或 Redis 不可达、`platform_users` 为空却缺播种配置时拒绝启动。
 
 ## 10. 配置
 
@@ -379,12 +395,17 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | 键 | Scope | 默认 | Secret | 说明 |
 | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | Infra | （必填） | ✅ | PostgreSQL URL |
+| `REDIS_URL` | Infra | （必填） | ✅ | Redis URL，本机 `redis://127.0.0.1:57379/0` |
 | `APP_HOST` | Infra | `127.0.0.1` | | 监听地址 |
 | `APP_PORT` | Infra | `5568` | | 监听端口 |
 | `SESSION_SECRET` | Infra | （必填） | ✅ | 预留给后续签名，≥ 32 字符 |
 | `TRUSTED_PROXIES` | Infra | 空 | | 信任其 `X-Forwarded-For` / `X-Request-Id` 的 CIDR，逗号分隔 |
 | `PLATFORM_USER` | Infra | 空 | | 播种的运营账号；仅 `platform_users` 为空时必填 |
 | `PLATFORM_PASSWORD_HASH` | Infra | 空 | ✅ | 播种账号的 argon2id 哈希，由 `golottery hash-password` 生成；仅表为空时必填 |
+| `WECHAT_APP_ID` | Infra | 空 | | 平台小程序 AppID；为空时活动码接口返回 `503 E_WECHAT_NOT_CONFIGURED` |
+| `WECHAT_APP_SECRET` | Infra | 空 | ✅ | 平台小程序 AppSecret |
+| `WECHAT_ENV_VERSION` | Infra | `release` | | 小程序码打开的版本：`release` / `trial` / `develop`；非 `release` 时不校验页面是否已发布 |
+| `WECHAT_API_BASE` | Infra | `https://api.weixin.qq.com` | | 微信接口地址；测试与本机联调可指向替身 |
 | `CONSOLE_SESSION_TTL` | App | `12h` | | 控制台令牌有效期 |
 | `HOST_SESSION_TTL` | App | `12h` | | 主持人令牌有效期 |
 | `PLATFORM_SESSION_TTL` | App | `8h` | | 运营令牌有效期 |
@@ -399,6 +420,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | --- | --- |
 | `config` | 必填项缺失时报出键名；`SESSION_SECRET` 过短拒绝；ScopeInfra 不接受 settings 覆盖；优先级 `settings > .env > 环境变量 > 默认值` |
 | `settings` | 读写删；未知键与 ScopeInfra 键拒绝 |
+| `redisx` | 真实 Redis db 15 的 `Open` / `Ping`；空地址、非法地址、不可达端口都报错 |
 | `store` | 真实库 `Ping` / `Migrate` / `Reset`；默认 `postgres://postgres:secret@127.0.0.1:15436/golottery_test?sslmode=disable` |
 | `bizerr` | 每个 Code 都有文案；文案句尾无中文句号 |
 | `auth` | 令牌签发与按哈希查找；`typ` 不可互换；过期拒绝；argon2id 往返；限速阈值、等待分钟数与清零 |
@@ -406,7 +428,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `org`（账号） | 临时口令只在响应里且哈希可校验、重复邮箱 `409`、跨组织操作 `404`、`console` 令牌不能当 `platform` 用、停用账号删令牌、停用组织令牌立即失效、重置与改密后旧令牌失效、邮箱限速 |
 | `org` | 开通的三行同事务（含回滚）、初始场次为 0 不写流水、调整与 `balance_after` 一致、扣成负数拒绝且余额不变、并发扣减不为负、停用启用幂等且不动配额、分页顺序 |
 | `httpapi` | `/readyz` 成功 200、失败空体 503；未知路径空体 404；安全响应头；不可信 `X-Request-Id` 被丢弃 |
-| `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
+| `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；`redis` 字段为 `up` / `down` / `skipped` 且不影响 `ok`；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
 | 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；`401` 跳转目标只在本入口内；登录表单的提交参数与错误展示；临时口令只展示一次 |
 
 `make test` 即 `go test -p=1 ./...`。禁止用 SQLite 证明持久化路径。
@@ -421,6 +443,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `002_platform_users.sql` | `platform_users` |
 | `003_org_quota.sql` | `orgs`、`org_quotas`、`credit_ledger` |
 | `004_org_users.sql` | `org_users` |
+| `005_event_setup.sql` | `events`、`attendees`、`prizes`；`credit_ledger.event_id` 外键与每场只扣一次的唯一索引 |
 
 仓库尚无生产数据。业务表以新增迁移追加，不改已发布迁移文件。
 

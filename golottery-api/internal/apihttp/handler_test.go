@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"golottery/api/internal/httpapi"
+	"golottery/api/internal/redisx"
 	"golottery/api/internal/store"
 )
 
@@ -58,5 +59,38 @@ func TestOpenAPIStillMounted(t *testing.T) {
 	engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api", nil))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHealthzReportsRedisWithoutFailingOK(t *testing.T) {
+	db := store.OpenTest(t)
+	cases := map[string]struct {
+		deps Deps
+		want string
+	}{
+		"up":      {Deps{DB: db.Gorm, Redis: redisx.OpenTest(t)}, "up"},
+		"down":    {Deps{DB: db.Gorm, Redis: redisx.Unreachable()}, "down"},
+		"skipped": {Deps{DB: db.Gorm}, "skipped"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			engine := httpapi.NewRouter(httpapi.Deps{})
+			mustRegister(t, engine, tc.deps)
+			rec := httptest.NewRecorder()
+			engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+			}
+			var body struct {
+				OK    bool   `json:"ok"`
+				Redis string `json:"redis"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if !body.OK || body.Redis != tc.want {
+				t.Fatalf("body = %+v, want ok and redis=%s", body, tc.want)
+			}
+		})
 	}
 }

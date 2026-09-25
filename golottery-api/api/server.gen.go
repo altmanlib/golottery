@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
@@ -26,6 +27,54 @@ type ServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx echo.Context) error
+	// ListEvents Events of the current organization, newest first
+	// (GET /api/organization/events)
+	ListEvents(ctx echo.Context, params ListEventsParams) error
+	// CreateEvent Create a draft event; no credit is used
+	// (POST /api/organization/events)
+	CreateEvent(ctx echo.Context) error
+	// GetEvent Event detail
+	// (GET /api/organization/events/{eventId})
+	GetEvent(ctx echo.Context, eventId EventId) error
+	// UpdateEvent Change settings or status; the first move to ready uses one credit
+	// (PATCH /api/organization/events/{eventId})
+	UpdateEvent(ctx echo.Context, eventId EventId) error
+	// ListAttendees Roster, in the order it was added
+	// (GET /api/organization/events/{eventId}/attendees)
+	ListAttendees(ctx echo.Context, eventId EventId, params ListAttendeesParams) error
+	// CreateAttendee Add one person
+	// (POST /api/organization/events/{eventId}/attendees)
+	CreateAttendee(ctx echo.Context, eventId EventId) error
+	// ImportAttendees Append roster rows from an xlsx file; any bad row rejects the whole file
+	// (POST /api/organization/events/{eventId}/attendees/import)
+	ImportAttendees(ctx echo.Context, eventId EventId) error
+	// DeleteAttendee Remove a person who has not bound, checked in or won
+	// (DELETE /api/organization/events/{eventId}/attendees/{attendeeId})
+	DeleteAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error
+	// UpdateAttendee Change name, department or phone
+	// (PATCH /api/organization/events/{eventId}/attendees/{attendeeId})
+	UpdateAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error
+	// GetEventEntry Public code and mini program path
+	// (GET /api/organization/events/{eventId}/entry)
+	GetEventEntry(ctx echo.Context, eventId EventId) error
+	// GetEventQRCode Mini program code that opens the event, as PNG
+	// (GET /api/organization/events/{eventId}/entry/qrcode)
+	GetEventQRCode(ctx echo.Context, eventId EventId) error
+	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/attendees)
+	ExportAttendees(ctx echo.Context, eventId EventId) error
+	// ListPrizes Prizes by sort_no
+	// (GET /api/organization/events/{eventId}/prizes)
+	ListPrizes(ctx echo.Context, eventId EventId) error
+	// CreatePrize Add a prize
+	// (POST /api/organization/events/{eventId}/prizes)
+	CreatePrize(ctx echo.Context, eventId EventId) error
+	// DeletePrize Delete a prize
+	// (DELETE /api/organization/events/{eventId}/prizes/{prizeId})
+	DeletePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error
+	// UpdatePrize Change a prize
+	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
+	UpdatePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx echo.Context) error
@@ -108,6 +157,312 @@ func (w *ServerInterfaceWrapper) GetApiInfo(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetApiInfo(ctx)
+	return err
+}
+
+// ListEvents converts echo context to params.
+func (w *ServerInterfaceWrapper) ListEvents(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEventsParams
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", ctx.QueryParams(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter offset: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", ctx.QueryParams(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListEvents(ctx, params)
+	return err
+}
+
+// CreateEvent converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateEvent(ctx)
+	return err
+}
+
+// GetEvent converts echo context to params.
+func (w *ServerInterfaceWrapper) GetEvent(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetEvent(ctx, eventId)
+	return err
+}
+
+// UpdateEvent converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateEvent(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateEvent(ctx, eventId)
+	return err
+}
+
+// ListAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) ListAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAttendeesParams
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", ctx.QueryParams(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter offset: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", ctx.QueryParams(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListAttendees(ctx, eventId, params)
+	return err
+}
+
+// CreateAttendee converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateAttendee(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateAttendee(ctx, eventId)
+	return err
+}
+
+// ImportAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) ImportAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ImportAttendees(ctx, eventId)
+	return err
+}
+
+// DeleteAttendee converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteAttendee(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "attendeeId" -------------
+	var attendeeId AttendeeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attendeeId", ctx.Param("attendeeId"), &attendeeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter attendeeId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteAttendee(ctx, eventId, attendeeId)
+	return err
+}
+
+// UpdateAttendee converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateAttendee(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "attendeeId" -------------
+	var attendeeId AttendeeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attendeeId", ctx.Param("attendeeId"), &attendeeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter attendeeId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateAttendee(ctx, eventId, attendeeId)
+	return err
+}
+
+// GetEventEntry converts echo context to params.
+func (w *ServerInterfaceWrapper) GetEventEntry(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetEventEntry(ctx, eventId)
+	return err
+}
+
+// GetEventQRCode converts echo context to params.
+func (w *ServerInterfaceWrapper) GetEventQRCode(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetEventQRCode(ctx, eventId)
+	return err
+}
+
+// ExportAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) ExportAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ExportAttendees(ctx, eventId)
+	return err
+}
+
+// ListPrizes converts echo context to params.
+func (w *ServerInterfaceWrapper) ListPrizes(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListPrizes(ctx, eventId)
+	return err
+}
+
+// CreatePrize converts echo context to params.
+func (w *ServerInterfaceWrapper) CreatePrize(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreatePrize(ctx, eventId)
+	return err
+}
+
+// DeletePrize converts echo context to params.
+func (w *ServerInterfaceWrapper) DeletePrize(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "prizeId" -------------
+	var prizeId PrizeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "prizeId", ctx.Param("prizeId"), &prizeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter prizeId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeletePrize(ctx, eventId, prizeId)
+	return err
+}
+
+// UpdatePrize converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdatePrize(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "prizeId" -------------
+	var prizeId PrizeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "prizeId", ctx.Param("prizeId"), &prizeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter prizeId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdatePrize(ctx, eventId, prizeId)
 	return err
 }
 
@@ -499,6 +854,22 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/organization/logout", wrapper.OrganizationLogout, options.OperationMiddlewares["organizationLogout"]...)
 	router.GET(options.BaseURL+"/api/organization/me", wrapper.GetOrganizationMe, options.OperationMiddlewares["getOrganizationMe"]...)
 	router.POST(options.BaseURL+"/api/organization/password", wrapper.ChangeOrganizationPassword, options.OperationMiddlewares["changeOrganizationPassword"]...)
+	router.GET(options.BaseURL+"/api/organization/events", wrapper.ListEvents, options.OperationMiddlewares["listEvents"]...)
+	router.POST(options.BaseURL+"/api/organization/events", wrapper.CreateEvent, options.OperationMiddlewares["createEvent"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId", wrapper.GetEvent, options.OperationMiddlewares["getEvent"]...)
+	router.PATCH(options.BaseURL+"/api/organization/events/:eventId", wrapper.UpdateEvent, options.OperationMiddlewares["updateEvent"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/entry", wrapper.GetEventEntry, options.OperationMiddlewares["getEventEntry"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/prizes", wrapper.ListPrizes, options.OperationMiddlewares["listPrizes"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/prizes", wrapper.CreatePrize, options.OperationMiddlewares["createPrize"]...)
+	router.DELETE(options.BaseURL+"/api/organization/events/:eventId/prizes/:prizeId", wrapper.DeletePrize, options.OperationMiddlewares["deletePrize"]...)
+	router.PATCH(options.BaseURL+"/api/organization/events/:eventId/prizes/:prizeId", wrapper.UpdatePrize, options.OperationMiddlewares["updatePrize"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/attendees", wrapper.ListAttendees, options.OperationMiddlewares["listAttendees"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/attendees", wrapper.CreateAttendee, options.OperationMiddlewares["createAttendee"]...)
+	router.DELETE(options.BaseURL+"/api/organization/events/:eventId/attendees/:attendeeId", wrapper.DeleteAttendee, options.OperationMiddlewares["deleteAttendee"]...)
+	router.PATCH(options.BaseURL+"/api/organization/events/:eventId/attendees/:attendeeId", wrapper.UpdateAttendee, options.OperationMiddlewares["updateAttendee"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/attendees/import", wrapper.ImportAttendees, options.OperationMiddlewares["importAttendees"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/exports/attendees", wrapper.ExportAttendees, options.OperationMiddlewares["exportAttendees"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/entry/qrcode", wrapper.GetEventQRCode, options.OperationMiddlewares["getEventQRCode"]...)
 
 }
 
@@ -521,6 +892,1043 @@ func (response GetApiInfo200JSONResponse) VisitGetApiInfoResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventsRequestObject struct {
+	Params ListEventsParams
+}
+
+type ListEventsResponseObject interface {
+	VisitListEventsResponse(w http.ResponseWriter) error
+}
+
+type ListEvents200JSONResponse EventPage
+
+func (response ListEvents200JSONResponse) VisitListEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEvents401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListEvents401JSONResponse) VisitListEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEventRequestObject struct {
+	Body *CreateEventJSONRequestBody
+}
+
+type CreateEventResponseObject interface {
+	VisitCreateEventResponse(w http.ResponseWriter) error
+}
+
+type CreateEvent201JSONResponse Event
+
+func (response CreateEvent201JSONResponse) VisitCreateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvent400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateEvent400JSONResponse) VisitCreateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvent401JSONResponse Error
+
+func (response CreateEvent401JSONResponse) VisitCreateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type GetEventResponseObject interface {
+	VisitGetEventResponse(w http.ResponseWriter) error
+}
+
+type GetEvent200JSONResponse Event
+
+func (response GetEvent200JSONResponse) VisitGetEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEvent401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetEvent401JSONResponse) VisitGetEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEvent404JSONResponse Error
+
+func (response GetEvent404JSONResponse) VisitGetEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEventRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *UpdateEventJSONRequestBody
+}
+
+type UpdateEventResponseObject interface {
+	VisitUpdateEventResponse(w http.ResponseWriter) error
+}
+
+type UpdateEvent200JSONResponse Event
+
+func (response UpdateEvent200JSONResponse) VisitUpdateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEvent400JSONResponse struct{ ErrorJSONResponse }
+
+func (response UpdateEvent400JSONResponse) VisitUpdateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEvent401JSONResponse Error
+
+func (response UpdateEvent401JSONResponse) VisitUpdateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEvent404JSONResponse Error
+
+func (response UpdateEvent404JSONResponse) VisitUpdateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEvent409JSONResponse Error
+
+func (response UpdateEvent409JSONResponse) VisitUpdateEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAttendeesRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Params  ListAttendeesParams
+}
+
+type ListAttendeesResponseObject interface {
+	VisitListAttendeesResponse(w http.ResponseWriter) error
+}
+
+type ListAttendees200JSONResponse AttendeePage
+
+func (response ListAttendees200JSONResponse) VisitListAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListAttendees401JSONResponse) VisitListAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAttendees404JSONResponse Error
+
+func (response ListAttendees404JSONResponse) VisitListAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAttendeeRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *CreateAttendeeJSONRequestBody
+}
+
+type CreateAttendeeResponseObject interface {
+	VisitCreateAttendeeResponse(w http.ResponseWriter) error
+}
+
+type CreateAttendee201JSONResponse Attendee
+
+func (response CreateAttendee201JSONResponse) VisitCreateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAttendee400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateAttendee400JSONResponse) VisitCreateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAttendee401JSONResponse Error
+
+func (response CreateAttendee401JSONResponse) VisitCreateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAttendee404JSONResponse Error
+
+func (response CreateAttendee404JSONResponse) VisitCreateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAttendee409JSONResponse Error
+
+func (response CreateAttendee409JSONResponse) VisitCreateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendeesRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *multipart.Reader
+}
+
+type ImportAttendeesResponseObject interface {
+	VisitImportAttendeesResponse(w http.ResponseWriter) error
+}
+
+type ImportAttendees200JSONResponse ImportResult
+
+func (response ImportAttendees200JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees400JSONResponse ImportError
+
+func (response ImportAttendees400JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ImportAttendees401JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees404JSONResponse Error
+
+func (response ImportAttendees404JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees409JSONResponse Error
+
+func (response ImportAttendees409JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAttendeeRequestObject struct {
+	EventId    EventId    `json:"eventId"`
+	AttendeeId AttendeeId `json:"attendeeId"`
+}
+
+type DeleteAttendeeResponseObject interface {
+	VisitDeleteAttendeeResponse(w http.ResponseWriter) error
+}
+
+type DeleteAttendee204Response struct {
+}
+
+func (response DeleteAttendee204Response) VisitDeleteAttendeeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAttendee401JSONResponse struct{ ErrorJSONResponse }
+
+func (response DeleteAttendee401JSONResponse) VisitDeleteAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAttendee404JSONResponse Error
+
+func (response DeleteAttendee404JSONResponse) VisitDeleteAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAttendee409JSONResponse Error
+
+func (response DeleteAttendee409JSONResponse) VisitDeleteAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAttendeeRequestObject struct {
+	EventId    EventId    `json:"eventId"`
+	AttendeeId AttendeeId `json:"attendeeId"`
+	Body       *UpdateAttendeeJSONRequestBody
+}
+
+type UpdateAttendeeResponseObject interface {
+	VisitUpdateAttendeeResponse(w http.ResponseWriter) error
+}
+
+type UpdateAttendee200JSONResponse Attendee
+
+func (response UpdateAttendee200JSONResponse) VisitUpdateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAttendee400JSONResponse struct{ ErrorJSONResponse }
+
+func (response UpdateAttendee400JSONResponse) VisitUpdateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAttendee401JSONResponse Error
+
+func (response UpdateAttendee401JSONResponse) VisitUpdateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAttendee404JSONResponse Error
+
+func (response UpdateAttendee404JSONResponse) VisitUpdateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAttendee409JSONResponse Error
+
+func (response UpdateAttendee409JSONResponse) VisitUpdateAttendeeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventEntryRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type GetEventEntryResponseObject interface {
+	VisitGetEventEntryResponse(w http.ResponseWriter) error
+}
+
+type GetEventEntry200JSONResponse EventEntry
+
+func (response GetEventEntry200JSONResponse) VisitGetEventEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventEntry401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetEventEntry401JSONResponse) VisitGetEventEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventEntry404JSONResponse Error
+
+func (response GetEventEntry404JSONResponse) VisitGetEventEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventQRCodeRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type GetEventQRCodeResponseObject interface {
+	VisitGetEventQRCodeResponse(w http.ResponseWriter) error
+}
+
+type GetEventQRCode200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetEventQRCode200ImagepngResponse struct {
+	Body          io.Reader
+	Headers       GetEventQRCode200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetEventQRCode200ImagepngResponse) VisitGetEventQRCodeResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "image/png")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetEventQRCode401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetEventQRCode401JSONResponse) VisitGetEventQRCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventQRCode404JSONResponse Error
+
+func (response GetEventQRCode404JSONResponse) VisitGetEventQRCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventQRCode500JSONResponse Error
+
+func (response GetEventQRCode500JSONResponse) VisitGetEventQRCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventQRCode503JSONResponse Error
+
+func (response GetEventQRCode503JSONResponse) VisitGetEventQRCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportAttendeesRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ExportAttendeesResponseObject interface {
+	VisitExportAttendeesResponse(w http.ResponseWriter) error
+}
+
+type ExportAttendees200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportAttendees200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	Headers       ExportAttendees200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportAttendees200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ExportAttendees401JSONResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportAttendees404JSONResponse Error
+
+func (response ExportAttendees404JSONResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrizesRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ListPrizesResponseObject interface {
+	VisitListPrizesResponse(w http.ResponseWriter) error
+}
+
+type ListPrizes200JSONResponse []Prize
+
+func (response ListPrizes200JSONResponse) VisitListPrizesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrizes401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListPrizes401JSONResponse) VisitListPrizesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrizes404JSONResponse Error
+
+func (response ListPrizes404JSONResponse) VisitListPrizesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrizeRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *CreatePrizeJSONRequestBody
+}
+
+type CreatePrizeResponseObject interface {
+	VisitCreatePrizeResponse(w http.ResponseWriter) error
+}
+
+type CreatePrize201JSONResponse Prize
+
+func (response CreatePrize201JSONResponse) VisitCreatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrize400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreatePrize400JSONResponse) VisitCreatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrize401JSONResponse Error
+
+func (response CreatePrize401JSONResponse) VisitCreatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrize404JSONResponse Error
+
+func (response CreatePrize404JSONResponse) VisitCreatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrize409JSONResponse Error
+
+func (response CreatePrize409JSONResponse) VisitCreatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePrizeRequestObject struct {
+	EventId EventId `json:"eventId"`
+	PrizeId PrizeId `json:"prizeId"`
+}
+
+type DeletePrizeResponseObject interface {
+	VisitDeletePrizeResponse(w http.ResponseWriter) error
+}
+
+type DeletePrize204Response struct {
+}
+
+func (response DeletePrize204Response) VisitDeletePrizeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePrize401JSONResponse struct{ ErrorJSONResponse }
+
+func (response DeletePrize401JSONResponse) VisitDeletePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePrize404JSONResponse Error
+
+func (response DeletePrize404JSONResponse) VisitDeletePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePrize409JSONResponse Error
+
+func (response DeletePrize409JSONResponse) VisitDeletePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrizeRequestObject struct {
+	EventId EventId `json:"eventId"`
+	PrizeId PrizeId `json:"prizeId"`
+	Body    *UpdatePrizeJSONRequestBody
+}
+
+type UpdatePrizeResponseObject interface {
+	VisitUpdatePrizeResponse(w http.ResponseWriter) error
+}
+
+type UpdatePrize200JSONResponse Prize
+
+func (response UpdatePrize200JSONResponse) VisitUpdatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrize400JSONResponse struct{ ErrorJSONResponse }
+
+func (response UpdatePrize400JSONResponse) VisitUpdatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrize401JSONResponse Error
+
+func (response UpdatePrize401JSONResponse) VisitUpdatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrize404JSONResponse Error
+
+func (response UpdatePrize404JSONResponse) VisitUpdatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrize409JSONResponse Error
+
+func (response UpdatePrize409JSONResponse) VisitUpdatePrizeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1587,6 +2995,54 @@ type StrictServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx context.Context, request GetApiInfoRequestObject) (GetApiInfoResponseObject, error)
+	// ListEvents Events of the current organization, newest first
+	// (GET /api/organization/events)
+	ListEvents(ctx context.Context, request ListEventsRequestObject) (ListEventsResponseObject, error)
+	// CreateEvent Create a draft event; no credit is used
+	// (POST /api/organization/events)
+	CreateEvent(ctx context.Context, request CreateEventRequestObject) (CreateEventResponseObject, error)
+	// GetEvent Event detail
+	// (GET /api/organization/events/{eventId})
+	GetEvent(ctx context.Context, request GetEventRequestObject) (GetEventResponseObject, error)
+	// UpdateEvent Change settings or status; the first move to ready uses one credit
+	// (PATCH /api/organization/events/{eventId})
+	UpdateEvent(ctx context.Context, request UpdateEventRequestObject) (UpdateEventResponseObject, error)
+	// ListAttendees Roster, in the order it was added
+	// (GET /api/organization/events/{eventId}/attendees)
+	ListAttendees(ctx context.Context, request ListAttendeesRequestObject) (ListAttendeesResponseObject, error)
+	// CreateAttendee Add one person
+	// (POST /api/organization/events/{eventId}/attendees)
+	CreateAttendee(ctx context.Context, request CreateAttendeeRequestObject) (CreateAttendeeResponseObject, error)
+	// ImportAttendees Append roster rows from an xlsx file; any bad row rejects the whole file
+	// (POST /api/organization/events/{eventId}/attendees/import)
+	ImportAttendees(ctx context.Context, request ImportAttendeesRequestObject) (ImportAttendeesResponseObject, error)
+	// DeleteAttendee Remove a person who has not bound, checked in or won
+	// (DELETE /api/organization/events/{eventId}/attendees/{attendeeId})
+	DeleteAttendee(ctx context.Context, request DeleteAttendeeRequestObject) (DeleteAttendeeResponseObject, error)
+	// UpdateAttendee Change name, department or phone
+	// (PATCH /api/organization/events/{eventId}/attendees/{attendeeId})
+	UpdateAttendee(ctx context.Context, request UpdateAttendeeRequestObject) (UpdateAttendeeResponseObject, error)
+	// GetEventEntry Public code and mini program path
+	// (GET /api/organization/events/{eventId}/entry)
+	GetEventEntry(ctx context.Context, request GetEventEntryRequestObject) (GetEventEntryResponseObject, error)
+	// GetEventQRCode Mini program code that opens the event, as PNG
+	// (GET /api/organization/events/{eventId}/entry/qrcode)
+	GetEventQRCode(ctx context.Context, request GetEventQRCodeRequestObject) (GetEventQRCodeResponseObject, error)
+	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/attendees)
+	ExportAttendees(ctx context.Context, request ExportAttendeesRequestObject) (ExportAttendeesResponseObject, error)
+	// ListPrizes Prizes by sort_no
+	// (GET /api/organization/events/{eventId}/prizes)
+	ListPrizes(ctx context.Context, request ListPrizesRequestObject) (ListPrizesResponseObject, error)
+	// CreatePrize Add a prize
+	// (POST /api/organization/events/{eventId}/prizes)
+	CreatePrize(ctx context.Context, request CreatePrizeRequestObject) (CreatePrizeResponseObject, error)
+	// DeletePrize Delete a prize
+	// (DELETE /api/organization/events/{eventId}/prizes/{prizeId})
+	DeletePrize(ctx context.Context, request DeletePrizeRequestObject) (DeletePrizeResponseObject, error)
+	// UpdatePrize Change a prize
+	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
+	UpdatePrize(ctx context.Context, request UpdatePrizeRequestObject) (UpdatePrizeResponseObject, error)
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx context.Context, request OrganizationLoginRequestObject) (OrganizationLoginResponseObject, error)
@@ -1687,6 +3143,511 @@ func (sh *strictHandler) GetApiInfo(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GetApiInfoResponseObject); ok {
 		return validResponse.VisitGetApiInfoResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListEvents operation middleware
+func (sh *strictHandler) ListEvents(ctx echo.Context, params ListEventsParams) error {
+	var request ListEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEvents(ctx.Request().Context(), request.(ListEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEvents")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListEventsResponseObject); ok {
+		return validResponse.VisitListEventsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateEvent operation middleware
+func (sh *strictHandler) CreateEvent(ctx echo.Context) error {
+	var request CreateEventRequestObject
+
+	var body CreateEventJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEvent(ctx.Request().Context(), request.(CreateEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEvent")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateEventResponseObject); ok {
+		return validResponse.VisitCreateEventResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetEvent operation middleware
+func (sh *strictHandler) GetEvent(ctx echo.Context, eventId EventId) error {
+	var request GetEventRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEvent(ctx.Request().Context(), request.(GetEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEvent")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetEventResponseObject); ok {
+		return validResponse.VisitGetEventResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdateEvent operation middleware
+func (sh *strictHandler) UpdateEvent(ctx echo.Context, eventId EventId) error {
+	var request UpdateEventRequestObject
+
+	request.EventId = eventId
+
+	var body UpdateEventJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateEvent(ctx.Request().Context(), request.(UpdateEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateEvent")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdateEventResponseObject); ok {
+		return validResponse.VisitUpdateEventResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListAttendees operation middleware
+func (sh *strictHandler) ListAttendees(ctx echo.Context, eventId EventId, params ListAttendeesParams) error {
+	var request ListAttendeesRequestObject
+
+	request.EventId = eventId
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAttendees(ctx.Request().Context(), request.(ListAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListAttendeesResponseObject); ok {
+		return validResponse.VisitListAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateAttendee operation middleware
+func (sh *strictHandler) CreateAttendee(ctx echo.Context, eventId EventId) error {
+	var request CreateAttendeeRequestObject
+
+	request.EventId = eventId
+
+	var body CreateAttendeeJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAttendee(ctx.Request().Context(), request.(CreateAttendeeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAttendee")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateAttendeeResponseObject); ok {
+		return validResponse.VisitCreateAttendeeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ImportAttendees operation middleware
+func (sh *strictHandler) ImportAttendees(ctx echo.Context, eventId EventId) error {
+	var request ImportAttendeesRequestObject
+
+	request.EventId = eventId
+
+	if reader, err := ctx.Request().MultipartReader(); err != nil {
+		return err
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportAttendees(ctx.Request().Context(), request.(ImportAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ImportAttendeesResponseObject); ok {
+		return validResponse.VisitImportAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DeleteAttendee operation middleware
+func (sh *strictHandler) DeleteAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error {
+	var request DeleteAttendeeRequestObject
+
+	request.EventId = eventId
+	request.AttendeeId = attendeeId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAttendee(ctx.Request().Context(), request.(DeleteAttendeeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAttendee")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeleteAttendeeResponseObject); ok {
+		return validResponse.VisitDeleteAttendeeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdateAttendee operation middleware
+func (sh *strictHandler) UpdateAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error {
+	var request UpdateAttendeeRequestObject
+
+	request.EventId = eventId
+	request.AttendeeId = attendeeId
+
+	var body UpdateAttendeeJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAttendee(ctx.Request().Context(), request.(UpdateAttendeeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAttendee")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdateAttendeeResponseObject); ok {
+		return validResponse.VisitUpdateAttendeeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetEventEntry operation middleware
+func (sh *strictHandler) GetEventEntry(ctx echo.Context, eventId EventId) error {
+	var request GetEventEntryRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEventEntry(ctx.Request().Context(), request.(GetEventEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEventEntry")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetEventEntryResponseObject); ok {
+		return validResponse.VisitGetEventEntryResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetEventQRCode operation middleware
+func (sh *strictHandler) GetEventQRCode(ctx echo.Context, eventId EventId) error {
+	var request GetEventQRCodeRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEventQRCode(ctx.Request().Context(), request.(GetEventQRCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEventQRCode")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetEventQRCodeResponseObject); ok {
+		return validResponse.VisitGetEventQRCodeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ExportAttendees operation middleware
+func (sh *strictHandler) ExportAttendees(ctx echo.Context, eventId EventId) error {
+	var request ExportAttendeesRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportAttendees(ctx.Request().Context(), request.(ExportAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ExportAttendeesResponseObject); ok {
+		return validResponse.VisitExportAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListPrizes operation middleware
+func (sh *strictHandler) ListPrizes(ctx echo.Context, eventId EventId) error {
+	var request ListPrizesRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPrizes(ctx.Request().Context(), request.(ListPrizesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPrizes")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListPrizesResponseObject); ok {
+		return validResponse.VisitListPrizesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreatePrize operation middleware
+func (sh *strictHandler) CreatePrize(ctx echo.Context, eventId EventId) error {
+	var request CreatePrizeRequestObject
+
+	request.EventId = eventId
+
+	var body CreatePrizeJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePrize(ctx.Request().Context(), request.(CreatePrizeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePrize")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreatePrizeResponseObject); ok {
+		return validResponse.VisitCreatePrizeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DeletePrize operation middleware
+func (sh *strictHandler) DeletePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error {
+	var request DeletePrizeRequestObject
+
+	request.EventId = eventId
+	request.PrizeId = prizeId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePrize(ctx.Request().Context(), request.(DeletePrizeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePrize")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeletePrizeResponseObject); ok {
+		return validResponse.VisitDeletePrizeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdatePrize operation middleware
+func (sh *strictHandler) UpdatePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error {
+	var request UpdatePrizeRequestObject
+
+	request.EventId = eventId
+	request.PrizeId = prizeId
+
+	var body UpdatePrizeJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePrize(ctx.Request().Context(), request.(UpdatePrizeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePrize")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdatePrizeResponseObject); ok {
+		return validResponse.VisitUpdatePrizeResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -2380,51 +4341,79 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

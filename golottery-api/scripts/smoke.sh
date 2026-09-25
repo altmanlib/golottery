@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 启动构建好的二进制，确认 /readyz 与 /openapi.json 可用。
-# 用法：make smoke（需可达的 PostgreSQL；默认用测试库 127.0.0.1:15436/golottery_test，避免在开发库播种冒烟账号）
+# 用法：make smoke（需可达的 PostgreSQL 与 Redis；默认用测试库 127.0.0.1:15436/golottery_test 与 Redis db 15，避免在开发库播种冒烟账号）
 set -euo pipefail
 
 binary="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
@@ -24,6 +24,7 @@ hash="$(printf '%s' 'smoke-test-password' | "${binary}" hash-password)"
   PLATFORM_USER="${SMOKE_PLATFORM_USER:-smoke}" \
   PLATFORM_PASSWORD_HASH="${hash}" \
   DATABASE_URL="${SMOKE_DATABASE_URL:-postgres://postgres:secret@127.0.0.1:15436/golottery_test?sslmode=disable}" \
+  REDIS_URL="${SMOKE_REDIS_URL:-redis://127.0.0.1:57379/15}" \
   SESSION_SECRET="smoke-test-session-secret-0123456789abcdef" \
   APP_HOST=127.0.0.1 \
   APP_PORT="${port}" \

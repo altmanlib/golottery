@@ -20,6 +20,9 @@ const (
 	// StatusDisabled organizations keep their data but cannot manage events.
 	StatusDisabled = "disabled"
 
+	// EventReadyReason is the ledger reason for the credit an event uses when it first becomes ready.
+	EventReadyReason = "event ready"
+
 	// LedgerPreview is how many recent entries an organization detail shows.
 	LedgerPreview = 20
 
@@ -285,4 +288,33 @@ func newEntry(orgID uuid.UUID, delta, balance int, reason string, by Operator, a
 		OperatorID:   by.ID,
 		CreatedAt:    at,
 	}
+}
+
+// ConsumeEventCredit takes one credit for an event's first move to ready, inside tx.
+// The balance check and decrement are one statement, so concurrent events cannot overdraw.
+func ConsumeEventCredit(ctx context.Context, tx *gorm.DB, orgID, eventID uuid.UUID, by Operator, at time.Time) error {
+	var balances []int
+	err := tx.WithContext(ctx).Raw(`UPDATE org_quotas SET event_credits = event_credits - 1, updated_at = ?
+		WHERE org_id = ? AND event_credits > 0 RETURNING event_credits`, at, orgID).Scan(&balances).Error
+	if err != nil {
+		return bizerr.Wrap(bizerr.CodeInternal, fmt.Errorf("org: consume credit: %w", err))
+	}
+	if len(balances) == 0 {
+		return bizerr.New(bizerr.CodeNoEventCredits)
+	}
+	entry := newEntry(orgID, -1, balances[0], EventReadyReason, by, at)
+	entry.EventID = &eventID
+	if err := tx.WithContext(ctx).Create(&entry).Error; err != nil {
+		return bizerr.Wrap(bizerr.CodeInternal, fmt.Errorf("org: insert ledger: %w", err))
+	}
+	return nil
+}
+
+// Credits returns the remaining event credits of an organization.
+func Credits(ctx context.Context, db *gorm.DB, orgID uuid.UUID) (int, error) {
+	var quota Quota
+	if err := db.WithContext(ctx).Where("org_id = ?", orgID).Take(&quota).Error; err != nil {
+		return 0, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	return quota.EventCredits, nil
 }

@@ -18,6 +18,10 @@ export type Healthz = {
      * Database status
      */
     db?: 'up' | 'down' | 'skipped';
+    /**
+     * Redis status; informational, it does not change ok
+     */
+    redis?: 'up' | 'down' | 'skipped';
 };
 
 export type ApiInfo = {
@@ -162,7 +166,147 @@ export type OrganizationMe = {
     email: string;
     org_id: string;
     org_name: string;
+    /**
+     * Remaining event credits of the organization
+     */
+    event_credits: number;
 };
+
+export type EventStatus = 'draft' | 'ready' | 'closed';
+
+export type CheckinMode = 'geo' | 'direct';
+
+export type Event = {
+    id: string;
+    public_id: string;
+    name: string;
+    status: EventStatus;
+    checkin_mode: CheckinMode;
+    /**
+     * GCJ-02 latitude
+     */
+    center_lat?: number | null;
+    /**
+     * GCJ-02 longitude
+     */
+    center_lng?: number | null;
+    radius_m: number;
+    checkin_start?: string | null;
+    checkin_end?: string | null;
+    allow_multi_win: boolean;
+    max_attendees: number;
+    attendee_count: number;
+    prize_count: number;
+    /**
+     * Whether this event has already used its credit
+     */
+    credit_consumed: boolean;
+    created_at: string;
+};
+
+export type EventPage = {
+    items: Array<Event>;
+    total: number;
+};
+
+export type CreateEventRequest = {
+    name: string;
+};
+
+/**
+ * Only the fields present change.
+ */
+export type UpdateEventRequest = {
+    name?: string;
+    checkin_mode?: CheckinMode;
+    center_lat?: number;
+    center_lng?: number;
+    radius_m?: number;
+    checkin_start?: string;
+    checkin_end?: string;
+    allow_multi_win?: boolean;
+    status?: EventStatus;
+};
+
+export type EventEntry = {
+    public_id: string;
+    path: string;
+};
+
+export type Prize = {
+    id: string;
+    name: string;
+    gift: string;
+    quota: number;
+    sort_no: number;
+};
+
+export type PrizeInput = {
+    name: string;
+    gift?: string;
+    quota: number;
+    sort_no: number;
+};
+
+export type PrizeUpdate = {
+    name?: string;
+    gift?: string;
+    quota?: number;
+    sort_no?: number;
+};
+
+export type Attendee = {
+    id: string;
+    name: string;
+    dept: string;
+    phone_last4: string;
+    status: string;
+    created_at: string;
+};
+
+export type AttendeePage = {
+    items: Array<Attendee>;
+    total: number;
+};
+
+export type AttendeeInput = {
+    name: string;
+    dept?: string;
+    /**
+     * Full phone or its last four digits; only the last four are stored
+     */
+    phone: string;
+};
+
+export type AttendeeUpdate = {
+    name?: string;
+    dept?: string;
+    phone?: string;
+};
+
+export type ImportResult = {
+    imported: number;
+};
+
+export type ImportRowError = {
+    /**
+     * Spreadsheet row number; the header is row 1
+     */
+    row: number;
+    reason: string;
+};
+
+export type ImportError = {
+    code: string;
+    message: string;
+    rows: Array<ImportRowError>;
+};
+
+export type EventId = string;
+
+export type PrizeId = string;
+
+export type AttendeeId = string;
 
 export type UserId = string;
 
@@ -856,3 +1000,567 @@ export type ChangeOrganizationPasswordResponses = {
 };
 
 export type ChangeOrganizationPasswordResponse = ChangeOrganizationPasswordResponses[keyof ChangeOrganizationPasswordResponses];
+
+export type ListEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        offset?: number;
+        limit?: number;
+    };
+    url: '/api/organization/events';
+};
+
+export type ListEventsErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type ListEventsError = ListEventsErrors[keyof ListEventsErrors];
+
+export type ListEventsResponses = {
+    /**
+     * OK
+     */
+    200: EventPage;
+};
+
+export type ListEventsResponse = ListEventsResponses[keyof ListEventsResponses];
+
+export type CreateEventData = {
+    body: CreateEventRequest;
+    path?: never;
+    query?: never;
+    url: '/api/organization/events';
+};
+
+export type CreateEventErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type CreateEventError = CreateEventErrors[keyof CreateEventErrors];
+
+export type CreateEventResponses = {
+    /**
+     * OK
+     */
+    201: Event;
+};
+
+export type CreateEventResponse = CreateEventResponses[keyof CreateEventResponses];
+
+export type GetEventData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}';
+};
+
+export type GetEventErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type GetEventError = GetEventErrors[keyof GetEventErrors];
+
+export type GetEventResponses = {
+    /**
+     * OK
+     */
+    200: Event;
+};
+
+export type GetEventResponse = GetEventResponses[keyof GetEventResponses];
+
+export type UpdateEventData = {
+    body: UpdateEventRequest;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}';
+};
+
+export type UpdateEventErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type UpdateEventError = UpdateEventErrors[keyof UpdateEventErrors];
+
+export type UpdateEventResponses = {
+    /**
+     * OK
+     */
+    200: Event;
+};
+
+export type UpdateEventResponse = UpdateEventResponses[keyof UpdateEventResponses];
+
+export type GetEventEntryData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/entry';
+};
+
+export type GetEventEntryErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type GetEventEntryError = GetEventEntryErrors[keyof GetEventEntryErrors];
+
+export type GetEventEntryResponses = {
+    /**
+     * OK
+     */
+    200: EventEntry;
+};
+
+export type GetEventEntryResponse = GetEventEntryResponses[keyof GetEventEntryResponses];
+
+export type ListPrizesData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/prizes';
+};
+
+export type ListPrizesErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListPrizesError = ListPrizesErrors[keyof ListPrizesErrors];
+
+export type ListPrizesResponses = {
+    /**
+     * OK
+     */
+    200: Array<Prize>;
+};
+
+export type ListPrizesResponse = ListPrizesResponses[keyof ListPrizesResponses];
+
+export type CreatePrizeData = {
+    body: PrizeInput;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/prizes';
+};
+
+export type CreatePrizeErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type CreatePrizeError = CreatePrizeErrors[keyof CreatePrizeErrors];
+
+export type CreatePrizeResponses = {
+    /**
+     * OK
+     */
+    201: Prize;
+};
+
+export type CreatePrizeResponse = CreatePrizeResponses[keyof CreatePrizeResponses];
+
+export type DeletePrizeData = {
+    body?: never;
+    path: {
+        eventId: string;
+        prizeId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/prizes/{prizeId}';
+};
+
+export type DeletePrizeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type DeletePrizeError = DeletePrizeErrors[keyof DeletePrizeErrors];
+
+export type DeletePrizeResponses = {
+    /**
+     * Done
+     */
+    204: void;
+};
+
+export type DeletePrizeResponse = DeletePrizeResponses[keyof DeletePrizeResponses];
+
+export type UpdatePrizeData = {
+    body: PrizeUpdate;
+    path: {
+        eventId: string;
+        prizeId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/prizes/{prizeId}';
+};
+
+export type UpdatePrizeErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type UpdatePrizeError = UpdatePrizeErrors[keyof UpdatePrizeErrors];
+
+export type UpdatePrizeResponses = {
+    /**
+     * OK
+     */
+    200: Prize;
+};
+
+export type UpdatePrizeResponse = UpdatePrizeResponses[keyof UpdatePrizeResponses];
+
+export type ListAttendeesData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: {
+        offset?: number;
+        limit?: number;
+    };
+    url: '/api/organization/events/{eventId}/attendees';
+};
+
+export type ListAttendeesErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListAttendeesError = ListAttendeesErrors[keyof ListAttendeesErrors];
+
+export type ListAttendeesResponses = {
+    /**
+     * OK
+     */
+    200: AttendeePage;
+};
+
+export type ListAttendeesResponse = ListAttendeesResponses[keyof ListAttendeesResponses];
+
+export type CreateAttendeeData = {
+    body: AttendeeInput;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/attendees';
+};
+
+export type CreateAttendeeErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type CreateAttendeeError = CreateAttendeeErrors[keyof CreateAttendeeErrors];
+
+export type CreateAttendeeResponses = {
+    /**
+     * OK
+     */
+    201: Attendee;
+};
+
+export type CreateAttendeeResponse = CreateAttendeeResponses[keyof CreateAttendeeResponses];
+
+export type DeleteAttendeeData = {
+    body?: never;
+    path: {
+        eventId: string;
+        attendeeId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/attendees/{attendeeId}';
+};
+
+export type DeleteAttendeeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type DeleteAttendeeError = DeleteAttendeeErrors[keyof DeleteAttendeeErrors];
+
+export type DeleteAttendeeResponses = {
+    /**
+     * Done
+     */
+    204: void;
+};
+
+export type DeleteAttendeeResponse = DeleteAttendeeResponses[keyof DeleteAttendeeResponses];
+
+export type UpdateAttendeeData = {
+    body: AttendeeUpdate;
+    path: {
+        eventId: string;
+        attendeeId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/attendees/{attendeeId}';
+};
+
+export type UpdateAttendeeErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type UpdateAttendeeError = UpdateAttendeeErrors[keyof UpdateAttendeeErrors];
+
+export type UpdateAttendeeResponses = {
+    /**
+     * OK
+     */
+    200: Attendee;
+};
+
+export type UpdateAttendeeResponse = UpdateAttendeeResponses[keyof UpdateAttendeeResponses];
+
+export type ImportAttendeesData = {
+    body: {
+        file: Blob | File;
+    };
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/attendees/import';
+};
+
+export type ImportAttendeesErrors = {
+    /**
+     * The file or some rows are invalid; nothing was written
+     */
+    400: ImportError;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type ImportAttendeesError = ImportAttendeesErrors[keyof ImportAttendeesErrors];
+
+export type ImportAttendeesResponses = {
+    /**
+     * Rows appended
+     */
+    200: ImportResult;
+};
+
+export type ImportAttendeesResponse = ImportAttendeesResponses[keyof ImportAttendeesResponses];
+
+export type ExportAttendeesData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/exports/attendees';
+};
+
+export type ExportAttendeesErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ExportAttendeesError = ExportAttendeesErrors[keyof ExportAttendeesErrors];
+
+export type ExportAttendeesResponses = {
+    /**
+     * xlsx workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportAttendeesResponse = ExportAttendeesResponses[keyof ExportAttendeesResponses];
+
+export type GetEventQrCodeData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/entry/qrcode';
+};
+
+export type GetEventQrCodeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    500: Error;
+    /**
+     * Business error
+     */
+    503: Error;
+};
+
+export type GetEventQrCodeError = GetEventQrCodeErrors[keyof GetEventQrCodeErrors];
+
+export type GetEventQrCodeResponses = {
+    /**
+     * PNG image
+     */
+    200: Blob | File;
+};
+
+export type GetEventQrCodeResponse = GetEventQrCodeResponses[keyof GetEventQrCodeResponses];

@@ -23,6 +23,12 @@ const (
 	CodeNotFound             Code = "E_NOT_FOUND"
 	CodeConflict             Code = "E_CONFLICT"
 	CodeTooManyAttempts      Code = "E_TOO_MANY_ATTEMPTS"
+	CodeNoEventCredits       Code = "E_NO_EVENT_CREDITS"
+	CodeEventIncomplete      Code = "E_EVENT_INCOMPLETE"
+	CodeRosterFull           Code = "E_ROSTER_FULL"
+	CodeImportFile           Code = "E_IMPORT_FILE"
+	CodeImportInvalid        Code = "E_IMPORT_INVALID"
+	CodeWechatNotConfigured  Code = "E_WECHAT_NOT_CONFIGURED"
 	CodeInternal             Code = "E_INTERNAL"
 	CodeStoreUnavailable     Code = "E_STORE_UNAVAILABLE"
 )
@@ -39,6 +45,12 @@ var messages = map[Code]string{
 	CodeNotFound:             "内容不存在或无权访问",
 	CodeConflict:             "操作与当前状态冲突",
 	CodeTooManyAttempts:      "尝试次数过多，请 %d 分钟后再试",
+	CodeNoEventCredits:       "剩余场次不足，请联系运营开通",
+	CodeEventIncomplete:      "就绪前请补全：%s",
+	CodeRosterFull:           "名单不能超过人数上限 %d 人",
+	CodeImportFile:           "无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx",
+	CodeImportInvalid:        "有 %d 行需要修正，整份文件未导入",
+	CodeWechatNotConfigured:  "微信小程序尚未配置，暂时无法生成小程序码",
 	CodeInternal:             "系统出错了，请稍后重试",
 	CodeStoreUnavailable:     "系统暂时不可用，请稍后重试",
 }
@@ -52,13 +64,13 @@ func StatusOf(code Code) int {
 		return http.StatusForbidden
 	case CodeNotFound:
 		return http.StatusNotFound
-	case CodeConflict:
+	case CodeConflict, CodeNoEventCredits:
 		return http.StatusConflict
 	case CodeTooManyAttempts:
 		return http.StatusTooManyRequests
 	case CodeInternal:
 		return http.StatusInternalServerError
-	case CodeStoreUnavailable:
+	case CodeStoreUnavailable, CodeWechatNotConfigured:
 		return http.StatusServiceUnavailable
 	default:
 		return http.StatusBadRequest

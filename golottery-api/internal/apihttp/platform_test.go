@@ -4,20 +4,27 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 
+	api "golottery/api/api"
 	"golottery/api/internal/auth"
+	"golottery/api/internal/event"
 	"golottery/api/internal/httpapi"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/redisx"
 	"golottery/api/internal/store"
+	"golottery/api/internal/wechat"
+	"golottery/api/internal/wechat/wechattest"
 )
 
 const (
@@ -29,12 +36,32 @@ type platformEnv struct {
 	engine *echo.Echo
 	db     *gorm.DB
 	tokens *auth.TokenIssuer
+	wechat *wechattest.Server
+	logs   *syncBuffer
+}
+
+// syncBuffer collects log output from concurrent handlers.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
 
 func newPlatformEnv(t *testing.T) platformEnv {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &org.User{}, &org.LedgerEntry{}, &org.Quota{}, &org.Org{})
+	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &event.Prize{}, &event.Attendee{}, &org.LedgerEntry{}, &event.Event{}, &org.User{}, &org.Quota{}, &org.Org{})
 	hash, err := auth.HashPassword(testPassword)
 	if err != nil {
 		t.Fatal(err)
@@ -44,15 +71,21 @@ func newPlatformEnv(t *testing.T) platformEnv {
 	}
 	tokens := auth.NewTokenIssuer(db.Gorm, time.Hour, time.Hour, time.Hour)
 	limiter := auth.NewLoginLimiter(db.Gorm, 3, 15*time.Minute)
+	fake := wechattest.New()
+	t.Cleanup(fake.Close)
+	logs := &syncBuffer{}
 	engine := httpapi.NewRouter(httpapi.Deps{})
 	mustRegister(t, engine, Deps{
+		Wechat:   wechat.New(wechat.Config{AppID: "wx123", AppSecret: "secret", BaseURL: fake.URL, Redis: redisx.OpenTest(t)}),
+		Logger:   slog.New(slog.NewTextHandler(logs, nil)),
 		DB:       db.Gorm,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
+		Events:   event.NewService(db.Gorm),
 	})
-	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens}
+	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens, wechat: fake, logs: logs}
 }
 
 func (e platformEnv) do(t *testing.T, method, path, token string, body any) *httptest.ResponseRecorder {
@@ -256,33 +289,31 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{
-		"PlatformLogout":             auth.TokenTypePlatform,
-		"GetPlatformMe":              auth.TokenTypePlatform,
-		"ChangePlatformPassword":     auth.TokenTypePlatform,
-		"ListOrgs":                   auth.TokenTypePlatform,
-		"CreateOrg":                  auth.TokenTypePlatform,
-		"GetOrg":                     auth.TokenTypePlatform,
-		"DisableOrg":                 auth.TokenTypePlatform,
-		"EnableOrg":                  auth.TokenTypePlatform,
-		"AdjustOrgCredits":           auth.TokenTypePlatform,
-		"SetOrgMaxAttendees":         auth.TokenTypePlatform,
-		"ListOrgUsers":               auth.TokenTypePlatform,
-		"CreateOrgUser":              auth.TokenTypePlatform,
-		"ResetOrgUserPassword":       auth.TokenTypePlatform,
-		"DisableOrgUser":             auth.TokenTypePlatform,
-		"EnableOrgUser":              auth.TokenTypePlatform,
-		"OrganizationLogout":         auth.TokenTypeConsole,
-		"GetOrganizationMe":          auth.TokenTypeConsole,
-		"ChangeOrganizationPassword": auth.TokenTypeConsole,
+	doc, err := api.GetSpec()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(secured) != len(want) {
-		t.Fatalf("secured = %v, want %v", secured, want)
-	}
-	for op, typ := range want {
-		if secured[op] != typ {
-			t.Fatalf("secured[%s] = %q, want %q", op, secured[op], typ)
+	public := map[string]bool{"PlatformLogin": true, "OrganizationLogin": true}
+	checked := 0
+	for path, item := range doc.Paths.Map() {
+		for _, op := range item.Operations() {
+			name := goOperationName(op.OperationID)
+			want := ""
+			switch {
+			case public[name]:
+			case strings.HasPrefix(path, "/api/platform/"):
+				want = auth.TokenTypePlatform
+			case strings.HasPrefix(path, "/api/organization/"):
+				want = auth.TokenTypeConsole
+			}
+			if secured[name] != want {
+				t.Errorf("%s %s requires %q, want %q", path, name, secured[name], want)
+			}
+			checked++
 		}
+	}
+	if checked < 30 {
+		t.Fatalf("checked only %d operations", checked)
 	}
 }
 

@@ -9,11 +9,14 @@ import (
 	"golottery/api/internal/apihttp"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/config"
+	"golottery/api/internal/event"
 	"golottery/api/internal/httpapi"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/redisx"
 	"golottery/api/internal/settings"
 	"golottery/api/internal/store"
+	"golottery/api/internal/wechat"
 )
 
 func main() {
@@ -58,22 +61,32 @@ func runServer() error {
 		return fmt.Errorf("store migrate error: %w", err)
 	}
 
+	rdb, err := redisx.Open(ctx, cfg.RedisURL)
+	if err != nil {
+		_ = db.Close()
+		return fmt.Errorf("redis open error: %w", err)
+	}
+	closeAll := func() error {
+		_ = rdb.Close()
+		return db.Close()
+	}
+
 	settingsStore := settings.NewStore(db.Gorm)
 	snapshot, err := settingsStore.Snapshot(ctx)
 	if err != nil {
-		_ = db.Close()
+		_ = closeAll()
 		return fmt.Errorf("settings snapshot error: %w", err)
 	}
 	if err := cfg.Apply(snapshot, func(format string, args ...any) {
 		logger.Warn(fmt.Sprintf(format, args...))
 	}); err != nil {
-		_ = db.Close()
+		_ = closeAll()
 		return fmt.Errorf("settings apply error: %w", err)
 	}
 
 	seeded, err := platform.Seed(ctx, db.Gorm, cfg.PlatformUser, cfg.PlatformPasswordHash)
 	if err != nil {
-		_ = db.Close()
+		_ = closeAll()
 		return fmt.Errorf("platform seed error: %w", err)
 	}
 	if seeded {
@@ -90,12 +103,23 @@ func runServer() error {
 	})
 	if err := apihttp.Register(router, apihttp.Deps{
 		DB:       db.Gorm,
+		Redis:    rdb,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
+		Events:   event.NewService(db.Gorm),
+		Wechat: wechat.New(wechat.Config{
+			AppID:      cfg.WechatAppID,
+			AppSecret:  cfg.WechatAppSecret,
+			BaseURL:    cfg.WechatAPIBase,
+			EnvVersion: cfg.WechatEnvVersion,
+			Redis:      rdb,
+			Logger:     logger,
+		}),
+		Logger: logger,
 	}); err != nil {
-		_ = db.Close()
+		_ = closeAll()
 		return err
 	}
 
@@ -103,6 +127,6 @@ func runServer() error {
 		Addr:       cfg.Addr(),
 		Handler:    router,
 		Logger:     logger,
-		CloseStore: db.Close,
+		CloseStore: closeAll,
 	})
 }

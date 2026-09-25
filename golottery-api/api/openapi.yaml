@@ -471,8 +471,423 @@ paths:
           $ref: "#/components/responses/Error"
         "401":
           $ref: "#/components/responses/Error"
+  /api/organization/events:
+    get:
+      operationId: listEvents
+      summary: Events of the current organization, newest first
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventPage"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createEvent
+      summary: Create a draft event; no credit is used
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: getEvent
+      summary: Event detail
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    patch:
+      operationId: updateEvent
+      summary: Change settings or status; the first move to ready uses one credit
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/entry:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: getEventEntry
+      summary: Public code and mini program path
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventEntry"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/prizes:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: listPrizes
+      summary: Prizes by sort_no
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Prize"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createPrize
+      summary: Add a prize
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrizeInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prize"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/prizes/{prizeId}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+      - $ref: "#/components/parameters/PrizeId"
+    patch:
+      operationId: updatePrize
+      summary: Change a prize
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrizeUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prize"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+    delete:
+      operationId: deletePrize
+      summary: Delete a prize
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/attendees:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: listAttendees
+      summary: Roster, in the order it was added
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeePage"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createAttendee
+      summary: Add one person
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendeeInput"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/attendees/{attendeeId}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+      - $ref: "#/components/parameters/AttendeeId"
+    patch:
+      operationId: updateAttendee
+      summary: Change name, department or phone
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendeeUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+    delete:
+      operationId: deleteAttendee
+      summary: Remove a person who has not bound, checked in or won
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "204":
+          description: Done
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/attendees/import:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    post:
+      operationId: importAttendees
+      summary: Append roster rows from an xlsx file; any bad row rejects the whole file
+      description: The first row holds the headers 姓名, 部门 and 手机号. Files are limited to 5 MB.
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Rows appended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+        "400":
+          description: The file or some rows are invalid; nothing was written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportError"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/exports/attendees:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: exportAttendees
+      summary: Roster as xlsx, times in Asia/Shanghai
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: xlsx workbook
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/entry/qrcode:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: getEventQRCode
+      summary: Mini program code that opens the event, as PNG
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: PNG image
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PrizeId:
+      name: prizeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AttendeeId:
+      name: attendeeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     UserId:
       name: userId
       in: path
@@ -546,6 +961,10 @@ components:
         db:
           type: string
           description: Database status
+          enum: [up, down, skipped]
+        redis:
+          type: string
+          description: Redis status; informational, it does not change ok
           enum: [up, down, skipped]
     ApiInfo:
       type: object
@@ -770,7 +1189,7 @@ components:
           format: uuid
     OrganizationMe:
       type: object
-      required: [name, email, org_id, org_name]
+      required: [name, email, org_id, org_name, event_credits]
       properties:
         name:
           type: string
@@ -781,3 +1200,239 @@ components:
           format: uuid
         org_name:
           type: string
+        event_credits:
+          type: integer
+          description: Remaining event credits of the organization
+    EventStatus:
+      type: string
+      enum: [draft, ready, closed]
+    CheckinMode:
+      type: string
+      enum: [geo, direct]
+    Event:
+      type: object
+      required: [id, public_id, name, status, checkin_mode, radius_m, allow_multi_win, max_attendees, attendee_count, prize_count, credit_consumed, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        public_id:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/EventStatus"
+        checkin_mode:
+          $ref: "#/components/schemas/CheckinMode"
+        center_lat:
+          type: number
+          format: double
+          nullable: true
+          description: GCJ-02 latitude
+        center_lng:
+          type: number
+          format: double
+          nullable: true
+          description: GCJ-02 longitude
+        radius_m:
+          type: integer
+        checkin_start:
+          type: string
+          format: date-time
+          nullable: true
+        checkin_end:
+          type: string
+          format: date-time
+          nullable: true
+        allow_multi_win:
+          type: boolean
+        max_attendees:
+          type: integer
+        attendee_count:
+          type: integer
+        prize_count:
+          type: integer
+        credit_consumed:
+          type: boolean
+          description: Whether this event has already used its credit
+        created_at:
+          type: string
+          format: date-time
+    EventPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        total:
+          type: integer
+    CreateEventRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+    UpdateEventRequest:
+      type: object
+      description: Only the fields present change.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        checkin_mode:
+          $ref: "#/components/schemas/CheckinMode"
+        center_lat:
+          type: number
+          format: double
+        center_lng:
+          type: number
+          format: double
+        radius_m:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        checkin_start:
+          type: string
+          format: date-time
+        checkin_end:
+          type: string
+          format: date-time
+        allow_multi_win:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/EventStatus"
+    EventEntry:
+      type: object
+      required: [public_id, path]
+      properties:
+        public_id:
+          type: string
+        path:
+          type: string
+          example: pages/index/index?e=V1StGXR8_Z5jdHi6B-myT
+    Prize:
+      type: object
+      required: [id, name, gift, quota, sort_no]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        gift:
+          type: string
+        quota:
+          type: integer
+        sort_no:
+          type: integer
+    PrizeInput:
+      type: object
+      required: [name, quota, sort_no]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        gift:
+          type: string
+          maxLength: 200
+        quota:
+          type: integer
+          minimum: 1
+        sort_no:
+          type: integer
+    PrizeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        gift:
+          type: string
+          maxLength: 200
+        quota:
+          type: integer
+          minimum: 1
+        sort_no:
+          type: integer
+    Attendee:
+      type: object
+      required: [id, name, dept, phone_last4, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dept:
+          type: string
+        phone_last4:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AttendeePage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        total:
+          type: integer
+    AttendeeInput:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        dept:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          description: Full phone or its last four digits; only the last four are stored
+    AttendeeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        dept:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+    ImportResult:
+      type: object
+      required: [imported]
+      properties:
+        imported:
+          type: integer
+    ImportRowError:
+      type: object
+      required: [row, reason]
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row number; the header is row 1
+        reason:
+          type: string
+    ImportError:
+      type: object
+      required: [code, message, rows]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowError"

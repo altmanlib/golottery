@@ -5,36 +5,48 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/event"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/redisx"
+	"golottery/api/internal/wechat"
 )
 
 // Deps are the collaborators behind the generated routes.
 // A nil DB reports the database as down.
 type Deps struct {
 	DB       *gorm.DB
+	Redis    *redis.Client
 	Tokens   *auth.TokenIssuer
 	Platform *platform.Service
 	Orgs     *org.Service
 	Accounts *org.Accounts
+	Events   *event.Service
+	Wechat   *wechat.Client
+	Logger   *slog.Logger
 }
 
 // Server implements the generated strict interface.
 type Server struct {
 	db       *gorm.DB
+	redis    *redis.Client
 	platform *platform.Service
 	orgs     *org.Service
 	accounts *org.Accounts
+	events   *event.Service
+	wechat   *wechat.Client
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -46,28 +58,41 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts}
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 		authenticate(deps.Tokens, secured, map[string]principalResolver{
 			auth.TokenTypeConsole: server.resolveAdmin,
 		}),
-		recoverBizErr,
+		recoverBizErr(logger),
 	})
 	api.RegisterHandlers(engine, handler)
 	return nil
 }
 
-func recoverBizErr(next api.StrictHandlerFunc, _ string) api.StrictHandlerFunc {
-	return func(ctx echo.Context, request any) (any, error) {
-		response, err := next(ctx, request)
-		if err == nil {
-			return response, nil
-		}
-		if be, ok := bizerr.As(err); ok {
+// recoverBizErr renders business errors as JSON and logs the cause of every 5xx,
+// which the response body never shows.
+func recoverBizErr(logger *slog.Logger) api.StrictMiddlewareFunc {
+	return func(next api.StrictHandlerFunc, operationID string) api.StrictHandlerFunc {
+		return func(ctx echo.Context, request any) (any, error) {
+			response, err := next(ctx, request)
+			if err == nil {
+				return response, nil
+			}
+			be, ok := bizerr.As(err)
+			if !ok {
+				logger.Error("request failed", "operation", operationID, "error", err)
+				return nil, err
+			}
+			if bizerr.StatusOf(be.Code) >= http.StatusInternalServerError {
+				logger.Error("request failed", "operation", operationID, "code", be.Code, "error", err)
+			}
 			return nil, writeBizErr(ctx, be)
 		}
-		return nil, err
 	}
 }
 
@@ -83,7 +108,7 @@ func writeBizErr(c echo.Context, be *bizerr.Error) error {
 
 // GetHealthz reports liveness and whether the database answers a ping.
 func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) (api.GetHealthzResponseObject, error) {
-	dbStatus := api.Down
+	dbStatus := api.HealthzDbDown
 	ok := false
 	if s.db != nil {
 		sqlDB, err := s.db.DB()
@@ -93,8 +118,15 @@ func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) 
 			cancel()
 		}
 		if err == nil {
-			dbStatus = api.Up
+			dbStatus = api.HealthzDbUp
 			ok = true
+		}
+	}
+	redisStatus := api.HealthzRedisSkipped
+	if s.redis != nil {
+		redisStatus = api.HealthzRedisUp
+		if err := redisx.Ping(ctx, s.redis); err != nil {
+			redisStatus = api.HealthzRedisDown
 		}
 	}
 	body := api.Healthz{
@@ -102,6 +134,7 @@ func (s *Server) GetHealthz(ctx context.Context, _ api.GetHealthzRequestObject) 
 		Service: "golottery-api",
 		Ts:      time.Now().UTC(),
 		Db:      &dbStatus,
+		Redis:   &redisStatus,
 	}
 	if !ok {
 		return api.GetHealthz503JSONResponse(body), nil
