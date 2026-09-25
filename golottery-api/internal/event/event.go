@@ -367,3 +367,29 @@ func asBizErr(err error) error {
 	}
 	return bizerr.Wrap(bizerr.CodeInternal, err)
 }
+
+// SetMaxAttendees lets an operator change one event's limit. It never drops below the
+// current roster and does not touch credits.
+func (s *Service) SetMaxAttendees(ctx context.Context, orgID, id uuid.UUID, maxAttendees int) (View, error) {
+	if maxAttendees <= 0 {
+		return View{}, bizerr.New(bizerr.CodeBadRequest)
+	}
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		ev, err := lockEvent(ctx, tx, orgID, id)
+		if err != nil {
+			return err
+		}
+		var count int64
+		if err := tx.Model(&Attendee{}).Where("event_id = ?", id).Count(&count).Error; err != nil {
+			return fmt.Errorf("event: count attendees: %w", err)
+		}
+		if int64(maxAttendees) < count {
+			return bizerr.New(bizerr.CodeConflict)
+		}
+		return tx.Model(&ev).Updates(map[string]any{"max_attendees": maxAttendees, "updated_at": s.now().UTC()}).Error
+	})
+	if err != nil {
+		return View{}, asBizErr(err)
+	}
+	return s.Get(ctx, orgID, id)
+}

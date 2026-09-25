@@ -1564,3 +1564,77 @@ export type GetEventQrCodeResponses = {
 };
 
 export type GetEventQrCodeResponse = GetEventQrCodeResponses[keyof GetEventQrCodeResponses];
+
+export type ListOrgEventsData = {
+    body?: never;
+    path: {
+        orgId: string;
+    };
+    query?: {
+        offset?: number;
+        limit?: number;
+    };
+    url: '/api/platform/orgs/{orgId}/events';
+};
+
+export type ListOrgEventsErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ListOrgEventsError = ListOrgEventsErrors[keyof ListOrgEventsErrors];
+
+export type ListOrgEventsResponses = {
+    /**
+     * One page of events
+     */
+    200: EventPage;
+};
+
+export type ListOrgEventsResponse = ListOrgEventsResponses[keyof ListOrgEventsResponses];
+
+export type SetEventMaxAttendeesData = {
+    body: SetMaxAttendeesRequest;
+    path: {
+        orgId: string;
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/platform/orgs/{orgId}/events/{eventId}';
+};
+
+export type SetEventMaxAttendeesErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type SetEventMaxAttendeesError = SetEventMaxAttendeesErrors[keyof SetEventMaxAttendeesErrors];
+
+export type SetEventMaxAttendeesResponses = {
+    /**
+     * Updated event
+     */
+    200: Event;
+};
+
+export type SetEventMaxAttendeesResponse = SetEventMaxAttendeesResponses[keyof SetEventMaxAttendeesResponses];

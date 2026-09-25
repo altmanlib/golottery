@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -561,4 +561,34 @@ export const getEventQrCode = <ThrowOnError extends boolean = false>(options: Op
         }],
     url: '/api/organization/events/{eventId}/entry/qrcode',
     ...options
+});
+
+/**
+ * Events of an organization, newest first
+ */
+export const listOrgEvents = <ThrowOnError extends boolean = false>(options: Options<ListOrgEventsData, ThrowOnError>): RequestResult<ListOrgEventsResponses, ListOrgEventsErrors, ThrowOnError> => (options.client ?? client).get<ListOrgEventsResponses, ListOrgEventsErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/events',
+    ...options
+});
+
+/**
+ * Raise or lower one event's attendee limit; never below its roster
+ */
+export const setEventMaxAttendees = <ThrowOnError extends boolean = false>(options: Options<SetEventMaxAttendeesData, ThrowOnError>): RequestResult<SetEventMaxAttendeesResponses, SetEventMaxAttendeesErrors, ThrowOnError> => (options.client ?? client).patch<SetEventMaxAttendeesResponses, SetEventMaxAttendeesErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/events/{eventId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

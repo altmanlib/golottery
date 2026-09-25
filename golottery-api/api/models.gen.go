@@ -499,6 +499,12 @@ type ListOrgsParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListOrgEventsParams defines parameters for ListOrgEvents.
+type ListOrgEventsParams struct {
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody = CreateEventRequest
 
@@ -534,6 +540,9 @@ type CreateOrgJSONRequestBody = CreateOrgRequest
 
 // AdjustOrgCreditsJSONRequestBody defines body for AdjustOrgCredits for application/json ContentType.
 type AdjustOrgCreditsJSONRequestBody = AdjustCreditsRequest
+
+// SetEventMaxAttendeesJSONRequestBody defines body for SetEventMaxAttendees for application/json ContentType.
+type SetEventMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest
 
 // SetOrgMaxAttendeesJSONRequestBody defines body for SetOrgMaxAttendees for application/json ContentType.
 type SetOrgMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest
