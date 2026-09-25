@@ -28,6 +28,7 @@ const (
 	CodeRosterFull           Code = "E_ROSTER_FULL"
 	CodeImportFile           Code = "E_IMPORT_FILE"
 	CodeImportInvalid        Code = "E_IMPORT_INVALID"
+	CodeWechatNotConfigured  Code = "E_WECHAT_NOT_CONFIGURED"
 	CodeInternal             Code = "E_INTERNAL"
 	CodeStoreUnavailable     Code = "E_STORE_UNAVAILABLE"
 )
@@ -49,6 +50,7 @@ var messages = map[Code]string{
 	CodeRosterFull:           "名单不能超过人数上限 %d 人",
 	CodeImportFile:           "无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx",
 	CodeImportInvalid:        "有 %d 行需要修正，整份文件未导入",
+	CodeWechatNotConfigured:  "微信小程序尚未配置，暂时无法生成小程序码",
 	CodeInternal:             "系统出错了，请稍后重试",
 	CodeStoreUnavailable:     "系统暂时不可用，请稍后重试",
 }
@@ -68,7 +70,7 @@ func StatusOf(code Code) int {
 		return http.StatusTooManyRequests
 	case CodeInternal:
 		return http.StatusInternalServerError
-	case CodeStoreUnavailable:
+	case CodeStoreUnavailable, CodeWechatNotConfigured:
 		return http.StatusServiceUnavailable
 	default:
 		return http.StatusBadRequest

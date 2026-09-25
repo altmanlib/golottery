@@ -21,6 +21,10 @@ type Config struct {
 	TrustedProxies       []string
 	PlatformUser         string
 	PlatformPasswordHash string
+	WechatAppID          string
+	WechatAppSecret      string
+	WechatEnvVersion     string
+	WechatAPIBase        string
 	ConsoleSessionTTL    time.Duration
 	HostSessionTTL       time.Duration
 	PlatformSessionTTL   time.Duration

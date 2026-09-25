@@ -16,6 +16,7 @@ import (
 	"golottery/api/internal/redisx"
 	"golottery/api/internal/settings"
 	"golottery/api/internal/store"
+	"golottery/api/internal/wechat"
 )
 
 func main() {
@@ -108,6 +109,15 @@ func runServer() error {
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 		Events:   event.NewService(db.Gorm),
+		Wechat: wechat.New(wechat.Config{
+			AppID:      cfg.WechatAppID,
+			AppSecret:  cfg.WechatAppSecret,
+			BaseURL:    cfg.WechatAPIBase,
+			EnvVersion: cfg.WechatEnvVersion,
+			Redis:      rdb,
+			Logger:     logger,
+		}),
+		Logger: logger,
 	}); err != nil {
 		_ = closeAll()
 		return err

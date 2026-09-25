@@ -1525,3 +1525,42 @@ export type ExportAttendeesResponses = {
 };
 
 export type ExportAttendeesResponse = ExportAttendeesResponses[keyof ExportAttendeesResponses];
+
+export type GetEventQrCodeData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/entry/qrcode';
+};
+
+export type GetEventQrCodeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    500: Error;
+    /**
+     * Business error
+     */
+    503: Error;
+};
+
+export type GetEventQrCodeError = GetEventQrCodeErrors[keyof GetEventQrCodeErrors];
+
+export type GetEventQrCodeResponses = {
+    /**
+     * PNG image
+     */
+    200: Blob | File;
+};
+
+export type GetEventQrCodeResponse = GetEventQrCodeResponses[keyof GetEventQrCodeResponses];

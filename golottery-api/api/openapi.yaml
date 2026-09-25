@@ -836,6 +836,35 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/entry/qrcode:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: getEventQRCode
+      summary: Mini program code that opens the event, as PNG
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: PNG image
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     EventId:

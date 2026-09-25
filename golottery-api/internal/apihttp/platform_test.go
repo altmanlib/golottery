@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,7 +21,10 @@ import (
 	"golottery/api/internal/httpapi"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/redisx"
 	"golottery/api/internal/store"
+	"golottery/api/internal/wechat"
+	"golottery/api/internal/wechat/wechattest"
 )
 
 const (
@@ -31,6 +36,26 @@ type platformEnv struct {
 	engine *echo.Echo
 	db     *gorm.DB
 	tokens *auth.TokenIssuer
+	wechat *wechattest.Server
+	logs   *syncBuffer
+}
+
+// syncBuffer collects log output from concurrent handlers.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
 
 func newPlatformEnv(t *testing.T) platformEnv {
@@ -46,8 +71,13 @@ func newPlatformEnv(t *testing.T) platformEnv {
 	}
 	tokens := auth.NewTokenIssuer(db.Gorm, time.Hour, time.Hour, time.Hour)
 	limiter := auth.NewLoginLimiter(db.Gorm, 3, 15*time.Minute)
+	fake := wechattest.New()
+	t.Cleanup(fake.Close)
+	logs := &syncBuffer{}
 	engine := httpapi.NewRouter(httpapi.Deps{})
 	mustRegister(t, engine, Deps{
+		Wechat:   wechat.New(wechat.Config{AppID: "wx123", AppSecret: "secret", BaseURL: fake.URL, Redis: redisx.OpenTest(t)}),
+		Logger:   slog.New(slog.NewTextHandler(logs, nil)),
 		DB:       db.Gorm,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
@@ -55,7 +85,7 @@ func newPlatformEnv(t *testing.T) platformEnv {
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 		Events:   event.NewService(db.Gorm),
 	})
-	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens}
+	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens, wechat: fake, logs: logs}
 }
 
 func (e platformEnv) do(t *testing.T, method, path, token string, body any) *httptest.ResponseRecorder {

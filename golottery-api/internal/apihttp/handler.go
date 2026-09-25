@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 	"golottery/api/internal/redisx"
+	"golottery/api/internal/wechat"
 )
 
 // Deps are the collaborators behind the generated routes.
@@ -32,6 +34,8 @@ type Deps struct {
 	Orgs     *org.Service
 	Accounts *org.Accounts
 	Events   *event.Service
+	Wechat   *wechat.Client
+	Logger   *slog.Logger
 }
 
 // Server implements the generated strict interface.
@@ -42,6 +46,7 @@ type Server struct {
 	orgs     *org.Service
 	accounts *org.Accounts
 	events   *event.Service
+	wechat   *wechat.Client
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -53,28 +58,41 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if err != nil {
 		return err
 	}
-	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events}
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 		authenticate(deps.Tokens, secured, map[string]principalResolver{
 			auth.TokenTypeConsole: server.resolveAdmin,
 		}),
-		recoverBizErr,
+		recoverBizErr(logger),
 	})
 	api.RegisterHandlers(engine, handler)
 	return nil
 }
 
-func recoverBizErr(next api.StrictHandlerFunc, _ string) api.StrictHandlerFunc {
-	return func(ctx echo.Context, request any) (any, error) {
-		response, err := next(ctx, request)
-		if err == nil {
-			return response, nil
-		}
-		if be, ok := bizerr.As(err); ok {
+// recoverBizErr renders business errors as JSON and logs the cause of every 5xx,
+// which the response body never shows.
+func recoverBizErr(logger *slog.Logger) api.StrictMiddlewareFunc {
+	return func(next api.StrictHandlerFunc, operationID string) api.StrictHandlerFunc {
+		return func(ctx echo.Context, request any) (any, error) {
+			response, err := next(ctx, request)
+			if err == nil {
+				return response, nil
+			}
+			be, ok := bizerr.As(err)
+			if !ok {
+				logger.Error("request failed", "operation", operationID, "error", err)
+				return nil, err
+			}
+			if bizerr.StatusOf(be.Code) >= http.StatusInternalServerError {
+				logger.Error("request failed", "operation", operationID, "code", be.Code, "error", err)
+			}
 			return nil, writeBizErr(ctx, be)
 		}
-		return nil, err
 	}
 }
 

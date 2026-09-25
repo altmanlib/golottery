@@ -32,6 +32,7 @@ type Group string
 const (
 	GroupServer Group = "server"
 	GroupAuth   Group = "auth"
+	GroupWechat Group = "wechat"
 )
 
 // Spec describes one configuration key.
@@ -95,6 +96,29 @@ var Registry = []Spec{
 		Key: "PLATFORM_PASSWORD_HASH", Kind: KindString, Group: GroupAuth,
 		Scope: ScopeInfra, Secret: true,
 		Set: func(c *Config, v string) error { c.PlatformPasswordHash = v; return nil },
+	},
+	{
+		Key: "WECHAT_APP_ID", Kind: KindString, Group: GroupWechat, Scope: ScopeInfra,
+		Set: func(c *Config, v string) error { c.WechatAppID = v; return nil },
+	},
+	{
+		Key: "WECHAT_APP_SECRET", Kind: KindString, Group: GroupWechat, Scope: ScopeInfra, Secret: true,
+		Set: func(c *Config, v string) error { c.WechatAppSecret = v; return nil },
+	},
+	{
+		Key: "WECHAT_ENV_VERSION", Kind: KindString, Group: GroupWechat, Scope: ScopeInfra, Default: "release",
+		Set: func(c *Config, v string) error {
+			switch v {
+			case "release", "trial", "develop":
+				c.WechatEnvVersion = v
+				return nil
+			}
+			return fmt.Errorf("invalid WECHAT_ENV_VERSION: %q (release, trial or develop)", v)
+		},
+	},
+	{
+		Key: "WECHAT_API_BASE", Kind: KindString, Group: GroupWechat, Scope: ScopeInfra, Default: "https://api.weixin.qq.com",
+		Set: func(c *Config, v string) error { c.WechatAPIBase = strings.TrimRight(v, "/"); return nil },
 	},
 	{
 		Key: "CONSOLE_SESSION_TTL", Kind: KindString, Group: GroupAuth,
