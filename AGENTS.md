@@ -54,6 +54,8 @@ git push -u origin agent/develop
 
 squash 之后 `main` 上的提交号才确定，[ROADMAP](docs/ROADMAP.md) 的提交号用一个单独的 `docs:` 提交回填。
 
+`main` 合回 `agent/develop` 时，git 不认为 squash 提交与分支上的提交同源，回填提交号的行会冲突。此时两边内容本应一致，冲突处一律以 `main` 为准（`git checkout --theirs <文件>`），合并后 `git diff main` 应为空。
+
 ## 3. 完成定义
 
 提交合并前，以下检查必须全绿；CI（`.github/workflows/ci.yml`）执行同样的检查。
