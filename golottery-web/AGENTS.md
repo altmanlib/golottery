@@ -9,11 +9,14 @@ golottery 前端：控制台、组织端与大屏 SPA（Vite + React 19 + Mantin
 ```bash
 bun run dev        # http://localhost:3000；代理 /api /healthz /readyz /openapi.json /openapi.yaml → :5568
 bun run format
+bun run check      # biome ci，只检查不改写；CI 用它
 bun run test:run
 bun run typecheck
 bun run build
-bun run gen:api    # 需 golottery-api 已启动并提供 /openapi.json
+bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 ```
+
+完成需求前必须 `bun run format && bun run test:run && bun run typecheck && bun run build` 全绿；改动契约后 `bun run gen:api` 并提交 `src/api-gen/`。需要 Bun ≥ 1.4（`bun.lock` 为新格式）
 
 ## 约定
 

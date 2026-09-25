@@ -1,20 +1,20 @@
-import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
-import '#/api';
-import { getHealthz } from '#/api-gen/sdk.gen';
-import type { Healthz } from '#/api-gen/types.gen';
+import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { useQuery } from '@tanstack/react-query'
+import '#/api'
+import { getHealthz } from '#/api-gen/sdk.gen'
+import type { Healthz } from '#/api-gen/types.gen'
 
 export function ConsoleHomeView() {
   const health = useQuery({
     queryKey: ['healthz'],
     queryFn: async () => {
-      const { data, error } = await getHealthz();
+      const { data, error } = await getHealthz()
       if (error) {
-        throw error;
+        throw error
       }
-      return data as Healthz;
+      return data as Healthz
     },
-  });
+  })
 
   return (
     <Stack gap="lg" maw={720}>
@@ -36,5 +36,5 @@ export function ConsoleHomeView() {
         </Text>
       </Card>
     </Stack>
-  );
+  )
 }

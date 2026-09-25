@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, agent/develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: golottery-api
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: golottery
+        ports:
+          - 15436:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: golottery-api/go.mod
+          cache-dependency-path: golottery-api/go.sum
+      - name: Create test database
+        run: PGPASSWORD=secret psql -h 127.0.0.1 -p 15436 -U postgres -c 'CREATE DATABASE golottery_test'
+      - name: Install golangci-lint
+        # 用当前 Go 版本编译，避免预编译二进制的 Go 版本低于 go.mod
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+      - name: Format
+        run: |
+          make fmt
+          git diff --exit-code
+      - run: make lint
+      - run: make check-generate
+      - run: make test
+      - run: make smoke
+
+  api-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image
+        run: docker build -t golottery-api:ci golottery-api
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: golottery-web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - name: SDK matches openapi.yaml
+        run: |
+          bun run gen:api
+          git diff --exit-code -- src/api-gen
+      - run: bun run test:run
+      - run: bun run typecheck
+      - run: bun run build
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun scripts/check-docs.ts

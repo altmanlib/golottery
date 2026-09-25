@@ -1,9 +1,9 @@
-import { AppShell, Group, Text } from '@mantine/core';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import styles from './AppLayout.module.css';
+import { AppShell, Group, Text } from '@mantine/core'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import styles from './AppLayout.module.css'
 
 export function AppLayout() {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <AppShell header={{ height: 52 }} padding="md" className={styles.root}>
@@ -27,5 +27,5 @@ export function AppLayout() {
         <Outlet />
       </AppShell.Main>
     </AppShell>
-  );
+  )
 }

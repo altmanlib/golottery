@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "gen:api": "openapi-ts && biome check --write src/",
     "format": "biome check --write src/",
+    "check": "biome ci src/",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"

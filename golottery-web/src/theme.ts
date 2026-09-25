@@ -1,6 +1,6 @@
-import { Button, type CSSVariablesResolver, createTheme, type MantineColorsTuple } from '@mantine/core';
+import { Button, type CSSVariablesResolver, createTheme, type MantineColorsTuple } from '@mantine/core'
 
-const brand: MantineColorsTuple = ['#E8EEEE', '#C5D4D3', '#9FB8B7', '#7A9C9A', '#55807E', '#3A6361', '#1E4544', '#0F2623', '#081614', '#040505'];
+const brand: MantineColorsTuple = ['#E8EEEE', '#C5D4D3', '#9FB8B7', '#7A9C9A', '#55807E', '#3A6361', '#1E4544', '#0F2623', '#081614', '#040505']
 
 export const theme = createTheme({
   fontFamily: 'Roboto, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif',
@@ -29,7 +29,7 @@ export const theme = createTheme({
     TextInput: { defaultProps: { radius: 'sm', size: 'sm' } },
     PasswordInput: { defaultProps: { radius: 'sm', size: 'sm' } },
   },
-});
+})
 
 export const cssVariablesResolver: CSSVariablesResolver = (t) => ({
   variables: {},
@@ -40,4 +40,4 @@ export const cssVariablesResolver: CSSVariablesResolver = (t) => ({
     '--mantine-color-default-border': t.other.border,
   },
   dark: {},
-});
+})
