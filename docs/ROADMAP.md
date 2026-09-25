@@ -34,19 +34,18 @@ updated: 2026-09-25
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-7 | api, web | 阶段 5 活动配置。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md)。已完成：Redis、活动与状态迁移、首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）。待做：运营调整活动人数上限、控制台前端。首发不上小程序，真机验证移到 P-25 |
 
 ## 4. 计划中
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
+| P-3 | api, web | 阶段 6 现场签到：后端按方案实现，客户端先用网页宾客端（`/m/:publicId`），见 [phases/phase-6-checkin.md §4.6](phases/phase-6-checkin.md#46-首发的网页宾客端) |
 | P-13 | ops | 微信与域名资质：平台小程序主体与类目、`wx.getLocation` 接口权限、隐私保护指引；业务域名 `golottery.ioclub.cn` 与素材域名 `golottery-oss.ioclub.cn` 的 ICP 备案与 HTTPS；微信后台配置 `request` / `downloadFile` 合法域名。阻塞阶段 5 小程序码、阶段 6 真机签到、阶段 9 上线 |
 
 ## 5. 之后
 
 | 编号 | 范围 | 内容 |
 | --- | --- | --- |
-| P-3 | api, web | 阶段 6 现场签到：后端按方案实现，客户端先用网页宾客端（`/m/:publicId`），见 [phases/phase-6-checkin.md §4.6](phases/phase-6-checkin.md#46-首发的网页宾客端) |
 | P-8 | api, web | 阶段 7 现场抽奖。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
 | P-20 | api, web, mp | 阶段 8 品牌装修。见 [phases/phase-8-branding.md](phases/phase-8-branding.md) |
 | P-4 | ops | 阶段 9 上线与现场兜底。见 [phases/phase-9-launch.md](phases/phase-9-launch.md) |
@@ -71,6 +70,7 @@ updated: 2026-09-25
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
+| P-7 | 待回填 | api, web | 阶段 5 活动配置：Redis、活动状态迁移与首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）、运营调整活动上限、组织控制台活动页。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md) |
 | P-6 | d5b5dcf | api, web | 阶段 4 组织管理员认证：`org_users`，运营创建管理员（一次性临时口令）、重置口令、停用启用；管理员登录 / 登出 / me / 改密，`console` 令牌每次请求校验账号与组织状态；组织控制台入口与按入口隔离的 `401` 处理。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
 | P-2 | 706787a | api, web | 阶段 3 组织与配额：`orgs` / `org_quotas` / `credit_ledger`，开通、停用启用、调整场次（并发安全）、人数上限，运营后台组织列表与详情。见 [phases/phase-3-org-quota.md](phases/phase-3-org-quota.md) |
 | P-5 | 928d946 | api, web | 阶段 2 运营认证：`platform_users` 与播种、登录限速、`/api/platform` 登录 / 登出 / me / 改密、按契约 `security` 校验令牌、运营登录页与按前缀分开的令牌。见 [phases/phase-2-platform-auth.md](phases/phase-2-platform-auth.md) |

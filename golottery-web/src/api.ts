@@ -58,12 +58,15 @@ const NETWORK_ERROR_MESSAGE = '无法连接服务器，请稍后重试'
 export class ApiError extends Error {
   code: string
   status: number
+  /** The parsed error body, for endpoints that add fields to `{code, message}`. */
+  body: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, body?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.body = body
   }
 }
 
@@ -106,7 +109,7 @@ export function setUnauthorizedHandler(handler: ((scope: TokenScope) => void) | 
 /** Builds an ApiError from a `{code, message}` body; other bodies keep the fallback text. */
 export function apiErrorFrom(status: number, body: unknown, fallback: string): ApiError {
   const { code, message } = (typeof body === 'object' && body !== null ? body : {}) as { code?: unknown; message?: unknown }
-  return new ApiError(status, typeof code === 'string' ? code : 'E_INTERNAL', typeof message === 'string' ? message : fallback)
+  return new ApiError(status, typeof code === 'string' ? code : 'E_INTERNAL', typeof message === 'string' ? message : fallback, body)
 }
 
 type SdkResult<T> = { data?: T; error?: unknown; response?: Response }

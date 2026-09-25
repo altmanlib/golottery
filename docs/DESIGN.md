@@ -355,7 +355,9 @@ Redis 约定：
 | `/platform/orgs` | 组织列表（页码写在 `?page=`）与开通弹窗 |
 | `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、管理员（创建、重置口令、停用 / 启用）、最近 20 条流水 |
 | `/organization/login` | 组织管理员登录；已有令牌时直接进入 `/organization` |
-| `/organization` | 组织控制台首页，显示本组织名称；无令牌时去 `/organization/login` |
+| `/organization` | 组织控制台外壳，页头显示本组织名称；无令牌时去 `/organization/login`；首页重定向到 `/organization/events` |
+| `/organization/events` | 活动列表（页码写在 `?page=`）、剩余场次与创建弹窗 |
+| `/organization/events/:eventId` | 活动详情：状态操作（就绪前提示场次消耗，余额为 0 时禁用）、签到设置（时间按北京时间输入）、签到入口（网页地址与二维码、小程序码下载）、奖项、名单（导入逐行报错、导出） |
 | `/host` | 大屏占位 |
 
 - 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`

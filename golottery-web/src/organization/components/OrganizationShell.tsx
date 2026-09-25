@@ -1,6 +1,6 @@
-import { AppShell, Box, Button, Group, Text } from '@mantine/core'
+import { Anchor, AppShell, Box, Button, Group, Text } from '@mantine/core'
 import { IconLogout } from '@tabler/icons-react'
-import { Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { getToken } from '#/api'
 import { useOrganizationLogout, useOrganizationMe } from '#/organization/hooks/useOrganizationSession'
 
@@ -17,7 +17,12 @@ export function OrganizationShell() {
     <AppShell header={{ height: 48 }}>
       <AppShell.Header>
         <Group h="100%" px={24} justify="space-between">
-          <Text fw={700}>{me.data?.org_name ?? 'golottery 控制台'}</Text>
+          <Group gap={24}>
+            <Text fw={700}>{me.data?.org_name ?? 'golottery 控制台'}</Text>
+            <Anchor component={Link} to="/organization/events" size="sm" underline="never">
+              活动
+            </Anchor>
+          </Group>
           <Group gap={12}>
             {me.data && (
               <Text size="sm" c="dimmed">
