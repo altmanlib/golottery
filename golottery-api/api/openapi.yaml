@@ -919,6 +919,130 @@ paths:
           $ref: "#/components/responses/Error"
         "409":
           $ref: "#/components/responses/Error"
+  /api/guest/session:
+    post:
+      operationId: guestLogin
+      summary: Sign in a guest for one event
+      description: In wechat mode send the mini program login code; in web mode send a device id kept by the browser.
+      tags: [guest]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestLoginRequest"
+      responses:
+        "200":
+          description: Guest token; logging in again rotates it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /api/guest/bind:
+    post:
+      operationId: guestBind
+      summary: Bind the guest to a roster person
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestBindRequest"
+      responses:
+        "200":
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/guest/checkin:
+    get:
+      operationId: getGuestStatus
+      summary: Binding, check-in and help request status, with the current check-in mode
+      tags: [guest]
+      security:
+        - guestBearer: []
+      responses:
+        "200":
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: guestCheckin
+      summary: Check in; geo mode needs coordinates, direct mode ignores them
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestCheckinRequest"
+      responses:
+        "200":
+          description: Checked in, now or earlier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/guest/manual-requests:
+    post:
+      operationId: submitManualRequest
+      summary: Ask on-site staff for help
+      tags: [guest]
+      security:
+        - guestBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualRequestInput"
+      responses:
+        "201":
+          description: Request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStatus"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     EventId:
@@ -980,6 +1104,10 @@ components:
       type: http
       scheme: bearer
       description: Organization admin token from organizationLogin
+    guestBearer:
+      type: http
+      scheme: bearer
+      description: Guest token from guestLogin, valid for one event
   responses:
     Error:
       description: Business error
@@ -1490,3 +1618,116 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImportRowError"
+    GuestLoginRequest:
+      type: object
+      required: [public_id]
+      properties:
+        public_id:
+          type: string
+        code:
+          type: string
+          description: Mini program login code (wechat mode)
+        device_id:
+          type: string
+          description: Random id kept by the browser, 16-60 of [A-Za-z0-9_-] (web mode)
+    GuestBindRequest:
+      type: object
+      required: [name, phone_last4]
+      properties:
+        name:
+          type: string
+        phone_last4:
+          type: string
+    CoordType:
+      type: string
+      enum: [gcj02, wgs84]
+      description: Browsers report wgs84; the mini program reports gcj02
+    GuestCheckinRequest:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        accuracy:
+          type: number
+          format: double
+          description: Horizontal accuracy in meters
+        coord_type:
+          $ref: "#/components/schemas/CoordType"
+    ManualRequestInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Required before binding
+        phone_last4:
+          type: string
+          description: Required before binding
+        reason:
+          type: string
+          maxLength: 200
+    CheckinMethod:
+      type: string
+      enum: [geo, direct, manual, proxy]
+    GuestEvent:
+      type: object
+      required: [name, status, checkin_mode]
+      properties:
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/EventStatus"
+        checkin_mode:
+          $ref: "#/components/schemas/CheckinMode"
+        checkin_start:
+          type: string
+          format: date-time
+          nullable: true
+        checkin_end:
+          type: string
+          format: date-time
+          nullable: true
+    GuestAttendee:
+      type: object
+      required: [name, dept, checked_in]
+      properties:
+        name:
+          type: string
+        dept:
+          type: string
+        checked_in:
+          type: boolean
+        checkin_at:
+          type: string
+          format: date-time
+          nullable: true
+        checkin_method:
+          $ref: "#/components/schemas/CheckinMethod"
+    GuestRequest:
+      type: object
+      required: [status, created_at]
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        created_at:
+          type: string
+          format: date-time
+    StaffRole:
+      type: string
+      enum: [staff, admin]
+    GuestStatus:
+      type: object
+      required: [event]
+      properties:
+        event:
+          $ref: "#/components/schemas/GuestEvent"
+        attendee:
+          $ref: "#/components/schemas/GuestAttendee"
+        request:
+          $ref: "#/components/schemas/GuestRequest"
+        staff_role:
+          $ref: "#/components/schemas/StaffRole"

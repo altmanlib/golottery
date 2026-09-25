@@ -302,6 +302,82 @@ export type ImportError = {
     rows: Array<ImportRowError>;
 };
 
+export type GuestLoginRequest = {
+    public_id: string;
+    /**
+     * Mini program login code (wechat mode)
+     */
+    code?: string;
+    /**
+     * Random id kept by the browser, 16-60 of [A-Za-z0-9_-] (web mode)
+     */
+    device_id?: string;
+};
+
+export type GuestBindRequest = {
+    name: string;
+    phone_last4: string;
+};
+
+/**
+ * Browsers report wgs84; the mini program reports gcj02
+ */
+export type CoordType = 'gcj02' | 'wgs84';
+
+export type GuestCheckinRequest = {
+    lat?: number;
+    lng?: number;
+    /**
+     * Horizontal accuracy in meters
+     */
+    accuracy?: number;
+    coord_type?: CoordType;
+};
+
+export type ManualRequestInput = {
+    /**
+     * Required before binding
+     */
+    name?: string;
+    /**
+     * Required before binding
+     */
+    phone_last4?: string;
+    reason?: string;
+};
+
+export type CheckinMethod = 'geo' | 'direct' | 'manual' | 'proxy';
+
+export type GuestEvent = {
+    name: string;
+    status: EventStatus;
+    checkin_mode: CheckinMode;
+    checkin_start?: string | null;
+    checkin_end?: string | null;
+};
+
+export type GuestAttendee = {
+    name: string;
+    dept: string;
+    checked_in: boolean;
+    checkin_at?: string | null;
+    checkin_method?: CheckinMethod;
+};
+
+export type GuestRequest = {
+    status: 'pending' | 'approved' | 'rejected';
+    created_at: string;
+};
+
+export type StaffRole = 'staff' | 'admin';
+
+export type GuestStatus = {
+    event: GuestEvent;
+    attendee?: GuestAttendee;
+    request?: GuestRequest;
+    staff_role?: StaffRole;
+};
+
 export type EventId = string;
 
 export type PrizeId = string;
@@ -1638,3 +1714,172 @@ export type SetEventMaxAttendeesResponses = {
 };
 
 export type SetEventMaxAttendeesResponse = SetEventMaxAttendeesResponses[keyof SetEventMaxAttendeesResponses];
+
+export type GuestLoginData = {
+    body: GuestLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/session';
+};
+
+export type GuestLoginErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    503: Error;
+};
+
+export type GuestLoginError = GuestLoginErrors[keyof GuestLoginErrors];
+
+export type GuestLoginResponses = {
+    /**
+     * Guest token; logging in again rotates it
+     */
+    200: SessionToken;
+};
+
+export type GuestLoginResponse = GuestLoginResponses[keyof GuestLoginResponses];
+
+export type GuestBindData = {
+    body: GuestBindRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/bind';
+};
+
+export type GuestBindErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+    /**
+     * Business error
+     */
+    429: Error;
+};
+
+export type GuestBindError = GuestBindErrors[keyof GuestBindErrors];
+
+export type GuestBindResponses = {
+    /**
+     * Current status
+     */
+    200: GuestStatus;
+};
+
+export type GuestBindResponse = GuestBindResponses[keyof GuestBindResponses];
+
+export type GetGuestStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/guest/checkin';
+};
+
+export type GetGuestStatusErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type GetGuestStatusError = GetGuestStatusErrors[keyof GetGuestStatusErrors];
+
+export type GetGuestStatusResponses = {
+    /**
+     * Current status
+     */
+    200: GuestStatus;
+};
+
+export type GetGuestStatusResponse = GetGuestStatusResponses[keyof GetGuestStatusResponses];
+
+export type GuestCheckinData = {
+    body: GuestCheckinRequest;
+    path?: never;
+    query?: never;
+    url: '/api/guest/checkin';
+};
+
+export type GuestCheckinErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+    /**
+     * Business error
+     */
+    429: Error;
+};
+
+export type GuestCheckinError = GuestCheckinErrors[keyof GuestCheckinErrors];
+
+export type GuestCheckinResponses = {
+    /**
+     * Checked in, now or earlier
+     */
+    200: GuestStatus;
+};
+
+export type GuestCheckinResponse = GuestCheckinResponses[keyof GuestCheckinResponses];
+
+export type SubmitManualRequestData = {
+    body: ManualRequestInput;
+    path?: never;
+    query?: never;
+    url: '/api/guest/manual-requests';
+};
+
+export type SubmitManualRequestErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type SubmitManualRequestError = SubmitManualRequestErrors[keyof SubmitManualRequestErrors];
+
+export type SubmitManualRequestResponses = {
+    /**
+     * Request submitted
+     */
+    201: GuestStatus;
+};
+
+export type SubmitManualRequestResponse = SubmitManualRequestResponses[keyof SubmitManualRequestResponses];

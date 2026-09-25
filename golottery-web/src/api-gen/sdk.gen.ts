@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetGuestStatusData, GetGuestStatusErrors, GetGuestStatusResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, GuestBindData, GuestBindErrors, GuestBindResponses, GuestCheckinData, GuestCheckinErrors, GuestCheckinResponses, GuestLoginData, GuestLoginErrors, GuestLoginResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, SubmitManualRequestData, SubmitManualRequestErrors, SubmitManualRequestResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -586,6 +586,84 @@ export const setEventMaxAttendees = <ThrowOnError extends boolean = false>(optio
             type: 'http'
         }],
     url: '/api/platform/orgs/{orgId}/events/{eventId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sign in a guest for one event
+ *
+ * In wechat mode send the mini program login code; in web mode send a device id kept by the browser.
+ */
+export const guestLogin = <ThrowOnError extends boolean = false>(options: Options<GuestLoginData, ThrowOnError>): RequestResult<GuestLoginResponses, GuestLoginErrors, ThrowOnError> => (options.client ?? client).post<GuestLoginResponses, GuestLoginErrors, ThrowOnError>({
+    url: '/api/guest/session',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Bind the guest to a roster person
+ */
+export const guestBind = <ThrowOnError extends boolean = false>(options: Options<GuestBindData, ThrowOnError>): RequestResult<GuestBindResponses, GuestBindErrors, ThrowOnError> => (options.client ?? client).post<GuestBindResponses, GuestBindErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/bind',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Binding, check-in and help request status, with the current check-in mode
+ */
+export const getGuestStatus = <ThrowOnError extends boolean = false>(options?: Options<GetGuestStatusData, ThrowOnError>): RequestResult<GetGuestStatusResponses, GetGuestStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetGuestStatusResponses, GetGuestStatusErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/checkin',
+    ...options
+});
+
+/**
+ * Check in; geo mode needs coordinates, direct mode ignores them
+ */
+export const guestCheckin = <ThrowOnError extends boolean = false>(options: Options<GuestCheckinData, ThrowOnError>): RequestResult<GuestCheckinResponses, GuestCheckinErrors, ThrowOnError> => (options.client ?? client).post<GuestCheckinResponses, GuestCheckinErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/checkin',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ask on-site staff for help
+ */
+export const submitManualRequest = <ThrowOnError extends boolean = false>(options: Options<SubmitManualRequestData, ThrowOnError>): RequestResult<SubmitManualRequestResponses, SubmitManualRequestErrors, ThrowOnError> => (options.client ?? client).post<SubmitManualRequestResponses, SubmitManualRequestErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/manual-requests',
     ...options,
     headers: {
         'Content-Type': 'application/json',

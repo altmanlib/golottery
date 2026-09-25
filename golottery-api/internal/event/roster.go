@@ -18,8 +18,10 @@ const (
 	maxDeptLen = 100
 	maxGiftLen = 200
 
-	// AttendeePending is the only attendee status before check-in exists (phase 6).
+	// AttendeePending has not checked in yet.
 	AttendeePending = "pending"
+	// AttendeeCheckedIn is in the draw pool.
+	AttendeeCheckedIn = "checked_in"
 )
 
 // Attendee is one person on an event roster. Only the last four phone digits are kept.
@@ -32,6 +34,11 @@ type Attendee struct {
 	PhoneLast4 string    `gorm:"column:phone_last4;type:char(4);not null"`
 	Status     string    `gorm:"size:16;not null"`
 	CreatedAt  time.Time `gorm:"not null"`
+	// Set by check-in (phase 6): the bound guest and how the person checked in.
+	OpenID        *string `gorm:"column:openid;size:64"`
+	CheckinAt     *time.Time
+	CheckinMethod *string `gorm:"size:16"`
+	CheckinBy     *string `gorm:"size:64"`
 }
 
 // TableName returns the attendees table name.

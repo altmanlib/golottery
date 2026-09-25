@@ -18,9 +18,11 @@ import (
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/event"
+	"golottery/api/internal/guest"
 	"golottery/api/internal/httpapi"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/ratelimit"
 	"golottery/api/internal/redisx"
 	"golottery/api/internal/store"
 	"golottery/api/internal/wechat"
@@ -61,7 +63,7 @@ func (b *syncBuffer) String() string {
 func newPlatformEnv(t *testing.T) platformEnv {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &event.Prize{}, &event.Attendee{}, &org.LedgerEntry{}, &event.Event{}, &org.User{}, &org.Quota{}, &org.Org{})
+	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &guest.Attempt{}, &guest.ManualRequest{}, &guest.Staff{}, &guest.Session{}, &event.Prize{}, &event.Attendee{}, &org.LedgerEntry{}, &event.Event{}, &org.User{}, &org.Quota{}, &org.Org{})
 	hash, err := auth.HashPassword(testPassword)
 	if err != nil {
 		t.Fatal(err)
@@ -84,6 +86,7 @@ func newPlatformEnv(t *testing.T) platformEnv {
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 		Events:   event.NewService(db.Gorm),
+		Guests:   guest.NewService(db.Gorm, guest.Config{Mode: guest.ModeWeb, Limiter: ratelimit.New(redisx.OpenTest(t), nil)}),
 	})
 	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens, wechat: fake, logs: logs}
 }
@@ -285,15 +288,18 @@ func TestChangePlatformPassword(t *testing.T) {
 }
 
 func TestSecuredOperationsFollowContract(t *testing.T) {
-	secured, err := securedOperations()
+	secured, err := securedOperations(map[string]authenticator{schemePlatform: nil, schemeConsole: nil, schemeGuest: nil})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if _, err := securedOperations(map[string]authenticator{schemePlatform: nil}); err == nil {
+		t.Fatal("a contract scheme without an authenticator was accepted")
 	}
 	doc, err := api.GetSpec()
 	if err != nil {
 		t.Fatal(err)
 	}
-	public := map[string]bool{"PlatformLogin": true, "OrganizationLogin": true}
+	public := map[string]bool{"PlatformLogin": true, "OrganizationLogin": true, "GuestLogin": true}
 	checked := 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -302,9 +308,11 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 			switch {
 			case public[name]:
 			case strings.HasPrefix(path, "/api/platform/"):
-				want = auth.TokenTypePlatform
+				want = schemePlatform
 			case strings.HasPrefix(path, "/api/organization/"):
-				want = auth.TokenTypeConsole
+				want = schemeConsole
+			case strings.HasPrefix(path, "/api/guest/"):
+				want = schemeGuest
 			}
 			if secured[name] != want {
 				t.Errorf("%s %s requires %q, want %q", path, name, secured[name], want)
@@ -312,7 +320,7 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 			checked++
 		}
 	}
-	if checked < 30 {
+	if checked < 40 {
 		t.Fatalf("checked only %d operations", checked)
 	}
 }

@@ -161,6 +161,12 @@ func (s *TokenIssuer) issue(ctx context.Context, typ, principalID, name string, 
 	return IssuedToken{Plain: plain, ExpiresAt: row.ExpiresAt, Row: row}, nil
 }
 
+// NewPlainToken returns a random bearer token and its SHA-256, for token tables outside api_tokens.
+func NewPlainToken() (string, []byte, error) { return newPlainToken() }
+
+// HashToken returns the SHA-256 stored for a bearer token.
+func HashToken(plain string) []byte { return hashToken(plain) }
+
 func newPlainToken() (string, []byte, error) {
 	buf := make([]byte, tokenPlainBytes)
 	if _, err := rand.Read(buf); err != nil {

@@ -27,6 +27,21 @@ type ServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx echo.Context) error
+	// GuestBind Bind the guest to a roster person
+	// (POST /api/guest/bind)
+	GuestBind(ctx echo.Context) error
+	// GetGuestStatus Binding, check-in and help request status, with the current check-in mode
+	// (GET /api/guest/checkin)
+	GetGuestStatus(ctx echo.Context) error
+	// GuestCheckin Check in; geo mode needs coordinates, direct mode ignores them
+	// (POST /api/guest/checkin)
+	GuestCheckin(ctx echo.Context) error
+	// SubmitManualRequest Ask on-site staff for help
+	// (POST /api/guest/manual-requests)
+	SubmitManualRequest(ctx echo.Context) error
+	// GuestLogin Sign in a guest for one event
+	// (POST /api/guest/session)
+	GuestLogin(ctx echo.Context) error
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx echo.Context, params ListEventsParams) error
@@ -163,6 +178,51 @@ func (w *ServerInterfaceWrapper) GetApiInfo(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetApiInfo(ctx)
+	return err
+}
+
+// GuestBind converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestBind(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestBind(ctx)
+	return err
+}
+
+// GetGuestStatus converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGuestStatus(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetGuestStatus(ctx)
+	return err
+}
+
+// GuestCheckin converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestCheckin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestCheckin(ctx)
+	return err
+}
+
+// SubmitManualRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) SubmitManualRequest(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SubmitManualRequest(ctx)
+	return err
+}
+
+// GuestLogin converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestLogin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestLogin(ctx)
 	return err
 }
 
@@ -934,6 +994,11 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/api/organization/events/:eventId/entry/qrcode", wrapper.GetEventQRCode, options.OperationMiddlewares["getEventQRCode"]...)
 	router.GET(options.BaseURL+"/api/platform/orgs/:orgId/events", wrapper.ListOrgEvents, options.OperationMiddlewares["listOrgEvents"]...)
 	router.PATCH(options.BaseURL+"/api/platform/orgs/:orgId/events/:eventId", wrapper.SetEventMaxAttendees, options.OperationMiddlewares["setEventMaxAttendees"]...)
+	router.POST(options.BaseURL+"/api/guest/session", wrapper.GuestLogin, options.OperationMiddlewares["guestLogin"]...)
+	router.POST(options.BaseURL+"/api/guest/bind", wrapper.GuestBind, options.OperationMiddlewares["guestBind"]...)
+	router.GET(options.BaseURL+"/api/guest/checkin", wrapper.GetGuestStatus, options.OperationMiddlewares["getGuestStatus"]...)
+	router.POST(options.BaseURL+"/api/guest/checkin", wrapper.GuestCheckin, options.OperationMiddlewares["guestCheckin"]...)
+	router.POST(options.BaseURL+"/api/guest/manual-requests", wrapper.SubmitManualRequest, options.OperationMiddlewares["submitManualRequest"]...)
 
 }
 
@@ -956,6 +1021,339 @@ func (response GetApiInfo200JSONResponse) VisitGetApiInfoResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBindRequestObject struct {
+	Body *GuestBindJSONRequestBody
+}
+
+type GuestBindResponseObject interface {
+	VisitGuestBindResponse(w http.ResponseWriter) error
+}
+
+type GuestBind200JSONResponse GuestStatus
+
+func (response GuestBind200JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestBind400JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind401JSONResponse Error
+
+func (response GuestBind401JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind409JSONResponse Error
+
+func (response GuestBind409JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind429JSONResponse Error
+
+func (response GuestBind429JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetGuestStatusRequestObject struct {
+}
+
+type GetGuestStatusResponseObject interface {
+	VisitGetGuestStatusResponse(w http.ResponseWriter) error
+}
+
+type GetGuestStatus200JSONResponse GuestStatus
+
+func (response GetGuestStatus200JSONResponse) VisitGetGuestStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetGuestStatus401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetGuestStatus401JSONResponse) VisitGetGuestStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckinRequestObject struct {
+	Body *GuestCheckinJSONRequestBody
+}
+
+type GuestCheckinResponseObject interface {
+	VisitGuestCheckinResponse(w http.ResponseWriter) error
+}
+
+type GuestCheckin200JSONResponse GuestStatus
+
+func (response GuestCheckin200JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestCheckin400JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin401JSONResponse Error
+
+func (response GuestCheckin401JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin409JSONResponse Error
+
+func (response GuestCheckin409JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin429JSONResponse Error
+
+func (response GuestCheckin429JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequestRequestObject struct {
+	Body *SubmitManualRequestJSONRequestBody
+}
+
+type SubmitManualRequestResponseObject interface {
+	VisitSubmitManualRequestResponse(w http.ResponseWriter) error
+}
+
+type SubmitManualRequest201JSONResponse GuestStatus
+
+func (response SubmitManualRequest201JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest400JSONResponse struct{ ErrorJSONResponse }
+
+func (response SubmitManualRequest400JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest401JSONResponse Error
+
+func (response SubmitManualRequest401JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest409JSONResponse Error
+
+func (response SubmitManualRequest409JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLoginRequestObject struct {
+	Body *GuestLoginJSONRequestBody
+}
+
+type GuestLoginResponseObject interface {
+	VisitGuestLoginResponse(w http.ResponseWriter) error
+}
+
+type GuestLogin200JSONResponse SessionToken
+
+func (response GuestLogin200JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestLogin400JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin401JSONResponse Error
+
+func (response GuestLogin401JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin404JSONResponse Error
+
+func (response GuestLogin404JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin503JSONResponse Error
+
+func (response GuestLogin503JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3190,6 +3588,21 @@ type StrictServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx context.Context, request GetApiInfoRequestObject) (GetApiInfoResponseObject, error)
+	// GuestBind Bind the guest to a roster person
+	// (POST /api/guest/bind)
+	GuestBind(ctx context.Context, request GuestBindRequestObject) (GuestBindResponseObject, error)
+	// GetGuestStatus Binding, check-in and help request status, with the current check-in mode
+	// (GET /api/guest/checkin)
+	GetGuestStatus(ctx context.Context, request GetGuestStatusRequestObject) (GetGuestStatusResponseObject, error)
+	// GuestCheckin Check in; geo mode needs coordinates, direct mode ignores them
+	// (POST /api/guest/checkin)
+	GuestCheckin(ctx context.Context, request GuestCheckinRequestObject) (GuestCheckinResponseObject, error)
+	// SubmitManualRequest Ask on-site staff for help
+	// (POST /api/guest/manual-requests)
+	SubmitManualRequest(ctx context.Context, request SubmitManualRequestRequestObject) (SubmitManualRequestResponseObject, error)
+	// GuestLogin Sign in a guest for one event
+	// (POST /api/guest/session)
+	GuestLogin(ctx context.Context, request GuestLoginRequestObject) (GuestLoginResponseObject, error)
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx context.Context, request ListEventsRequestObject) (ListEventsResponseObject, error)
@@ -3344,6 +3757,185 @@ func (sh *strictHandler) GetApiInfo(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GetApiInfoResponseObject); ok {
 		return validResponse.VisitGetApiInfoResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestBind operation middleware
+func (sh *strictHandler) GuestBind(ctx echo.Context) error {
+	var request GuestBindRequestObject
+
+	var body GuestBindJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestBind(ctx.Request().Context(), request.(GuestBindRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestBind")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestBindResponseObject); ok {
+		return validResponse.VisitGuestBindResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetGuestStatus operation middleware
+func (sh *strictHandler) GetGuestStatus(ctx echo.Context) error {
+	var request GetGuestStatusRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetGuestStatus(ctx.Request().Context(), request.(GetGuestStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetGuestStatus")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetGuestStatusResponseObject); ok {
+		return validResponse.VisitGetGuestStatusResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestCheckin operation middleware
+func (sh *strictHandler) GuestCheckin(ctx echo.Context) error {
+	var request GuestCheckinRequestObject
+
+	var body GuestCheckinJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestCheckin(ctx.Request().Context(), request.(GuestCheckinRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestCheckin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestCheckinResponseObject); ok {
+		return validResponse.VisitGuestCheckinResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SubmitManualRequest operation middleware
+func (sh *strictHandler) SubmitManualRequest(ctx echo.Context) error {
+	var request SubmitManualRequestRequestObject
+
+	var body SubmitManualRequestJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitManualRequest(ctx.Request().Context(), request.(SubmitManualRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitManualRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SubmitManualRequestResponseObject); ok {
+		return validResponse.VisitSubmitManualRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestLogin operation middleware
+func (sh *strictHandler) GuestLogin(ctx echo.Context) error {
+	var request GuestLoginRequestObject
+
+	var body GuestLoginJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestLogin(ctx.Request().Context(), request.(GuestLoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestLogin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestLoginResponseObject); ok {
+		return validResponse.VisitGuestLoginResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -4610,81 +5202,94 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"36hC8p8GAA==",
+	"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",
+	"kPyXAQA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -10,9 +10,11 @@ import (
 	"golottery/api/internal/auth"
 	"golottery/api/internal/config"
 	"golottery/api/internal/event"
+	"golottery/api/internal/guest"
 	"golottery/api/internal/httpapi"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
+	"golottery/api/internal/ratelimit"
 	"golottery/api/internal/redisx"
 	"golottery/api/internal/settings"
 	"golottery/api/internal/store"
@@ -96,6 +98,15 @@ func runServer() error {
 	tokens := auth.NewTokenIssuer(db.Gorm, cfg.ConsoleSessionTTL, cfg.HostSessionTTL, cfg.PlatformSessionTTL)
 	limiter := auth.NewLoginLimiter(db.Gorm, cfg.LoginMaxFailures, cfg.LoginWindow)
 
+	wechatClient := wechat.New(wechat.Config{
+		AppID:      cfg.WechatAppID,
+		AppSecret:  cfg.WechatAppSecret,
+		BaseURL:    cfg.WechatAPIBase,
+		EnvVersion: cfg.WechatEnvVersion,
+		Redis:      rdb,
+		Logger:     logger,
+	})
+
 	router := httpapi.NewRouter(httpapi.Deps{
 		Logger:         logger,
 		TrustedProxies: cfg.TrustedProxies,
@@ -109,13 +120,12 @@ func runServer() error {
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 		Events:   event.NewService(db.Gorm),
-		Wechat: wechat.New(wechat.Config{
-			AppID:      cfg.WechatAppID,
-			AppSecret:  cfg.WechatAppSecret,
-			BaseURL:    cfg.WechatAPIBase,
-			EnvVersion: cfg.WechatEnvVersion,
-			Redis:      rdb,
-			Logger:     logger,
+		Wechat:   wechatClient,
+		Guests: guest.NewService(db.Gorm, guest.Config{
+			Mode:       cfg.GuestLoginMode,
+			SessionTTL: cfg.GuestSessionTTL,
+			Wechat:     wechatClient,
+			Limiter:    ratelimit.New(rdb, logger),
 		}),
 		Logger: logger,
 	}); err != nil {

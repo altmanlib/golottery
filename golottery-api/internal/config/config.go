@@ -25,6 +25,8 @@ type Config struct {
 	WechatAppSecret      string
 	WechatEnvVersion     string
 	WechatAPIBase        string
+	GuestLoginMode       string
+	GuestSessionTTL      time.Duration
 	ConsoleSessionTTL    time.Duration
 	HostSessionTTL       time.Duration
 	PlatformSessionTTL   time.Duration
