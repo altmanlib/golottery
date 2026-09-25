@@ -277,6 +277,26 @@ type HealthzDb string
 // HealthzRedis Redis status; informational, it does not change ok
 type HealthzRedis string
 
+// ImportError defines model for ImportError.
+type ImportError struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Rows    []ImportRowError `json:"rows"`
+}
+
+// ImportResult defines model for ImportResult.
+type ImportResult struct {
+	Imported int `json:"imported"`
+}
+
+// ImportRowError defines model for ImportRowError.
+type ImportRowError struct {
+	Reason string `json:"reason"`
+
+	// Row Spreadsheet row number; the header is row 1
+	Row int `json:"row"`
+}
+
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {
 	BalanceAfter int                 `json:"balance_after"`
@@ -468,6 +488,11 @@ type ListAttendeesParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ImportAttendeesMultipartBody defines parameters for ImportAttendees.
+type ImportAttendeesMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
+
 // ListOrgsParams defines parameters for ListOrgs.
 type ListOrgsParams struct {
 	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
@@ -482,6 +507,9 @@ type UpdateEventJSONRequestBody = UpdateEventRequest
 
 // CreateAttendeeJSONRequestBody defines body for CreateAttendee for application/json ContentType.
 type CreateAttendeeJSONRequestBody = AttendeeInput
+
+// ImportAttendeesMultipartRequestBody defines body for ImportAttendees for multipart/form-data ContentType.
+type ImportAttendeesMultipartRequestBody ImportAttendeesMultipartBody
 
 // UpdateAttendeeJSONRequestBody defines body for UpdateAttendee for application/json ContentType.
 type UpdateAttendeeJSONRequestBody = AttendeeUpdate

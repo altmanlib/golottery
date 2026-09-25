@@ -284,6 +284,24 @@ export type AttendeeUpdate = {
     phone?: string;
 };
 
+export type ImportResult = {
+    imported: number;
+};
+
+export type ImportRowError = {
+    /**
+     * Spreadsheet row number; the header is row 1
+     */
+    row: number;
+    reason: string;
+};
+
+export type ImportError = {
+    code: string;
+    message: string;
+    rows: Array<ImportRowError>;
+};
+
 export type EventId = string;
 
 export type PrizeId = string;
@@ -1435,3 +1453,75 @@ export type UpdateAttendeeResponses = {
 };
 
 export type UpdateAttendeeResponse = UpdateAttendeeResponses[keyof UpdateAttendeeResponses];
+
+export type ImportAttendeesData = {
+    body: {
+        file: Blob | File;
+    };
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/attendees/import';
+};
+
+export type ImportAttendeesErrors = {
+    /**
+     * The file or some rows are invalid; nothing was written
+     */
+    400: ImportError;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type ImportAttendeesError = ImportAttendeesErrors[keyof ImportAttendeesErrors];
+
+export type ImportAttendeesResponses = {
+    /**
+     * Rows appended
+     */
+    200: ImportResult;
+};
+
+export type ImportAttendeesResponse = ImportAttendeesResponses[keyof ImportAttendeesResponses];
+
+export type ExportAttendeesData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/exports/attendees';
+};
+
+export type ExportAttendeesErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ExportAttendeesError = ExportAttendeesErrors[keyof ExportAttendeesErrors];
+
+export type ExportAttendeesResponses = {
+    /**
+     * xlsx workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportAttendeesResponse = ExportAttendeesResponses[keyof ExportAttendeesResponses];

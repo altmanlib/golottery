@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
@@ -44,6 +45,9 @@ type ServerInterface interface {
 	// CreateAttendee Add one person
 	// (POST /api/organization/events/{eventId}/attendees)
 	CreateAttendee(ctx echo.Context, eventId EventId) error
+	// ImportAttendees Append roster rows from an xlsx file; any bad row rejects the whole file
+	// (POST /api/organization/events/{eventId}/attendees/import)
+	ImportAttendees(ctx echo.Context, eventId EventId) error
 	// DeleteAttendee Remove a person who has not bound, checked in or won
 	// (DELETE /api/organization/events/{eventId}/attendees/{attendeeId})
 	DeleteAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error
@@ -53,6 +57,9 @@ type ServerInterface interface {
 	// GetEventEntry Public code and mini program path
 	// (GET /api/organization/events/{eventId}/entry)
 	GetEventEntry(ctx echo.Context, eventId EventId) error
+	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/attendees)
+	ExportAttendees(ctx echo.Context, eventId EventId) error
 	// ListPrizes Prizes by sort_no
 	// (GET /api/organization/events/{eventId}/prizes)
 	ListPrizes(ctx echo.Context, eventId EventId) error
@@ -264,6 +271,22 @@ func (w *ServerInterfaceWrapper) CreateAttendee(ctx echo.Context) error {
 	return err
 }
 
+// ImportAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) ImportAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ImportAttendees(ctx, eventId)
+	return err
+}
+
 // DeleteAttendee converts echo context to params.
 func (w *ServerInterfaceWrapper) DeleteAttendee(ctx echo.Context) error {
 	var err error
@@ -325,6 +348,22 @@ func (w *ServerInterfaceWrapper) GetEventEntry(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetEventEntry(ctx, eventId)
+	return err
+}
+
+// ExportAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) ExportAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ExportAttendees(ctx, eventId)
 	return err
 }
 
@@ -809,6 +848,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/organization/events/:eventId/attendees", wrapper.CreateAttendee, options.OperationMiddlewares["createAttendee"]...)
 	router.DELETE(options.BaseURL+"/api/organization/events/:eventId/attendees/:attendeeId", wrapper.DeleteAttendee, options.OperationMiddlewares["deleteAttendee"]...)
 	router.PATCH(options.BaseURL+"/api/organization/events/:eventId/attendees/:attendeeId", wrapper.UpdateAttendee, options.OperationMiddlewares["updateAttendee"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/attendees/import", wrapper.ImportAttendees, options.OperationMiddlewares["importAttendees"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/exports/attendees", wrapper.ExportAttendees, options.OperationMiddlewares["exportAttendees"]...)
 
 }
 
@@ -1180,6 +1221,85 @@ func (response CreateAttendee409JSONResponse) VisitCreateAttendeeResponse(w http
 	return err
 }
 
+type ImportAttendeesRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *multipart.Reader
+}
+
+type ImportAttendeesResponseObject interface {
+	VisitImportAttendeesResponse(w http.ResponseWriter) error
+}
+
+type ImportAttendees200JSONResponse ImportResult
+
+func (response ImportAttendees200JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees400JSONResponse ImportError
+
+func (response ImportAttendees400JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ImportAttendees401JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees404JSONResponse Error
+
+func (response ImportAttendees404JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAttendees409JSONResponse Error
+
+func (response ImportAttendees409JSONResponse) VisitImportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeleteAttendeeRequestObject struct {
 	EventId    EventId    `json:"eventId"`
 	AttendeeId AttendeeId `json:"attendeeId"`
@@ -1358,6 +1478,70 @@ func (response GetEventEntry401JSONResponse) VisitGetEventEntryResponse(w http.R
 type GetEventEntry404JSONResponse Error
 
 func (response GetEventEntry404JSONResponse) VisitGetEventEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportAttendeesRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ExportAttendeesResponseObject interface {
+	VisitExportAttendeesResponse(w http.ResponseWriter) error
+}
+
+type ExportAttendees200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportAttendees200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	Headers       ExportAttendees200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportAttendees200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ExportAttendees401JSONResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportAttendees404JSONResponse Error
+
+func (response ExportAttendees404JSONResponse) VisitExportAttendeesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -2717,6 +2901,9 @@ type StrictServerInterface interface {
 	// CreateAttendee Add one person
 	// (POST /api/organization/events/{eventId}/attendees)
 	CreateAttendee(ctx context.Context, request CreateAttendeeRequestObject) (CreateAttendeeResponseObject, error)
+	// ImportAttendees Append roster rows from an xlsx file; any bad row rejects the whole file
+	// (POST /api/organization/events/{eventId}/attendees/import)
+	ImportAttendees(ctx context.Context, request ImportAttendeesRequestObject) (ImportAttendeesResponseObject, error)
 	// DeleteAttendee Remove a person who has not bound, checked in or won
 	// (DELETE /api/organization/events/{eventId}/attendees/{attendeeId})
 	DeleteAttendee(ctx context.Context, request DeleteAttendeeRequestObject) (DeleteAttendeeResponseObject, error)
@@ -2726,6 +2913,9 @@ type StrictServerInterface interface {
 	// GetEventEntry Public code and mini program path
 	// (GET /api/organization/events/{eventId}/entry)
 	GetEventEntry(ctx context.Context, request GetEventEntryRequestObject) (GetEventEntryResponseObject, error)
+	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/attendees)
+	ExportAttendees(ctx context.Context, request ExportAttendeesRequestObject) (ExportAttendeesResponseObject, error)
 	// ListPrizes Prizes by sort_no
 	// (GET /api/organization/events/{eventId}/prizes)
 	ListPrizes(ctx context.Context, request ListPrizesRequestObject) (ListPrizesResponseObject, error)
@@ -3041,6 +3231,37 @@ func (sh *strictHandler) CreateAttendee(ctx echo.Context, eventId EventId) error
 	return nil
 }
 
+// ImportAttendees operation middleware
+func (sh *strictHandler) ImportAttendees(ctx echo.Context, eventId EventId) error {
+	var request ImportAttendeesRequestObject
+
+	request.EventId = eventId
+
+	if reader, err := ctx.Request().MultipartReader(); err != nil {
+		return err
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportAttendees(ctx.Request().Context(), request.(ImportAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ImportAttendeesResponseObject); ok {
+		return validResponse.VisitImportAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // DeleteAttendee operation middleware
 func (sh *strictHandler) DeleteAttendee(ctx echo.Context, eventId EventId, attendeeId AttendeeId) error {
 	var request DeleteAttendeeRequestObject
@@ -3128,6 +3349,31 @@ func (sh *strictHandler) GetEventEntry(ctx echo.Context, eventId EventId) error 
 		return err
 	} else if validResponse, ok := response.(GetEventEntryResponseObject); ok {
 		return validResponse.VisitGetEventEntryResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ExportAttendees operation middleware
+func (sh *strictHandler) ExportAttendees(ctx echo.Context, eventId EventId) error {
+	var request ExportAttendeesRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportAttendees(ctx.Request().Context(), request.(ExportAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ExportAttendeesResponseObject); ok {
+		return validResponse.VisitExportAttendeesResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -3955,71 +4201,78 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"LF+8+PEnVQv5/wEA",
+	"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",
+	"PLE3dB2OxwfP/mZ/sj/ZPzh88eLb71Qv5I8DAA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

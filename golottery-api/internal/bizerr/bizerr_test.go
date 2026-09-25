@@ -6,7 +6,7 @@ import (
 )
 
 func TestAllCodesHaveMessages(t *testing.T) {
-	if len(All()) != 15 {
+	if len(All()) != 18 {
 		t.Fatalf("codes = %d", len(All()))
 	}
 	for _, code := range All() {

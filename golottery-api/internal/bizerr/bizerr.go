@@ -25,6 +25,9 @@ const (
 	CodeTooManyAttempts      Code = "E_TOO_MANY_ATTEMPTS"
 	CodeNoEventCredits       Code = "E_NO_EVENT_CREDITS"
 	CodeEventIncomplete      Code = "E_EVENT_INCOMPLETE"
+	CodeRosterFull           Code = "E_ROSTER_FULL"
+	CodeImportFile           Code = "E_IMPORT_FILE"
+	CodeImportInvalid        Code = "E_IMPORT_INVALID"
 	CodeInternal             Code = "E_INTERNAL"
 	CodeStoreUnavailable     Code = "E_STORE_UNAVAILABLE"
 )
@@ -43,6 +46,9 @@ var messages = map[Code]string{
 	CodeTooManyAttempts:      "尝试次数过多，请 %d 分钟后再试",
 	CodeNoEventCredits:       "剩余场次不足，请联系运营开通",
 	CodeEventIncomplete:      "就绪前请补全：%s",
+	CodeRosterFull:           "名单不能超过人数上限 %d 人",
+	CodeImportFile:           "无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx",
+	CodeImportInvalid:        "有 %d 行需要修正，整份文件未导入",
 	CodeInternal:             "系统出错了，请稍后重试",
 	CodeStoreUnavailable:     "系统暂时不可用，请稍后重试",
 }

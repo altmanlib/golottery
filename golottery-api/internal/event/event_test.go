@@ -319,7 +319,7 @@ func TestRosterRules(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = e.events.AddAttendee(ctx, orgID, ev.ID, AttendeeInput{Name: "赵六", Phone: "1111"})
-	expectCode(t, err, bizerr.CodeBadRequest)
+	expectCode(t, err, bizerr.CodeRosterFull)
 
 	name := "李雷"
 	phone := "1234"

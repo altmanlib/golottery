@@ -217,7 +217,7 @@ func checkRoom(ctx context.Context, tx *gorm.DB, ev Event, n int) error {
 		return fmt.Errorf("event: count attendees: %w", err)
 	}
 	if int(count)+n > ev.MaxAttendees {
-		return bizerr.New(bizerr.CodeBadRequest)
+		return bizerr.New(bizerr.CodeRosterFull, ev.MaxAttendees)
 	}
 	return nil
 }
