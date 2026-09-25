@@ -25,6 +25,18 @@ type ServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx echo.Context) error
+	// PlatformLogin Platform operator login
+	// (POST /api/platform/login)
+	PlatformLogin(ctx echo.Context) error
+	// PlatformLogout Revoke the current platform token
+	// (POST /api/platform/logout)
+	PlatformLogout(ctx echo.Context) error
+	// GetPlatformMe Current platform operator
+	// (GET /api/platform/me)
+	GetPlatformMe(ctx echo.Context) error
+	// ChangePlatformPassword Change the platform operator password
+	// (POST /api/platform/password)
+	ChangePlatformPassword(ctx echo.Context) error
 	// GetHealthz Liveness and database ping
 	// (GET /healthz)
 	GetHealthz(ctx echo.Context) error
@@ -47,6 +59,42 @@ func (w *ServerInterfaceWrapper) GetApiInfo(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetApiInfo(ctx)
+	return err
+}
+
+// PlatformLogin converts echo context to params.
+func (w *ServerInterfaceWrapper) PlatformLogin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.PlatformLogin(ctx)
+	return err
+}
+
+// PlatformLogout converts echo context to params.
+func (w *ServerInterfaceWrapper) PlatformLogout(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.PlatformLogout(ctx)
+	return err
+}
+
+// GetPlatformMe converts echo context to params.
+func (w *ServerInterfaceWrapper) GetPlatformMe(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetPlatformMe(ctx)
+	return err
+}
+
+// ChangePlatformPassword converts echo context to params.
+func (w *ServerInterfaceWrapper) ChangePlatformPassword(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ChangePlatformPassword(ctx)
 	return err
 }
 
@@ -128,8 +176,14 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/api", wrapper.GetApiInfo, options.OperationMiddlewares["getApiInfo"]...)
 	router.GET(options.BaseURL+"/openapi.yaml", wrapper.GetOpenAPIYaml, options.OperationMiddlewares["getOpenAPIYaml"]...)
 	router.GET(options.BaseURL+"/openapi.json", wrapper.GetOpenAPIJSON, options.OperationMiddlewares["getOpenAPIJSON"]...)
+	router.POST(options.BaseURL+"/api/platform/login", wrapper.PlatformLogin, options.OperationMiddlewares["platformLogin"]...)
+	router.POST(options.BaseURL+"/api/platform/logout", wrapper.PlatformLogout, options.OperationMiddlewares["platformLogout"]...)
+	router.GET(options.BaseURL+"/api/platform/me", wrapper.GetPlatformMe, options.OperationMiddlewares["getPlatformMe"]...)
+	router.POST(options.BaseURL+"/api/platform/password", wrapper.ChangePlatformPassword, options.OperationMiddlewares["changePlatformPassword"]...)
 
 }
+
+type ErrorJSONResponse Error
 
 type GetApiInfoRequestObject struct {
 }
@@ -148,6 +202,170 @@ func (response GetApiInfo200JSONResponse) VisitGetApiInfoResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlatformLoginRequestObject struct {
+	Body *PlatformLoginJSONRequestBody
+}
+
+type PlatformLoginResponseObject interface {
+	VisitPlatformLoginResponse(w http.ResponseWriter) error
+}
+
+type PlatformLogin200JSONResponse SessionToken
+
+func (response PlatformLogin200JSONResponse) VisitPlatformLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlatformLogin401JSONResponse struct{ ErrorJSONResponse }
+
+func (response PlatformLogin401JSONResponse) VisitPlatformLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlatformLogin429JSONResponse Error
+
+func (response PlatformLogin429JSONResponse) VisitPlatformLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlatformLogoutRequestObject struct {
+}
+
+type PlatformLogoutResponseObject interface {
+	VisitPlatformLogoutResponse(w http.ResponseWriter) error
+}
+
+type PlatformLogout204Response struct {
+}
+
+func (response PlatformLogout204Response) VisitPlatformLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PlatformLogout401JSONResponse struct{ ErrorJSONResponse }
+
+func (response PlatformLogout401JSONResponse) VisitPlatformLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlatformMeRequestObject struct {
+}
+
+type GetPlatformMeResponseObject interface {
+	VisitGetPlatformMeResponse(w http.ResponseWriter) error
+}
+
+type GetPlatformMe200JSONResponse PlatformMe
+
+func (response GetPlatformMe200JSONResponse) VisitGetPlatformMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlatformMe401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetPlatformMe401JSONResponse) VisitGetPlatformMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangePlatformPasswordRequestObject struct {
+	Body *ChangePlatformPasswordJSONRequestBody
+}
+
+type ChangePlatformPasswordResponseObject interface {
+	VisitChangePlatformPasswordResponse(w http.ResponseWriter) error
+}
+
+type ChangePlatformPassword200JSONResponse SessionToken
+
+func (response ChangePlatformPassword200JSONResponse) VisitChangePlatformPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangePlatformPassword400JSONResponse struct{ ErrorJSONResponse }
+
+func (response ChangePlatformPassword400JSONResponse) VisitChangePlatformPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangePlatformPassword401JSONResponse Error
+
+func (response ChangePlatformPassword401JSONResponse) VisitChangePlatformPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -254,6 +472,18 @@ type StrictServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx context.Context, request GetApiInfoRequestObject) (GetApiInfoResponseObject, error)
+	// PlatformLogin Platform operator login
+	// (POST /api/platform/login)
+	PlatformLogin(ctx context.Context, request PlatformLoginRequestObject) (PlatformLoginResponseObject, error)
+	// PlatformLogout Revoke the current platform token
+	// (POST /api/platform/logout)
+	PlatformLogout(ctx context.Context, request PlatformLogoutRequestObject) (PlatformLogoutResponseObject, error)
+	// GetPlatformMe Current platform operator
+	// (GET /api/platform/me)
+	GetPlatformMe(ctx context.Context, request GetPlatformMeRequestObject) (GetPlatformMeResponseObject, error)
+	// ChangePlatformPassword Change the platform operator password
+	// (POST /api/platform/password)
+	ChangePlatformPassword(ctx context.Context, request ChangePlatformPasswordRequestObject) (ChangePlatformPasswordResponseObject, error)
 	// GetHealthz Liveness and database ping
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
@@ -294,6 +524,130 @@ func (sh *strictHandler) GetApiInfo(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GetApiInfoResponseObject); ok {
 		return validResponse.VisitGetApiInfoResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// PlatformLogin operation middleware
+func (sh *strictHandler) PlatformLogin(ctx echo.Context) error {
+	var request PlatformLoginRequestObject
+
+	var body PlatformLoginJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PlatformLogin(ctx.Request().Context(), request.(PlatformLoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PlatformLogin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(PlatformLoginResponseObject); ok {
+		return validResponse.VisitPlatformLoginResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// PlatformLogout operation middleware
+func (sh *strictHandler) PlatformLogout(ctx echo.Context) error {
+	var request PlatformLogoutRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PlatformLogout(ctx.Request().Context(), request.(PlatformLogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PlatformLogout")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(PlatformLogoutResponseObject); ok {
+		return validResponse.VisitPlatformLogoutResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetPlatformMe operation middleware
+func (sh *strictHandler) GetPlatformMe(ctx echo.Context) error {
+	var request GetPlatformMeRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPlatformMe(ctx.Request().Context(), request.(GetPlatformMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPlatformMe")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetPlatformMeResponseObject); ok {
+		return validResponse.VisitGetPlatformMeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ChangePlatformPassword operation middleware
+func (sh *strictHandler) ChangePlatformPassword(ctx echo.Context) error {
+	var request ChangePlatformPasswordRequestObject
+
+	var body ChangePlatformPasswordJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangePlatformPassword(ctx.Request().Context(), request.(ChangePlatformPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangePlatformPassword")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ChangePlatformPasswordResponseObject); ok {
+		return validResponse.VisitChangePlatformPasswordResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -374,19 +728,27 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"vFVdb9s2FP0rxN0eWlSRlQbZBr15WLB5yBfS7aEYguGaurZZSyRLXnn1Av/34VJWHdsysmFbXyKGPPfj",
-	"HF4eP4F2jXeWLEconyDqBTWYlmNvJnbmZOmD8xTYUDqonE5fw9SkBa89QQmRg7Fz2GT9BoaAa/nfYkMC",
-	"pE/Y+FqO5q52zBTWkB2H+wXGA/xNMQSMjHq5DyS9cG/mLjRvvIs8DxQ/1sehmwwCfWxNoArK37r++rp9",
-	"2qwj+vg52E0/kGapexWCC8fCaFcdtD25/eXq4XZ8/fvVw8PdwxCFhmLEOQ3KKC1S5Eklp7ata5xKVg4t",
-	"vcQotbLLPkTiJ8KaF38O3O80/aWog/FsnIUSfkDGKUZSkZHbCBmQbRup1Pqk1B9WhFsa76mCx6P2MnDL",
-	"ZxynztWEVvYjhZXRp8bjDL0Zkq2b1pkLDTKUUCHTGZuGjrEHwrgl7GqmPMfaSIzZjv6+DPcuGlkaO1d6",
-	"QXp5ZqxCWylnz6JhUtu21fh+ol7dFCpqnM1cXb3OpZjhfXYCgwxWFGKXv8jP8yKp5ckK9RIu8iK/kOFE",
-	"XiTSo7T/BHNi+cjNofQkYwI/EvfvVnhH72zsbvVtUXQzaplsikTva6NT7OhDdHb3/mX1daAZlPDVaGcQ",
-	"o+40jvoSSal9hb7HaLTaCqxMh8ogtk2DYQ0lvNseNcRYIaPogvModxPXkamBRwkYLXbjeYppP8H/I9O+",
-	"xADTnoiJqus1Wd3lf1i8s5mB0r9a+uRJM1VJaQqKOqjUv/iS5F1QVW8NrcUVms6k9u/82qzIUozpqXzG",
-	"e3mfJ25/O/953/CpEbjzZMf3k5/f3d3+2zHAqkpvG+v7Z3a4Z7bPDWJfj20fKjWyT74/qpxuG7KsXgno",
-	"9UvM19jUf4P5e4H9I+Z94p3bbkuWqveanSiHZnqS+PvxzfWLxAU0THz7Q0BB9g9d99pprFVFK6qdl0yQ",
-	"QRtqKGHB7MvR6Pztt3mRF/l5eXn5zXewedz8NQA=",
+	"zFhfb9s2EP8qBLeHDVVsp026Tn1Ks2DLkD+G0z0UQRAw0sViLZEMeXLiBf7uAynSliw5drB42Esri6e7",
+	"3/3uD+/yTBNZKClAoKHxM9VglBQG3I8TraW2D4kUCALtI1Mq5wlDLkX/u5HCvjNJBgWzTz9quKcx/aG/",
+	"1NqvTk2/0jafzyOagkk0V1YJjemX0nABxhDwEpHX6EAcKX4q7qV9VFoq0MgrdKlM3P8coXAPOFNAY2pQ",
+	"czGm8yi8YFqzmf0tWAFWEJ5YoXJ7NJa5RAQ9o1H7c5UxsyJ/PugSNMiSSVMQkky+G0tdvFPS4FiDecjb",
+	"n84jquGh5BpSGl9X+ILdoDaqHL1ZfCzvvkOC1u5xxsQYhsyYR6nTETyUYLBNVFJqDQJvlRfs5ErAY0Og",
+	"4OIMxBgzGn/ahLtlYEVdF/ZFbq1glekK5acXX09GF0dntyej0eWoi/4CjGFj6HRLV6ScOp9EmefszmpF",
+	"XcJGryyUpfYuJ/4AlmP2d0du3rl/G2n+G0N2xwwQgwxLQyMKoiyspVK5KD8KG/QJVwrqnC2dkZOaj3dS",
+	"5sCEfW9AT3myLrX3mOJdtFUFfy91wZDGNGUIe8gLaMuuECMndGnT6eniZpgztMrP5JiLtbn5Yk6WBnSo",
+	"2YI9hXz8eLAJ4eLDiL6YhAHjObSR1Y1vaa3LxBUYw6X4Kicg2kbgSXEN5pbhtrGIKAZVK10UmAZN3ClR",
+	"OeMC4Qk/Ew1YagEpkSKfESmSzQGuLER1dG3XXN4lpeY4u7Ld2sfTM1qhaaMMjBPLAkMZAN9rWRBVTxnq",
+	"bwGX65W2BYYMUVU3CfdXw4oVabh95GJMkgySyR4XhAnLwZ7hCMSXBjkanvasWo7NmrEHNKJT0KbSOOjt",
+	"9wauBhUIW1Ax/dAb9D64DMPM+d5375/pGFw0Kw+5FLb50N8Bw00WNW/Z94PBm92xwUTXLcsMT4gvW8Ir",
+	"qYiasiiYntGYXvmjApClDJnlhY2NTQgzMwgFvbEfWC/7IVL93IXKBl6aDq+HKxH17fiLTGdv5nNno5k3",
+	"c9r2+/kOeW9UeQf5DhsxZZIApJB+JpiBz3xuiMnko6hKcx7Rg8H+OnML/GGYiujB+1+3lm6Eu12JuQ9S",
+	"iHoI8pq4yxK3CryVa1F/0C5aRx7RMJUTSF9LRK0b0fi63Yeub+Y3de9HzowLg59eFt2HhPa3DQ8FvFTx",
+	"tftlh8lXs9KResfevRDmXTN7vErnwvB2jNYngpBbTY+q2BkCU9upqyqS9y6Wi1y2zb66+QxhRMAjkQJs",
+	"q2/GyE/Q3vZwOb/uolF1j+v/s04V4JHEofWtyhK4tl0NXtOudpl5DrHD20o+UttN1mRhthzm19VzmPd3",
+	"GJ9goiM04YLmhlRY3VJ7+IbG167ofwl4UpAgpG6CAB12dWv/w3/pvNQkDYtUKdiU8Wqla15uZ3wK7k8K",
+	"tg8s5JUddtdMNX6u6wXA61LgUoE4Gp7+eXV58W/TgKWpm1JZPqwtBY3VdDFst/jwOIgD0nQ+HKUyKQvb",
+	"in+yQj9v8nzGinwLz79ZsVd5HhQvd1NvMiZhhl6SsrqZrHX829H52UbHrVC3435tBm1cb1kd1xKWkxSm",
+	"kEtlNdGIljr3m0fc7++//6U36A16+/Hh4cdPdH4z/2cA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -16,7 +16,7 @@ func TestHealthzDatabaseUp(t *testing.T) {
 	engine := httpapi.NewRouter(httpapi.Deps{
 		Readiness: func(ctx context.Context) error { return db.Ping(ctx) },
 	})
-	Register(engine, db.Gorm)
+	mustRegister(t, engine, Deps{DB: db.Gorm})
 
 	rec := httptest.NewRecorder()
 	engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
@@ -42,7 +42,7 @@ func TestHealthzDatabaseDown(t *testing.T) {
 	engine := httpapi.NewRouter(httpapi.Deps{
 		Readiness: func(context.Context) error { return context.Canceled },
 	})
-	Register(engine, nil)
+	mustRegister(t, engine, Deps{})
 
 	rec := httptest.NewRecorder()
 	engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
@@ -53,7 +53,7 @@ func TestHealthzDatabaseDown(t *testing.T) {
 
 func TestOpenAPIStillMounted(t *testing.T) {
 	engine := httpapi.NewRouter(httpapi.Deps{})
-	Register(engine, nil)
+	mustRegister(t, engine, Deps{})
 	rec := httptest.NewRecorder()
 	engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api", nil))
 	if rec.Code != http.StatusOK {

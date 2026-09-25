@@ -13,16 +13,18 @@ const minSessionSecretLen = 32
 
 // Config holds the resolved runtime configuration.
 type Config struct {
-	DatabaseURL        string
-	AppHost            string
-	AppPort            int
-	SessionSecret      string
-	TrustedProxies     []string
-	ConsoleSessionTTL  time.Duration
-	HostSessionTTL     time.Duration
-	PlatformSessionTTL time.Duration
-	LoginMaxFailures   int
-	LoginWindow        time.Duration
+	DatabaseURL          string
+	AppHost              string
+	AppPort              int
+	SessionSecret        string
+	TrustedProxies       []string
+	PlatformUser         string
+	PlatformPasswordHash string
+	ConsoleSessionTTL    time.Duration
+	HostSessionTTL       time.Duration
+	PlatformSessionTTL   time.Duration
+	LoginMaxFailures     int
+	LoginWindow          time.Duration
 
 	bootstrapValues map[string]ResolvedValue
 }

@@ -27,6 +27,28 @@ export type ApiInfo = {
     docs: Array<string>;
 };
 
+export type PlatformLoginRequest = {
+    username: string;
+    password: string;
+};
+
+export type ChangePasswordRequest = {
+    current_password: string;
+    new_password: string;
+};
+
+export type SessionToken = {
+    /**
+     * Bearer token plaintext; returned only once
+     */
+    token: string;
+    expires_at: string;
+};
+
+export type PlatformMe = {
+    username: string;
+};
+
 export type GetHealthzData = {
     body?: never;
     path?: never;
@@ -105,3 +127,111 @@ export type GetOpenApijsonResponses = {
 };
 
 export type GetOpenApijsonResponse = GetOpenApijsonResponses[keyof GetOpenApijsonResponses];
+
+export type PlatformLoginData = {
+    body: PlatformLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/platform/login';
+};
+
+export type PlatformLoginErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    429: Error;
+};
+
+export type PlatformLoginError = PlatformLoginErrors[keyof PlatformLoginErrors];
+
+export type PlatformLoginResponses = {
+    /**
+     * Login succeeded; the token is shown once
+     */
+    200: SessionToken;
+};
+
+export type PlatformLoginResponse = PlatformLoginResponses[keyof PlatformLoginResponses];
+
+export type PlatformLogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/platform/logout';
+};
+
+export type PlatformLogoutErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type PlatformLogoutError = PlatformLogoutErrors[keyof PlatformLogoutErrors];
+
+export type PlatformLogoutResponses = {
+    /**
+     * Token revoked
+     */
+    204: void;
+};
+
+export type PlatformLogoutResponse = PlatformLogoutResponses[keyof PlatformLogoutResponses];
+
+export type GetPlatformMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/platform/me';
+};
+
+export type GetPlatformMeErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type GetPlatformMeError = GetPlatformMeErrors[keyof GetPlatformMeErrors];
+
+export type GetPlatformMeResponses = {
+    /**
+     * Current operator
+     */
+    200: PlatformMe;
+};
+
+export type GetPlatformMeResponse = GetPlatformMeResponses[keyof GetPlatformMeResponses];
+
+export type ChangePlatformPasswordData = {
+    body: ChangePasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/platform/password';
+};
+
+export type ChangePlatformPasswordErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type ChangePlatformPasswordError = ChangePlatformPasswordErrors[keyof ChangePlatformPasswordErrors];
+
+export type ChangePlatformPasswordResponses = {
+    /**
+     * Password changed; the new token is shown once
+     */
+    200: SessionToken;
+};
+
+export type ChangePlatformPasswordResponse = ChangePlatformPasswordResponses[keyof ChangePlatformPasswordResponses];

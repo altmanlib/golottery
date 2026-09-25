@@ -83,6 +83,15 @@ var Registry = []Spec{
 		Set: func(c *Config, v string) error { c.TrustedProxies = splitCSV(v); return nil },
 	},
 	{
+		Key: "PLATFORM_USER", Kind: KindString, Group: GroupAuth, Scope: ScopeInfra,
+		Set: func(c *Config, v string) error { c.PlatformUser = v; return nil },
+	},
+	{
+		Key: "PLATFORM_PASSWORD_HASH", Kind: KindString, Group: GroupAuth,
+		Scope: ScopeInfra, Secret: true,
+		Set: func(c *Config, v string) error { c.PlatformPasswordHash = v; return nil },
+	},
+	{
 		Key: "CONSOLE_SESSION_TTL", Kind: KindString, Group: GroupAuth,
 		Default: "12h", Scope: ScopeApp,
 		Set: durationSetter("CONSOLE_SESSION_TTL", func(c *Config, d time.Duration) { c.ConsoleSessionTTL = d }),

@@ -13,26 +13,42 @@ import (
 	"gorm.io/gorm"
 
 	api "golottery/api/api"
+	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/platform"
 )
+
+// Deps are the collaborators behind the generated routes.
+// A nil DB reports the database as down.
+type Deps struct {
+	DB       *gorm.DB
+	Tokens   *auth.TokenIssuer
+	Platform *platform.Service
+}
 
 // Server implements the generated strict interface.
 type Server struct {
-	db *gorm.DB
-}
-
-// New builds a server bound to db. A nil db reports the database as down.
-func New(db *gorm.DB) *Server {
-	return &Server{db: db}
+	db       *gorm.DB
+	platform *platform.Service
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
 
-// Register mounts generated routes and translates bizerr values to JSON.
-func Register(engine *echo.Echo, db *gorm.DB) {
-	server := New(db)
-	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{recoverBizErr})
+// Register mounts generated routes, enforces the contract's security
+// requirements and translates bizerr values to JSON.
+func Register(engine *echo.Echo, deps Deps) error {
+	secured, err := securedOperations()
+	if err != nil {
+		return err
+	}
+	server := &Server{db: deps.DB, platform: deps.Platform}
+	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
+	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
+		authenticate(deps.Tokens, secured),
+		recoverBizErr,
+	})
 	api.RegisterHandlers(engine, handler)
+	return nil
 }
 
 func recoverBizErr(next api.StrictHandlerFunc, _ string) api.StrictHandlerFunc {
