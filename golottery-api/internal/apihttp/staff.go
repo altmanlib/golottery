@@ -1,7 +1,9 @@
 package apihttp
 
 import (
+	"bytes"
 	"context"
+	"net/url"
 
 	api "golottery/api/api"
 	"golottery/api/internal/event"
@@ -207,4 +209,39 @@ func staffAttendee(a event.Attendee) api.StaffAttendee {
 		out.CheckinMethod = &m
 	}
 	return out
+}
+
+// ResetLiveData clears a trial run and logs what it removed.
+func (s *Server) ResetLiveData(ctx context.Context, request api.ResetLiveDataRequestObject) (api.ResetLiveDataResponseObject, error) {
+	admin, err := adminFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	counts, err := s.guests.ResetLiveData(ctx, admin.OrgID, request.EventId, request.Body.ConfirmName)
+	if err != nil {
+		return nil, err
+	}
+	s.logger.Info("event live data reset", "event", request.EventId, "admin", admin.ID,
+		"unbound", counts.Unbound, "attempts", counts.Attempts, "requests", counts.Requests, "sessions", counts.Sessions)
+	return api.ResetLiveData200JSONResponse{
+		Unbound: int(counts.Unbound), Attempts: int(counts.Attempts), Requests: int(counts.Requests), Sessions: int(counts.Sessions),
+	}, nil
+}
+
+// ExportCheckinAttempts returns the check-in attempt workbook.
+func (s *Server) ExportCheckinAttempts(ctx context.Context, request api.ExportCheckinAttemptsRequestObject) (api.ExportCheckinAttemptsResponseObject, error) {
+	admin, err := adminFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	book, name, err := s.guests.ExportAttempts(ctx, admin.OrgID, request.EventId)
+	if err != nil {
+		return nil, err
+	}
+	disposition := `attachment; filename="checkin-attempts.xlsx"; filename*=UTF-8''` + url.PathEscape(name+"-签到明细.xlsx")
+	return api.ExportCheckinAttempts200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body:          bytes.NewReader(book),
+		ContentLength: int64(len(book)),
+		Headers:       api.ExportCheckinAttempts200ResponseHeaders{ContentDisposition: &disposition},
+	}, nil
 }

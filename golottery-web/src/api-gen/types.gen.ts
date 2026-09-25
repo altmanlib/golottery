@@ -453,6 +453,23 @@ export type StaffSettingsRequest = {
     radius_m?: number;
 };
 
+export type ResetRequest = {
+    /**
+     * Must equal the event name
+     */
+    confirm_name: string;
+};
+
+export type ResetResult = {
+    /**
+     * Roster people whose binding or check-in was cleared
+     */
+    unbound: number;
+    attempts: number;
+    requests: number;
+    sessions: number;
+};
+
 export type StaffId = string;
 
 export type RequestId = string;
@@ -2324,3 +2341,73 @@ export type UpdateStaffSettingsResponses = {
 };
 
 export type UpdateStaffSettingsResponse = UpdateStaffSettingsResponses[keyof UpdateStaffSettingsResponses];
+
+export type ResetLiveDataData = {
+    body: ResetRequest;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/reset';
+};
+
+export type ResetLiveDataErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type ResetLiveDataError = ResetLiveDataErrors[keyof ResetLiveDataErrors];
+
+export type ResetLiveDataResponses = {
+    /**
+     * What was cleared
+     */
+    200: ResetResult;
+};
+
+export type ResetLiveDataResponse = ResetLiveDataResponses[keyof ResetLiveDataResponses];
+
+export type ExportCheckinAttemptsData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/exports/checkin-attempts';
+};
+
+export type ExportCheckinAttemptsErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ExportCheckinAttemptsError = ExportCheckinAttemptsErrors[keyof ExportCheckinAttemptsErrors];
+
+export type ExportCheckinAttemptsResponses = {
+    /**
+     * xlsx workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportCheckinAttemptsResponse = ExportCheckinAttemptsResponses[keyof ExportCheckinAttemptsResponses];

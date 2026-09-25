@@ -248,11 +248,12 @@ func TestCheckinOrderAndModes(t *testing.T) {
 	_, err := e.guests.Checkin(ctx, stranger, CheckinInput{})
 	expectCode(t, err, bizerr.CodeNotBound)
 
-	g := e.bound(t, "device-bbbbbbbbbbbbbbbb", "韩梅梅", "1001")
+	// Back to draft before anyone binds: live data would block the move.
 	direct, draft := event.ModeDirect, event.StatusDraft
 	if _, err := e.events.Update(ctx, e.orgID, e.ev.ID, event.Patch{Status: &draft}, org.Operator{}); err != nil {
 		t.Fatal(err)
 	}
+	g := e.bound(t, "device-bbbbbbbbbbbbbbbb", "韩梅梅", "1001")
 	_, err = e.guests.Checkin(ctx, g, CheckinInput{})
 	expectCode(t, err, bizerr.CodeEventNotOpen)
 

@@ -26,8 +26,11 @@ const (
 	headerPhone = "手机号"
 )
 
-// displayZone is the zone for times shown to admins and written to exports.
-var displayZone = mustLoadZone("Asia/Shanghai")
+// DisplayZone is the zone for times shown to admins and written to exports.
+var DisplayZone = mustLoadZone("Asia/Shanghai")
+
+// DisplayTime formats t in DisplayZone for exports.
+func DisplayTime(t time.Time) string { return t.In(DisplayZone).Format("2006-01-02 15:04") }
 
 func mustLoadZone(name string) *time.Location {
 	loc, err := time.LoadLocation(name)
@@ -203,8 +206,11 @@ func readRoster(file io.Reader) ([]rosterRow, error) {
 	return rows, nil
 }
 
-// attendeeStatusLabels names roster statuses in exports; phase 6 adds check-in states.
-var attendeeStatusLabels = map[string]string{AttendeePending: "未签到"}
+// Export labels for roster statuses and check-in methods.
+var (
+	attendeeStatusLabels = map[string]string{AttendeePending: "未签到", AttendeeCheckedIn: "已签到"}
+	checkinMethodLabels  = map[string]string{"geo": "定位", "direct": "直接", "manual": "人工确认", "proxy": "代签到"}
+)
 
 // ExportAttendees writes the roster as an xlsx workbook and returns it with the event name.
 func (s *Service) ExportAttendees(ctx context.Context, orgID, eventID uuid.UUID) ([]byte, string, error) {
@@ -220,7 +226,14 @@ func (s *Service) ExportAttendees(ctx context.Context, orgID, eventID uuid.UUID)
 	book := excelize.NewFile()
 	defer func() { _ = book.Close() }()
 	sheet := book.GetSheetName(0)
-	header := []any{headerName, headerDept, "手机后四位", "状态", "加入时间"}
+	// Staff act as guest identities; show the roster name they are bound to when there is one.
+	names := map[string]string{}
+	for _, a := range rows {
+		if a.OpenID != nil {
+			names[*a.OpenID] = a.Name
+		}
+	}
+	header := []any{headerName, headerDept, "手机后四位", "状态", "加入时间", "签到时间", "签到方式", "操作人"}
 	if err := book.SetSheetRow(sheet, "A1", &header); err != nil {
 		return nil, "", bizerr.Wrap(bizerr.CodeInternal, err)
 	}
@@ -229,7 +242,20 @@ func (s *Service) ExportAttendees(ctx context.Context, orgID, eventID uuid.UUID)
 		if status == "" {
 			status = a.Status
 		}
-		line := []any{a.Name, a.Dept, a.PhoneLast4, status, a.CreatedAt.In(displayZone).Format("2006-01-02 15:04")}
+		checkinAt, method, by := "", "", ""
+		if a.CheckinAt != nil {
+			checkinAt = DisplayTime(*a.CheckinAt)
+		}
+		if a.CheckinMethod != nil {
+			method = checkinMethodLabels[*a.CheckinMethod]
+		}
+		if a.CheckinBy != nil {
+			by = names[*a.CheckinBy]
+			if by == "" {
+				by = "工作人员"
+			}
+		}
+		line := []any{a.Name, a.Dept, a.PhoneLast4, status, DisplayTime(a.CreatedAt), checkinAt, method, by}
 		cellRef, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := book.SetSheetRow(sheet, cellRef, &line); err != nil {
 			return nil, "", bizerr.Wrap(bizerr.CodeInternal, err)

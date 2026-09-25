@@ -50,6 +50,7 @@ type Server struct {
 	events   *event.Service
 	wechat   *wechat.Client
 	guests   *guest.Service
+	logger   *slog.Logger
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -61,7 +62,7 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat, guests: deps.Guests}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat, guests: deps.Guests, logger: logger}
 	auths := map[string]authenticator{
 		schemePlatform: apiTokenAuth(deps.Tokens, auth.TokenTypePlatform, nil),
 		schemeConsole:  apiTokenAuth(deps.Tokens, auth.TokenTypeConsole, server.resolveAdmin),

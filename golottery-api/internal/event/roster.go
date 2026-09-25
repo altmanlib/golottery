@@ -218,20 +218,20 @@ func (s *Service) UpdateAttendee(ctx context.Context, orgID, eventID, attendeeID
 	return row, asBizErr(err)
 }
 
-// DeleteAttendee removes a person. Phases 6 and 7 add the bound, checked-in and winner checks.
+// DeleteAttendee removes a person who has not bound or checked in. Phase 7 adds the winner check.
 func (s *Service) DeleteAttendee(ctx context.Context, orgID, eventID, attendeeID uuid.UUID) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if _, err := editableEvent(ctx, tx, orgID, eventID); err != nil {
 			return err
 		}
-		res := tx.Where("id = ? AND event_id = ?", attendeeID, eventID).Delete(&Attendee{})
-		if res.Error != nil {
-			return res.Error
+		var row Attendee
+		if err := findIn(ctx, tx, &row, eventID, attendeeID); err != nil {
+			return err
 		}
-		if res.RowsAffected == 0 {
-			return bizerr.New(bizerr.CodeNotFound)
+		if row.OpenID != nil || row.Status != AttendeePending {
+			return bizerr.New(bizerr.CodeConflict)
 		}
-		return nil
+		return tx.Delete(&row).Error
 	})
 	return asBizErr(err)
 }

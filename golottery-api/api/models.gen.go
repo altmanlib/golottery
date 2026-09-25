@@ -614,6 +614,22 @@ type ProxyCheckinRequest struct {
 	AttendeeId openapi_types.UUID `json:"attendee_id"`
 }
 
+// ResetRequest defines model for ResetRequest.
+type ResetRequest struct {
+	// ConfirmName Must equal the event name
+	ConfirmName string `json:"confirm_name"`
+}
+
+// ResetResult defines model for ResetResult.
+type ResetResult struct {
+	Attempts int `json:"attempts"`
+	Requests int `json:"requests"`
+	Sessions int `json:"sessions"`
+
+	// Unbound Roster people whose binding or check-in was cleared
+	Unbound int `json:"unbound"`
+}
+
 // SessionToken defines model for SessionToken.
 type SessionToken struct {
 	ExpiresAt time.Time `json:"expires_at"`
@@ -802,6 +818,9 @@ type CreatePrizeJSONRequestBody = PrizeInput
 
 // UpdatePrizeJSONRequestBody defines body for UpdatePrize for application/json ContentType.
 type UpdatePrizeJSONRequestBody = PrizeUpdate
+
+// ResetLiveDataJSONRequestBody defines body for ResetLiveData for application/json ContentType.
+type ResetLiveDataJSONRequestBody = ResetRequest
 
 // CreateStaffInviteJSONRequestBody defines body for CreateStaffInvite for application/json ContentType.
 type CreateStaffInviteJSONRequestBody = StaffInviteRequest

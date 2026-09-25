@@ -1289,6 +1289,61 @@ paths:
           $ref: "#/components/responses/Error"
         "409":
           $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/reset:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    post:
+      operationId: resetLiveData
+      summary: Clear a trial run before check-in opens; the roster, prizes and staff stay
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetRequest"
+      responses:
+        "200":
+          description: What was cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/exports/checkin-attempts:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: exportCheckinAttempts
+      summary: Every check-in tap with coordinates, as xlsx in Asia/Shanghai
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: xlsx workbook
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     StaffId:
@@ -2114,4 +2169,24 @@ components:
           type: number
           format: double
         radius_m:
+          type: integer
+    ResetRequest:
+      type: object
+      required: [confirm_name]
+      properties:
+        confirm_name:
+          type: string
+          description: Must equal the event name
+    ResetResult:
+      type: object
+      required: [unbound, attempts, requests, sessions]
+      properties:
+        unbound:
+          type: integer
+          description: Roster people whose binding or check-in was cleared
+        attempts:
+          type: integer
+        requests:
+          type: integer
+        sessions:
           type: integer

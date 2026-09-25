@@ -211,6 +211,11 @@ func (s *Service) Update(ctx context.Context, orgID, id uuid.UUID, p Patch, by o
 				return err
 			}
 		}
+		if from == StatusReady && to == StatusDraft {
+			if err := checkNoLiveData(ctx, tx, ev.ID); err != nil {
+				return err
+			}
+		}
 		now := s.now().UTC()
 		if from == StatusDraft && to == StatusReady && ev.CreditConsumedAt == nil {
 			if err := org.ConsumeEventCredit(ctx, tx, orgID, ev.ID, by, now); err != nil {
@@ -316,6 +321,22 @@ func checkComplete(ctx context.Context, tx *gorm.DB, ev Event) error {
 	}
 	if len(missing) > 0 {
 		return bizerr.New(bizerr.CodeEventIncomplete, strings.Join(missing, "、"))
+	}
+	return nil
+}
+
+// checkNoLiveData keeps a ready event from going back to draft once guests have used it;
+// a trial run is cleared with the reset first.
+func checkNoLiveData(ctx context.Context, tx *gorm.DB, eventID uuid.UUID) error {
+	var live int64
+	err := tx.WithContext(ctx).Raw(`SELECT
+		(SELECT count(*) FROM attendees WHERE event_id = ? AND (openid IS NOT NULL OR status <> 'pending')) +
+		(SELECT count(*) FROM manual_requests WHERE event_id = ?)`, eventID, eventID).Scan(&live).Error
+	if err != nil {
+		return fmt.Errorf("event: count live data: %w", err)
+	}
+	if live > 0 {
+		return bizerr.New(bizerr.CodeConflict)
 	}
 	return nil
 }

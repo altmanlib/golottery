@@ -185,7 +185,7 @@ func TestExportAttendees(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, _ := book.GetRows(book.GetSheetName(0))
-	want := [][]string{{"姓名", "部门", "手机后四位", "状态", "加入时间"}, {"李雷", "研发", "1234", "未签到", "2026-10-01 00:30"}}
+	want := [][]string{{"姓名", "部门", "手机后四位", "状态", "加入时间", "签到时间", "签到方式", "操作人"}, {"李雷", "研发", "1234", "未签到", "2026-10-01 00:30"}}
 	if len(rows) != 2 || strings.Join(rows[0], ",") != strings.Join(want[0], ",") || strings.Join(rows[1], ",") != strings.Join(want[1], ",") {
 		t.Fatalf("rows = %v", rows)
 	}
