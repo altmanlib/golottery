@@ -14,6 +14,7 @@ import (
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
 	"golottery/api/internal/event"
+	"golottery/api/internal/geo"
 	"golottery/api/internal/org"
 )
 
@@ -93,6 +94,8 @@ type SettingsPatch struct {
 	CheckinMode          *string
 	CenterLat, CenterLng *float64
 	RadiusM              *int
+	// CoordType says which datum the center is in; wgs84 (a browser fix) is converted to the fence's gcj02.
+	CoordType string
 }
 
 // ownedEvent checks that the event belongs to the organization.
@@ -382,12 +385,23 @@ func (s *Service) UpdateSettings(ctx context.Context, g Guest, p SettingsPatch) 
 	if _, err := s.requireStaff(ctx, g, true); err != nil {
 		return event.View{}, err
 	}
+	lat, lng := p.CenterLat, p.CenterLng
+	switch p.CoordType {
+	case "", CoordGCJ02:
+	case CoordWGS84:
+		if lat != nil && lng != nil && geo.Valid(*lat, *lng) {
+			glat, glng := geo.WGS84ToGCJ02(*lat, *lng)
+			lat, lng = &glat, &glng
+		}
+	default:
+		return event.View{}, bizerr.New(bizerr.CodeBadRequest)
+	}
 	var ev event.Event
 	if err := s.db.WithContext(ctx).Where("id = ?", g.EventID).Take(&ev).Error; err != nil {
 		return event.View{}, bizerr.Wrap(bizerr.CodeInternal, err)
 	}
 	return event.NewService(s.db).Update(ctx, ev.OrgID, ev.ID, event.Patch{
-		CheckinMode: p.CheckinMode, CenterLat: p.CenterLat, CenterLng: p.CenterLng, RadiusM: p.RadiusM,
+		CheckinMode: p.CheckinMode, CenterLat: lat, CenterLng: lng, RadiusM: p.RadiusM,
 	}, org.Operator{Type: "guest", ID: g.OpenID})
 }
 

@@ -2170,6 +2170,8 @@ components:
           format: double
         radius_m:
           type: integer
+        coord_type:
+          $ref: "#/components/schemas/CoordType"
     ResetRequest:
       type: object
       required: [confirm_name]

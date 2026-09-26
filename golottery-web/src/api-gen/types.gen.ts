@@ -451,6 +451,7 @@ export type StaffSettingsRequest = {
     center_lat?: number;
     center_lng?: number;
     radius_m?: number;
+    coord_type?: CoordType;
 };
 
 export type ResetRequest = {

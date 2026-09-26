@@ -185,6 +185,9 @@ func (s *Server) UpdateStaffSettings(ctx context.Context, request api.UpdateStaf
 	}
 	b := request.Body
 	p := guest.SettingsPatch{CenterLat: b.CenterLat, CenterLng: b.CenterLng, RadiusM: b.RadiusM}
+	if b.CoordType != nil {
+		p.CoordType = string(*b.CoordType)
+	}
 	if b.CheckinMode != nil {
 		mode := string(*b.CheckinMode)
 		p.CheckinMode = &mode

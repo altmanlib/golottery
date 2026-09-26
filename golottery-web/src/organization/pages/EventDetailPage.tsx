@@ -8,7 +8,9 @@ import { CheckinSettingsForm } from '#/organization/components/CheckinSettingsFo
 import { EntrySection } from '#/organization/components/EntrySection'
 import { EventStatusBadge } from '#/organization/components/EventStatusBadge'
 import { EventStatusBar } from '#/organization/components/EventStatusBar'
+import { LiveDataSection } from '#/organization/components/LiveDataSection'
 import { PrizeSection } from '#/organization/components/PrizeSection'
+import { StaffSection } from '#/organization/components/StaffSection'
 import { useEvent } from '#/organization/hooks/useEvents'
 import { useOrganizationMe } from '#/organization/hooks/useOrganizationSession'
 
@@ -84,6 +86,14 @@ export function EventDetailPage() {
             <PrizeSection event={ev} />
           </Paper>
         </Stack>
+      </SimpleGrid>
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing={16} verticalSpacing={16}>
+        <Section title="现场工作人员">
+          <StaffSection event={ev} />
+        </Section>
+        <Section title="现场数据">
+          <LiveDataSection event={ev} />
+        </Section>
       </SimpleGrid>
       <Paper withBorder radius="md" p={12}>
         <AttendeeSection event={ev} />

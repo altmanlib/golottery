@@ -687,7 +687,10 @@ type StaffSettingsRequest struct {
 	CenterLat   *float64     `json:"center_lat,omitempty"`
 	CenterLng   *float64     `json:"center_lng,omitempty"`
 	CheckinMode *CheckinMode `json:"checkin_mode,omitempty"`
-	RadiusM     *int         `json:"radius_m,omitempty"`
+
+	// CoordType Browsers report wgs84; the mini program reports gcj02
+	CoordType *CoordType `json:"coord_type,omitempty"`
+	RadiusM   *int       `json:"radius_m,omitempty"`
 }
 
 // StaffSummary defines model for StaffSummary.

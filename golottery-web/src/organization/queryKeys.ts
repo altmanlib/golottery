@@ -6,4 +6,5 @@ export const organizationKeys = {
   event: (id: string) => [...organizationKeys.events(), 'detail', id] as const,
   attendees: (id: string, page: number) => [...organizationKeys.events(), 'attendees', id, page] as const,
   prizes: (id: string) => [...organizationKeys.events(), 'prizes', id] as const,
+  staff: (id: string) => [...organizationKeys.events(), 'staff', id] as const,
 }

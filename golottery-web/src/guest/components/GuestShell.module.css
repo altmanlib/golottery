@@ -1,0 +1,25 @@
+.root {
+  min-height: 100dvh;
+  background: var(--mantine-color-gray-0);
+}
+
+.header {
+  background: var(--mantine-color-brand-6);
+  color: var(--mantine-color-white);
+}
+
+.body {
+  animation: fade-in 160ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body {
+    animation: none;
+  }
+}

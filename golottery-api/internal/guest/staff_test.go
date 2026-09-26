@@ -2,6 +2,7 @@ package guest
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 
 	"golottery/api/internal/bizerr"
 	"golottery/api/internal/event"
+	"golottery/api/internal/geo"
 )
 
 func (e env) staffGuest(t *testing.T, device, role string) Guest {
@@ -237,5 +239,18 @@ func TestOnSiteModeSwitch(t *testing.T) {
 	}
 	late := e.bound(t, "device-cccccccccccccccc", "王五", "1002")
 	_, err = e.guests.Checkin(ctx, late, CheckinInput{})
+	expectCode(t, err, bizerr.CodeBadRequest)
+
+	// An admin standing at the venue moves the fence with a browser fix.
+	view, err := e.guests.UpdateSettings(ctx, admin, SettingsPatch{CenterLat: ptr(gpsLat), CenterLng: ptr(gpsLng), CoordType: CoordWGS84})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantLat, wantLng := geo.WGS84ToGCJ02(gpsLat, gpsLng)
+	// The column keeps six decimals, about 0.1 m.
+	if view.CenterLat == nil || math.Abs(*view.CenterLat-wantLat) > 1e-6 || math.Abs(*view.CenterLng-wantLng) > 1e-6 {
+		t.Fatalf("fence center = %v,%v, want gcj02 %v,%v", *view.CenterLat, *view.CenterLng, wantLat, wantLng)
+	}
+	_, err = e.guests.UpdateSettings(ctx, admin, SettingsPatch{CenterLat: ptr(gpsLat), CenterLng: ptr(gpsLng), CoordType: "bd09"})
 	expectCode(t, err, bizerr.CodeBadRequest)
 }

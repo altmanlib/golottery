@@ -2,7 +2,7 @@
 title: 阶段 6：现场签到
 type: design
 status: published
-updated: 2026-09-25
+updated: 2026-09-26
 ---
 
 # 阶段 6：现场签到
@@ -103,11 +103,11 @@ updated: 2026-09-25
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET · POST | `/api/organization/events/:id/staff` | 工作人员列表 · `{role}` 生成邀请，返回一次性邀请码与小程序码 |
+| GET · POST | `/api/organization/events/:id/staff` | 工作人员列表 · `{role}` 生成邀请，返回一次性邀请码与网页路径 `/#/m/<public_id>/staff?invite=<code>` |
 | DELETE | `/api/organization/events/:id/staff/:staffId` | 撤销授权 |
 | POST | `/api/guest/staff/join` | `{invite}`，把当前宾客会话的 openid 写入 `event_staff` |
 
-邀请码 24 小时有效、只能使用一次，库内只存 SHA-256。
+邀请码 24 小时有效、只能使用一次，库内只存 SHA-256。无效、已用或过期统一返回 `400 E_INVITE_INVALID`。
 
 ### 4.2 宾客接口
 
@@ -150,7 +150,7 @@ updated: 2026-09-25
 | POST | `/api/guest/staff/manual-requests/:id/reject` | 拒绝 |
 | POST | `/api/guest/staff/checkins/proxy` | `{attendee_id}` 代签到 |
 | GET | `/api/guest/staff/attendees?q=` | 按姓名搜索，供代签到选人 |
-| PATCH | `/api/guest/staff/checkin-settings` | `{checkin_mode, center_lat, center_lng, radius_m}`，字段可部分提交，仅 `admin`，PRD M5。切到 `geo` 时缺围栏返回 `400 E_BAD_REQUEST` |
+| PATCH | `/api/guest/staff/checkin-settings` | `{checkin_mode, center_lat, center_lng, radius_m, coord_type}`，字段可部分提交，仅 `admin`，PRD M5。`coord_type: wgs84`（网页定位）时服务端先把圆心换算成 GCJ-02。校验沿用控制台改活动的规则，就绪活动缺围栏时返回 `400 E_EVENT_INCOMPLETE` |
 
 无现场权限统一返回 `404 E_NOT_FOUND`。
 
@@ -160,9 +160,9 @@ updated: 2026-09-25
 | --- | --- | --- |
 | 已绑定者 | `{}` | 签到 |
 | 未绑定，名单有错字 | `{attendee_id}` | 关联已有人员并绑定 openid；该人员已绑定其他 openid 时返回 `409 E_CONFLICT` |
-| 未绑定，不在名单 | `{create: {name, dept, phone_last4}}` | 新增名单人员并绑定；受 `events.max_attendees` 约束 |
+| 未绑定，不在名单 | `{create: {name, dept, phone}}`（`phone` 可只填后四位） | 新增名单人员并绑定；受 `events.max_attendees` 约束 |
 
-三种结果都写 `checkin_method = manual` 与 `checkin_by`，并删除该 openid 的绑定失败计数。
+三种结果都写 `checkin_method = manual` 与 `checkin_by`，并删除该 openid 的绑定失败计数。活动须为 `ready`，否则返回 `409 E_EVENT_NOT_OPEN`。同一名单人员被第二个身份绑定时返回 `409 E_ATTENDEE_TAKEN`。
 
 重置现场数据：`POST /api/organization/events/:id/reset`，要求 `console` 令牌，入参 `{confirm_name}` 必须等于活动名称。
 

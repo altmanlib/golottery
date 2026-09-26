@@ -4,20 +4,25 @@ import {
   createAttendee,
   createEvent,
   createPrize,
+  createStaffInvite,
   deleteAttendee,
   deletePrize,
   exportAttendees,
+  exportCheckinAttempts,
   getEvent,
   getEventQrCode,
   importAttendees,
   listAttendees,
+  listEventStaff,
   listEvents,
   listPrizes,
+  removeEventStaff,
+  resetLiveData,
   updateAttendee,
   updateEvent,
   updatePrize,
 } from '#/api-gen/sdk.gen'
-import type { AttendeeInput, AttendeeUpdate, PrizeInput, PrizeUpdate, UpdateEventRequest } from '#/api-gen/types.gen'
+import type { AttendeeInput, AttendeeUpdate, PrizeInput, PrizeUpdate, StaffRole, UpdateEventRequest } from '#/api-gen/types.gen'
 import { saveBlob } from '#/lib/download'
 import { PAGE_SIZE } from '#/organization/events'
 import { organizationKeys } from '#/organization/queryKeys'
@@ -128,5 +133,42 @@ export function useDownloadQRCode(eventId: string, eventName: string) {
       const blob = await unwrap<Blob>(getEventQrCode({ path: { eventId }, parseAs: 'blob' }))
       saveBlob(blob, `${eventName}-小程序码.png`)
     },
+  })
+}
+
+export function useExportAttempts(eventId: string, eventName: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const blob = await unwrap<Blob>(exportCheckinAttempts({ path: { eventId }, parseAs: 'blob' }))
+      saveBlob(blob, `${eventName}-签到明细.xlsx`)
+    },
+  })
+}
+
+export function useStaff(eventId: string) {
+  return useQuery({
+    queryKey: organizationKeys.staff(eventId),
+    queryFn: () => unwrap(listEventStaff({ path: { eventId } })),
+  })
+}
+
+/** The invite code comes back once; the caller shows it and resets the mutation. */
+export function useCreateInvite(eventId: string) {
+  return useMutation({ mutationFn: (role: StaffRole) => unwrap(createStaffInvite({ path: { eventId }, body: { role } })) })
+}
+
+export function useRemoveStaff(eventId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (staffId: string) => unwrap(removeEventStaff({ path: { eventId, staffId } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.staff(eventId) }),
+  })
+}
+
+export function useResetLiveData(eventId: string) {
+  const refresh = useRefresh()
+  return useMutation({
+    mutationFn: (confirmName: string) => unwrap(resetLiveData({ path: { eventId }, body: { confirm_name: confirmName } })),
+    onSuccess: refresh,
   })
 }
