@@ -191,3 +191,56 @@ export function attendeeErrorMessage(error: unknown): string | null {
 export function guestEntryUrl(origin: string, publicId: string): string {
   return `${origin}/#/m/${publicId}`
 }
+
+export type DetailTab = 'overview' | 'settings' | 'roster' | 'prizes' | 'onsite' | 'data'
+
+export const DETAIL_TABS: { value: DetailTab; label: string }[] = [
+  { value: 'overview', label: '概览' },
+  { value: 'settings', label: '签到设置' },
+  { value: 'roster', label: '名单' },
+  { value: 'prizes', label: '奖项' },
+  { value: 'onsite', label: '现场与大屏' },
+  { value: 'data', label: '现场数据' },
+]
+
+export function parseTab(value: string | null): DetailTab {
+  return DETAIL_TABS.some((t) => t.value === value) ? (value as DetailTab) : 'overview'
+}
+
+export type ReadinessStep = { label: string; done: boolean; required: boolean; detail: string; tab: DetailTab }
+
+/** The overview checklist; required steps mirror the server's check before an event can go ready. */
+export function readinessSteps(event: Event): ReadinessStep[] {
+  const geo = event.checkin_mode === 'geo'
+  const hasWindow = Boolean(event.checkin_start && event.checkin_end)
+  return [
+    {
+      label: '导入名单',
+      done: event.attendee_count > 0,
+      required: true,
+      detail: event.attendee_count > 0 ? `${event.attendee_count} 人，上限 ${event.max_attendees}` : `上限 ${event.max_attendees} 人`,
+      tab: 'roster',
+    },
+    {
+      label: '设定签到时间',
+      done: hasWindow,
+      required: true,
+      detail: hasWindow ? `${formatShanghai(event.checkin_start)} 至 ${formatShanghai(event.checkin_end)}` : '北京时间，窗口外不能签到',
+      tab: 'settings',
+    },
+    {
+      label: geo ? '标注会场位置' : '选择签到方式',
+      done: !geo || (event.center_lat != null && event.center_lng != null),
+      required: true,
+      detail: geo ? `定位签到，半径 ${event.radius_m} 米` : '直接签到，不校验位置',
+      tab: 'settings',
+    },
+    {
+      label: '设置奖项',
+      done: event.prize_count > 0,
+      required: false,
+      detail: event.prize_count > 0 ? `${event.prize_count} 个奖项` : '抽奖前补上即可',
+      tab: 'prizes',
+    },
+  ]
+}

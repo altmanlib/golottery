@@ -65,6 +65,7 @@ type Event struct {
 	AllowMultiWin    bool `gorm:"not null"`
 	MaxAttendees     int  `gorm:"not null"`
 	CreditConsumedAt *time.Time
+	DrawVersion      int64     `gorm:"not null"`
 	CreatedAt        time.Time `gorm:"not null"`
 	UpdatedAt        time.Time `gorm:"not null"`
 }
@@ -196,6 +197,15 @@ func (s *Service) Update(ctx context.Context, orgID, id uuid.UUID, p Patch, by o
 			return bizerr.New(bizerr.CodeConflict)
 		}
 		from := ev.Status
+		if p.AllowMultiWin != nil && *p.AllowMultiWin != ev.AllowMultiWin {
+			has, err := HasDrawResults(ctx, tx, ev.ID)
+			if err != nil {
+				return err
+			}
+			if has {
+				return bizerr.New(bizerr.CodeConflict)
+			}
+		}
 		if err := applyPatch(&ev, p); err != nil {
 			return err
 		}
@@ -285,6 +295,15 @@ func applyPatch(ev *Event, p Patch) error {
 	return nil
 }
 
+// HasDrawResults reports whether the event already has any draw_results row.
+func HasDrawResults(ctx context.Context, tx *gorm.DB, eventID uuid.UUID) (bool, error) {
+	var n int64
+	if err := tx.WithContext(ctx).Table("draw_results").Where("event_id = ?", eventID).Count(&n).Error; err != nil {
+		return false, fmt.Errorf("event: count draw results: %w", err)
+	}
+	return n > 0, nil
+}
+
 // allowedTransitions lists the status changes an admin may make; closed is terminal.
 var allowedTransitions = map[string][]string{
 	StatusDraft: {StatusReady},
@@ -331,7 +350,8 @@ func checkNoLiveData(ctx context.Context, tx *gorm.DB, eventID uuid.UUID) error 
 	var live int64
 	err := tx.WithContext(ctx).Raw(`SELECT
 		(SELECT count(*) FROM attendees WHERE event_id = ? AND (openid IS NOT NULL OR status <> 'pending')) +
-		(SELECT count(*) FROM manual_requests WHERE event_id = ?)`, eventID, eventID).Scan(&live).Error
+		(SELECT count(*) FROM manual_requests WHERE event_id = ?) +
+		(SELECT count(*) FROM draw_results WHERE event_id = ?)`, eventID, eventID, eventID).Scan(&live).Error
 	if err != nil {
 		return fmt.Errorf("event: count live data: %w", err)
 	}

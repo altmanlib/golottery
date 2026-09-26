@@ -11,14 +11,23 @@ import (
 	"golottery/api/internal/event"
 )
 
+// Local table stubs so reset can clear draw rows without importing draw.
+type drawResult struct{}
+
+func (drawResult) TableName() string { return "draw_results" }
+
+type drawLog struct{}
+
+func (drawLog) TableName() string { return "draw_logs" }
+
 // ResetCounts reports what a reset removed.
 type ResetCounts struct {
-	Unbound, Attempts, Requests, Sessions int64
+	Unbound, Attempts, Requests, Sessions, Results, Logs int64
 }
 
 // ResetLiveData clears a trial run before check-in opens: bindings, check-ins, attempts,
-// help requests and guest sessions. The roster, prizes, fence, staff and the credit
-// already used stay. confirmName must equal the event name.
+// help requests, guest sessions and draw records. The roster, prizes, fence, staff and the
+// credit already used stay. confirmName must equal the event name.
 func (s *Service) ResetLiveData(ctx context.Context, orgID, eventID uuid.UUID, confirmName string) (ResetCounts, error) {
 	var counts ResetCounts
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -42,12 +51,21 @@ func (s *Service) ResetLiveData(ctx context.Context, orgID, eventID uuid.UUID, c
 		for _, step := range []struct {
 			model any
 			n     *int64
-		}{{&Attempt{}, &counts.Attempts}, {&ManualRequest{}, &counts.Requests}, {&Session{}, &counts.Sessions}} {
+		}{
+			{&Attempt{}, &counts.Attempts},
+			{&ManualRequest{}, &counts.Requests},
+			{&Session{}, &counts.Sessions},
+			{&drawResult{}, &counts.Results},
+			{&drawLog{}, &counts.Logs},
+		} {
 			res := tx.Where("event_id = ?", eventID).Delete(step.model)
 			if res.Error != nil {
 				return res.Error
 			}
 			*step.n = res.RowsAffected
+		}
+		if err := tx.Model(&ev).Update("draw_version", 0).Error; err != nil {
+			return err
 		}
 		return nil
 	})

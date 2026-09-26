@@ -6,6 +6,7 @@ import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 import '@fontsource/roboto-condensed/700.css'
 import '@fontsource/roboto-mono/500.css'
+import '@fontsource/noto-serif-sc/700.css'
 
 import './styles/base.css'
 

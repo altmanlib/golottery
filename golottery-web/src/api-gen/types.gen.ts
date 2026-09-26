@@ -469,11 +469,98 @@ export type ResetResult = {
     attempts: number;
     requests: number;
     sessions: number;
+    /**
+     * Draw result rows cleared
+     */
+    results: number;
+    /**
+     * Draw log rows cleared
+     */
+    logs: number;
+};
+
+export type HostCredential = {
+    /**
+     * Temporary host password; returned only once
+     */
+    password: string;
+    public_id: string;
+    /**
+     * Web path of the host screen, relative to the site root
+     */
+    path: string;
+};
+
+export type HostLoginRequest = {
+    event_public_id: string;
+    password: string;
+};
+
+export type DrawResultStatus = 'valid' | 'void';
+
+export type HostPrize = {
+    id: string;
+    name: string;
+    gift: string;
+    quota: number;
+    remaining: number;
+    sort_no: number;
+};
+
+export type DrawResult = {
+    id: string;
+    prize_id: string;
+    prize_name: string;
+    attendee_id: string;
+    attendee_name: string;
+    attendee_dept: string;
+    status: DrawResultStatus;
+    void_reason?: string | null;
+    voided_at?: string | null;
+    created_at: string;
+};
+
+export type HostSnapshot = {
+    event_name: string;
+    public_id: string;
+    status: EventStatus;
+    checked_in: number;
+    draw_version: number;
+    prizes: Array<HostPrize>;
+    winners: Array<DrawResult>;
+};
+
+export type HostPoolPerson = {
+    id: string;
+    name: string;
+    dept: string;
+};
+
+export type HostPool = {
+    items: Array<HostPoolPerson>;
+};
+
+export type CreateDrawRequest = {
+    prize_id: string;
+    count: number;
+    request_id: string;
+};
+
+export type DrawBatch = {
+    request_id: string;
+    draw_version: number;
+    results: Array<DrawResult>;
+};
+
+export type VoidResultRequest = {
+    reason: string;
 };
 
 export type StaffId = string;
 
 export type RequestId = string;
+
+export type ResultId = string;
 
 export type Query = string;
 
@@ -2412,3 +2499,243 @@ export type ExportCheckinAttemptsResponses = {
 };
 
 export type ExportCheckinAttemptsResponse = ExportCheckinAttemptsResponses[keyof ExportCheckinAttemptsResponses];
+
+export type UpsertEventHostData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/host';
+};
+
+export type UpsertEventHostErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type UpsertEventHostError = UpsertEventHostErrors[keyof UpsertEventHostErrors];
+
+export type UpsertEventHostResponses = {
+    /**
+     * Host credential ready
+     */
+    200: HostCredential;
+};
+
+export type UpsertEventHostResponse = UpsertEventHostResponses[keyof UpsertEventHostResponses];
+
+export type ExportWinnersData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/exports/winners';
+};
+
+export type ExportWinnersErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ExportWinnersError = ExportWinnersErrors[keyof ExportWinnersErrors];
+
+export type ExportWinnersResponses = {
+    /**
+     * xlsx workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportWinnersResponse = ExportWinnersResponses[keyof ExportWinnersResponses];
+
+export type ExportDrawLogData = {
+    body?: never;
+    path: {
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/organization/events/{eventId}/exports/draw-log';
+};
+
+export type ExportDrawLogErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type ExportDrawLogError = ExportDrawLogErrors[keyof ExportDrawLogErrors];
+
+export type ExportDrawLogResponses = {
+    /**
+     * xlsx workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportDrawLogResponse = ExportDrawLogResponses[keyof ExportDrawLogResponses];
+
+export type HostLoginData = {
+    body: HostLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/host/login';
+};
+
+export type HostLoginErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    429: Error;
+};
+
+export type HostLoginError = HostLoginErrors[keyof HostLoginErrors];
+
+export type HostLoginResponses = {
+    /**
+     * Host session
+     */
+    200: SessionToken;
+};
+
+export type HostLoginResponse = HostLoginResponses[keyof HostLoginResponses];
+
+export type GetHostSnapshotData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/host/snapshot';
+};
+
+export type GetHostSnapshotErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type GetHostSnapshotError = GetHostSnapshotErrors[keyof GetHostSnapshotErrors];
+
+export type GetHostSnapshotResponses = {
+    /**
+     * Current draw state
+     */
+    200: HostSnapshot;
+};
+
+export type GetHostSnapshotResponse = GetHostSnapshotResponses[keyof GetHostSnapshotResponses];
+
+export type GetHostPoolData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/host/pool';
+};
+
+export type GetHostPoolErrors = {
+    /**
+     * Business error
+     */
+    401: Error;
+};
+
+export type GetHostPoolError = GetHostPoolErrors[keyof GetHostPoolErrors];
+
+export type GetHostPoolResponses = {
+    /**
+     * Eligible pool
+     */
+    200: HostPool;
+};
+
+export type GetHostPoolResponse = GetHostPoolResponses[keyof GetHostPoolResponses];
+
+export type CreateDrawData = {
+    body: CreateDrawRequest;
+    path?: never;
+    query?: never;
+    url: '/api/host/draws';
+};
+
+export type CreateDrawErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    409: Error;
+};
+
+export type CreateDrawError = CreateDrawErrors[keyof CreateDrawErrors];
+
+export type CreateDrawResponses = {
+    /**
+     * Drawn winners
+     */
+    200: DrawBatch;
+};
+
+export type CreateDrawResponse = CreateDrawResponses[keyof CreateDrawResponses];
+
+export type VoidDrawResultData = {
+    body: VoidResultRequest;
+    path: {
+        resultId: string;
+    };
+    query?: never;
+    url: '/api/host/results/{resultId}/void';
+};
+
+export type VoidDrawResultErrors = {
+    /**
+     * Business error
+     */
+    400: Error;
+    /**
+     * Business error
+     */
+    401: Error;
+    /**
+     * Business error
+     */
+    404: Error;
+};
+
+export type VoidDrawResultError = VoidDrawResultErrors[keyof VoidDrawResultErrors];
+
+export type VoidDrawResultResponses = {
+    /**
+     * Current result
+     */
+    200: DrawResult;
+};
+
+export type VoidDrawResultResponse = VoidDrawResultResponses[keyof VoidDrawResultResponses];

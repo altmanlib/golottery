@@ -2,7 +2,7 @@
 title: 阶段 2：运营认证
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-26
 ---
 
 # 阶段 2：运营认证
@@ -96,7 +96,7 @@ updated: 2026-09-24
 - 登录失败展示接口返回的 `message`
 - `/platform` 在没有令牌时直接去 `/platform/login`；有令牌时请求 `GET /api/platform/me`，失败交给 `401` 处理
 - `401` 跳转目标改为 `/platform/login`；根路径 `/` 暂时重定向到 `/platform`
-- 不在本阶段做改密页面
+- 页头提供改密：成功后用响应中的新令牌替换本地 `platform` 令牌
 
 ### 4.4 测试
 
@@ -116,7 +116,6 @@ updated: 2026-09-24
 - 自助注册与邀请
 - 按 IP 限流
 - 记住我、刷新令牌、多设备列表
-- 运营后台的账号管理界面
 
 ## 6. 完成定义
 

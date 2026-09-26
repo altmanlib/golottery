@@ -17,6 +17,7 @@ import (
 
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
+	"golottery/api/internal/draw"
 	"golottery/api/internal/event"
 	"golottery/api/internal/guest"
 	"golottery/api/internal/httpapi"
@@ -63,7 +64,7 @@ func (b *syncBuffer) String() string {
 func newPlatformEnv(t *testing.T) platformEnv {
 	t.Helper()
 	db := store.OpenTest(t)
-	store.Reset(t, db, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &guest.Attempt{}, &guest.ManualRequest{}, &guest.Staff{}, &guest.Session{}, &event.Prize{}, &event.Attendee{}, &org.LedgerEntry{}, &event.Event{}, &org.User{}, &org.Quota{}, &org.Org{})
+	store.Reset(t, db, &draw.Result{}, &draw.Log{}, &draw.Host{}, &platform.User{}, &auth.APIToken{}, &auth.LoginAttempt{}, &guest.Attempt{}, &guest.ManualRequest{}, &guest.Staff{}, &guest.Session{}, &event.Prize{}, &event.Attendee{}, &org.LedgerEntry{}, &event.Event{}, &org.User{}, &org.Quota{}, &org.Org{})
 	hash, err := auth.HashPassword(testPassword)
 	if err != nil {
 		t.Fatal(err)
@@ -73,20 +74,23 @@ func newPlatformEnv(t *testing.T) platformEnv {
 	}
 	tokens := auth.NewTokenIssuer(db.Gorm, time.Hour, time.Hour, time.Hour)
 	limiter := auth.NewLoginLimiter(db.Gorm, 3, 15*time.Minute)
+	rdb := redisx.OpenTest(t)
 	fake := wechattest.New()
 	t.Cleanup(fake.Close)
 	logs := &syncBuffer{}
 	engine := httpapi.NewRouter(httpapi.Deps{})
 	mustRegister(t, engine, Deps{
-		Wechat:   wechat.New(wechat.Config{AppID: "wx123", AppSecret: "secret", BaseURL: fake.URL, Redis: redisx.OpenTest(t)}),
+		Wechat:   wechat.New(wechat.Config{AppID: "wx123", AppSecret: "secret", BaseURL: fake.URL, Redis: rdb}),
 		Logger:   slog.New(slog.NewTextHandler(logs, nil)),
 		DB:       db.Gorm,
+		Redis:    rdb,
 		Tokens:   tokens,
 		Platform: platform.NewService(db.Gorm, tokens, limiter),
 		Orgs:     org.NewService(db.Gorm),
 		Accounts: org.NewAccounts(db.Gorm, tokens, limiter),
 		Events:   event.NewService(db.Gorm),
-		Guests:   guest.NewService(db.Gorm, guest.Config{Mode: guest.ModeWeb, Limiter: ratelimit.New(redisx.OpenTest(t), nil)}),
+		Guests:   guest.NewService(db.Gorm, guest.Config{Mode: guest.ModeWeb, Limiter: ratelimit.New(rdb, nil)}),
+		Draws:    draw.NewService(draw.Config{DB: db.Gorm, Tokens: tokens, Limiter: limiter, Redis: rdb}),
 	})
 	return platformEnv{engine: engine, db: db.Gorm, tokens: tokens, wechat: fake, logs: logs}
 }
@@ -288,7 +292,7 @@ func TestChangePlatformPassword(t *testing.T) {
 }
 
 func TestSecuredOperationsFollowContract(t *testing.T) {
-	secured, err := securedOperations(map[string]authenticator{schemePlatform: nil, schemeConsole: nil, schemeGuest: nil})
+	secured, err := securedOperations(map[string]authenticator{schemePlatform: nil, schemeConsole: nil, schemeGuest: nil, schemeHost: nil})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +303,7 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	public := map[string]bool{"PlatformLogin": true, "OrganizationLogin": true, "GuestLogin": true}
+	public := map[string]bool{"PlatformLogin": true, "OrganizationLogin": true, "GuestLogin": true, "HostLogin": true}
 	checked := 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -313,6 +317,8 @@ func TestSecuredOperationsFollowContract(t *testing.T) {
 				want = schemeConsole
 			case strings.HasPrefix(path, "/api/guest/"):
 				want = schemeGuest
+			case strings.HasPrefix(path, "/api/host/"):
+				want = schemeHost
 			}
 			if secured[name] != want {
 				t.Errorf("%s %s requires %q, want %q", path, name, secured[name], want)

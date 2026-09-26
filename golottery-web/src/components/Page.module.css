@@ -1,0 +1,39 @@
+.page {
+  padding: var(--gl-page-gutter-y) var(--gl-page-gutter-x);
+}
+
+.fill {
+  height: 100dvh;
+}
+
+.band {
+  padding: var(--gl-page-gutter-y) var(--gl-page-gutter-x) 0;
+  background: var(--gl-surface);
+  border-bottom: 1px solid var(--gl-border);
+}
+
+.title {
+  font-size: 26px;
+  letter-spacing: 0.02em;
+}
+
+.back {
+  color: var(--gl-text-secondary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--gl-text);
+  }
+}
+
+.card {
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-card);
+}
+
+.sectionTitle {
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}

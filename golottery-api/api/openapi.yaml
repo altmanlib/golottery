@@ -1344,6 +1344,184 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/host:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    post:
+      operationId: upsertEventHost
+      summary: Create or reset the host password for this event; the password is shown once
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: Host credential ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HostCredential"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/exports/winners:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: exportWinners
+      summary: Winners workbook; voided rows are kept and marked
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: xlsx workbook
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/organization/events/{eventId}/exports/draw-log:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      operationId: exportDrawLog
+      summary: Draw log workbook in Asia/Shanghai
+      tags: [organization]
+      security:
+        - consoleBearer: []
+      responses:
+        "200":
+          description: xlsx workbook
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/host/login:
+    post:
+      operationId: hostLogin
+      summary: Sign in as the host of one event
+      tags: [host]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HostLoginRequest"
+      responses:
+        "200":
+          description: Host session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/host/snapshot:
+    get:
+      operationId: getHostSnapshot
+      summary: Prizes, remaining quotas, check-in count and valid winners
+      tags: [host]
+      security:
+        - hostBearer: []
+      responses:
+        "200":
+          description: Current draw state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HostSnapshot"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/host/pool:
+    get:
+      operationId: getHostPool
+      summary: People currently eligible for a draw
+      tags: [host]
+      security:
+        - hostBearer: []
+      responses:
+        "200":
+          description: Eligible pool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HostPool"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/host/draws:
+    post:
+      operationId: createDraw
+      summary: Draw winners for one prize; same request_id returns the first result
+      tags: [host]
+      security:
+        - hostBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDrawRequest"
+      responses:
+        "200":
+          description: Drawn winners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrawBatch"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/host/results/{resultId}/void:
+    parameters:
+      - $ref: "#/components/parameters/ResultId"
+    post:
+      operationId: voidDrawResult
+      summary: Mark a winner as void; already void rows stay as they are
+      tags: [host]
+      security:
+        - hostBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoidResultRequest"
+      responses:
+        "200":
+          description: Current result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrawResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     StaffId:
@@ -1355,6 +1533,13 @@ components:
         format: uuid
     RequestId:
       name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ResultId:
+      name: resultId
       in: path
       required: true
       schema:
@@ -1428,6 +1613,10 @@ components:
       type: http
       scheme: bearer
       description: Guest token from guestLogin, valid for one event
+    hostBearer:
+      type: http
+      scheme: bearer
+      description: Host token from hostLogin, valid for one event
   responses:
     Error:
       description: Business error
@@ -2181,7 +2370,7 @@ components:
           description: Must equal the event name
     ResetResult:
       type: object
-      required: [unbound, attempts, requests, sessions]
+      required: [unbound, attempts, requests, sessions, results, logs]
       properties:
         unbound:
           type: integer
@@ -2192,3 +2381,156 @@ components:
           type: integer
         sessions:
           type: integer
+        results:
+          type: integer
+          description: Draw result rows cleared
+        logs:
+          type: integer
+          description: Draw log rows cleared
+    HostCredential:
+      type: object
+      required: [password, public_id, path]
+      properties:
+        password:
+          type: string
+          description: Temporary host password; returned only once
+        public_id:
+          type: string
+        path:
+          type: string
+          description: Web path of the host screen, relative to the site root
+    HostLoginRequest:
+      type: object
+      required: [event_public_id, password]
+      properties:
+        event_public_id:
+          type: string
+        password:
+          type: string
+    DrawResultStatus:
+      type: string
+      enum: [valid, void]
+    HostPrize:
+      type: object
+      required: [id, name, gift, quota, remaining, sort_no]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        gift:
+          type: string
+        quota:
+          type: integer
+        remaining:
+          type: integer
+        sort_no:
+          type: integer
+    DrawResult:
+      type: object
+      required: [id, prize_id, prize_name, attendee_id, attendee_name, attendee_dept, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        prize_id:
+          type: string
+          format: uuid
+        prize_name:
+          type: string
+        attendee_id:
+          type: string
+          format: uuid
+        attendee_name:
+          type: string
+        attendee_dept:
+          type: string
+        status:
+          $ref: "#/components/schemas/DrawResultStatus"
+        void_reason:
+          type: string
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    HostSnapshot:
+      type: object
+      required: [event_name, public_id, status, checked_in, draw_version, prizes, winners]
+      properties:
+        event_name:
+          type: string
+        public_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/EventStatus"
+        checked_in:
+          type: integer
+        draw_version:
+          type: integer
+          format: int64
+        prizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/HostPrize"
+        winners:
+          type: array
+          items:
+            $ref: "#/components/schemas/DrawResult"
+    HostPoolPerson:
+      type: object
+      required: [id, name, dept]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dept:
+          type: string
+    HostPool:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HostPoolPerson"
+    CreateDrawRequest:
+      type: object
+      required: [prize_id, count, request_id]
+      properties:
+        prize_id:
+          type: string
+          format: uuid
+        count:
+          type: integer
+          minimum: 1
+        request_id:
+          type: string
+          format: uuid
+    DrawBatch:
+      type: object
+      required: [request_id, draw_version, results]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        draw_version:
+          type: integer
+          format: int64
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/DrawResult"
+    VoidResultRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 200

@@ -17,6 +17,7 @@ import (
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/draw"
 	"golottery/api/internal/event"
 	"golottery/api/internal/guest"
 	"golottery/api/internal/org"
@@ -37,6 +38,7 @@ type Deps struct {
 	Events   *event.Service
 	Wechat   *wechat.Client
 	Guests   *guest.Service
+	Draws    *draw.Service
 	Logger   *slog.Logger
 }
 
@@ -44,12 +46,14 @@ type Deps struct {
 type Server struct {
 	db       *gorm.DB
 	redis    *redis.Client
+	tokens   *auth.TokenIssuer
 	platform *platform.Service
 	orgs     *org.Service
 	accounts *org.Accounts
 	events   *event.Service
 	wechat   *wechat.Client
 	guests   *guest.Service
+	draws    *draw.Service
 	logger   *slog.Logger
 }
 
@@ -62,11 +66,16 @@ func Register(engine *echo.Echo, deps Deps) error {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat, guests: deps.Guests, logger: logger}
+	server := &Server{
+		db: deps.DB, redis: deps.Redis, tokens: deps.Tokens, platform: deps.Platform,
+		orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat,
+		guests: deps.Guests, draws: deps.Draws, logger: logger,
+	}
 	auths := map[string]authenticator{
 		schemePlatform: apiTokenAuth(deps.Tokens, auth.TokenTypePlatform, nil),
 		schemeConsole:  apiTokenAuth(deps.Tokens, auth.TokenTypeConsole, server.resolveAdmin),
 		schemeGuest:    guestAuth(deps.Guests),
+		schemeHost:     apiTokenAuth(deps.Tokens, auth.TokenTypeHost, server.resolveHost),
 	}
 	secured, err := securedOperations(auths)
 	if err != nil {
@@ -78,6 +87,7 @@ func Register(engine *echo.Echo, deps Deps) error {
 		recoverBizErr(logger),
 	})
 	api.RegisterHandlers(engine.Group("", withClientIP), handler)
+	server.mountHostStream(engine)
 	return nil
 }
 

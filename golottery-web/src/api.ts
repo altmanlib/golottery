@@ -20,8 +20,9 @@ const SCOPE_PREFIXES: [string, TokenScope][] = [
 /** A 401 from these paths means wrong credentials, not an expired session. */
 const LOGIN_PATHS = new Set(['/api/platform/login', '/api/organization/login', '/api/guest/session'])
 
-/** Where each scope goes after its token is rejected; host joins in phase 7. Guests have no
- * login page: their pages sign in again with the same device id. */
+/** Where each scope goes after its token is rejected. Guests have no login page: their pages
+ * sign in again with the same device id. Host login is event-scoped; expiry clears the token
+ * and stays on the current host route so the login page can pick up the public id. */
 const LOGIN_ROUTES: Partial<Record<TokenScope, string>> = {
   platform: '/platform/login',
   console: '/organization/login',

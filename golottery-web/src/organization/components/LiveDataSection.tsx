@@ -3,7 +3,7 @@ import { IconDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import type { Event } from '#/api-gen/types.gen'
 import { showToast } from '#/lib/message'
-import { useExportAttempts, useResetLiveData } from '#/organization/hooks/useEvents'
+import { useExportAttempts, useExportDrawLog, useExportWinners, useResetLiveData } from '#/organization/hooks/useEvents'
 
 /** Clears a trial run; the event name must be typed back to confirm. */
 function ResetModal({ event, onClose }: { event: Event; onClose: () => void }) {
@@ -13,7 +13,10 @@ function ResetModal({ event, onClose }: { event: Event; onClose: () => void }) {
     reset.mutate(name, {
       onSuccess: (r) => {
         onClose()
-        showToast(`已清除：${r.unbound} 人的绑定与签到、${r.attempts} 条签到记录、${r.requests} 条协助请求`, 'success')
+        showToast(
+          `已清除：${r.unbound} 人的绑定与签到、${r.attempts} 条签到记录、${r.requests} 条协助请求、${r.results} 条中奖、${r.logs} 条抽奖日志`,
+          'success',
+        )
       },
     })
 
@@ -41,23 +44,42 @@ function ResetModal({ event, onClose }: { event: Event; onClose: () => void }) {
 }
 
 export function LiveDataSection({ event }: { event: Event }) {
-  const exporter = useExportAttempts(event.id, event.name)
+  const attempts = useExportAttempts(event.id, event.name)
+  const winners = useExportWinners(event.id, event.name)
+  const drawLog = useExportDrawLog(event.id, event.name)
   const [resetting, setResetting] = useState(false)
   const started = Boolean(event.checkin_start && new Date(event.checkin_start).getTime() <= Date.now())
+  const onExportError = (error: Error) => showToast(error.message, 'error')
 
   return (
     <Stack gap={8}>
       <Text size="sm" c="dimmed">
-        签到明细包含每一次点击签到的时间、坐标和结果，便于核查争议。
+        签到明细包含每一次点击签到的时间、坐标和结果；中奖名单与抽奖日志用于现场核对和事后追溯。
       </Text>
       <Group gap={8}>
         <Button
           size="xs"
           variant="light"
           leftSection={<IconDownload size={16} />}
-          loading={exporter.isPending}
-          onClick={() => exporter.mutate(undefined, { onError: (error) => showToast(error.message, 'error') })}>
+          loading={attempts.isPending}
+          onClick={() => attempts.mutate(undefined, { onError: onExportError })}>
           导出签到明细
+        </Button>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconDownload size={16} />}
+          loading={winners.isPending}
+          onClick={() => winners.mutate(undefined, { onError: onExportError })}>
+          导出中奖名单
+        </Button>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconDownload size={16} />}
+          loading={drawLog.isPending}
+          onClick={() => drawLog.mutate(undefined, { onError: onExportError })}>
+          导出抽奖日志
         </Button>
         <Button size="xs" variant="subtle" color="red" disabled={started || event.status === 'closed'} onClick={() => setResetting(true)}>
           重置现场数据

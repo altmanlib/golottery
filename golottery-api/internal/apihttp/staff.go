@@ -225,9 +225,11 @@ func (s *Server) ResetLiveData(ctx context.Context, request api.ResetLiveDataReq
 		return nil, err
 	}
 	s.logger.Info("event live data reset", "event", request.EventId, "admin", admin.ID,
-		"unbound", counts.Unbound, "attempts", counts.Attempts, "requests", counts.Requests, "sessions", counts.Sessions)
+		"unbound", counts.Unbound, "attempts", counts.Attempts, "requests", counts.Requests, "sessions", counts.Sessions,
+		"results", counts.Results, "logs", counts.Logs)
 	return api.ResetLiveData200JSONResponse{
 		Unbound: int(counts.Unbound), Attempts: int(counts.Attempts), Requests: int(counts.Requests), Sessions: int(counts.Sessions),
+		Results: int(counts.Results), Logs: int(counts.Logs),
 	}, nil
 }
 

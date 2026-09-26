@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ApproveRequestData, ApproveRequestErrors, ApproveRequestResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, CreateStaffInviteData, CreateStaffInviteErrors, CreateStaffInviteResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, ExportCheckinAttemptsData, ExportCheckinAttemptsErrors, ExportCheckinAttemptsResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetGuestStatusData, GetGuestStatusErrors, GetGuestStatusResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, GetStaffSummaryData, GetStaffSummaryErrors, GetStaffSummaryResponses, GuestBindData, GuestBindErrors, GuestBindResponses, GuestCheckinData, GuestCheckinErrors, GuestCheckinResponses, GuestLoginData, GuestLoginErrors, GuestLoginResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, JoinStaffData, JoinStaffErrors, JoinStaffResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListEventStaffData, ListEventStaffErrors, ListEventStaffResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPendingRequestsData, ListPendingRequestsErrors, ListPendingRequestsResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ProxyCheckinData, ProxyCheckinErrors, ProxyCheckinResponses, RejectRequestData, RejectRequestErrors, RejectRequestResponses, RemoveEventStaffData, RemoveEventStaffErrors, RemoveEventStaffResponses, ResetLiveDataData, ResetLiveDataErrors, ResetLiveDataResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SearchStaffAttendeesData, SearchStaffAttendeesErrors, SearchStaffAttendeesResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, SubmitManualRequestData, SubmitManualRequestErrors, SubmitManualRequestResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses, UpdateStaffSettingsData, UpdateStaffSettingsErrors, UpdateStaffSettingsResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ApproveRequestData, ApproveRequestErrors, ApproveRequestResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateDrawData, CreateDrawErrors, CreateDrawResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, CreateStaffInviteData, CreateStaffInviteErrors, CreateStaffInviteResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, ExportCheckinAttemptsData, ExportCheckinAttemptsErrors, ExportCheckinAttemptsResponses, ExportDrawLogData, ExportDrawLogErrors, ExportDrawLogResponses, ExportWinnersData, ExportWinnersErrors, ExportWinnersResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetGuestStatusData, GetGuestStatusErrors, GetGuestStatusResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetHostPoolData, GetHostPoolErrors, GetHostPoolResponses, GetHostSnapshotData, GetHostSnapshotErrors, GetHostSnapshotResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, GetStaffSummaryData, GetStaffSummaryErrors, GetStaffSummaryResponses, GuestBindData, GuestBindErrors, GuestBindResponses, GuestCheckinData, GuestCheckinErrors, GuestCheckinResponses, GuestLoginData, GuestLoginErrors, GuestLoginResponses, HostLoginData, HostLoginErrors, HostLoginResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, JoinStaffData, JoinStaffErrors, JoinStaffResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListEventStaffData, ListEventStaffErrors, ListEventStaffResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPendingRequestsData, ListPendingRequestsErrors, ListPendingRequestsResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ProxyCheckinData, ProxyCheckinErrors, ProxyCheckinResponses, RejectRequestData, RejectRequestErrors, RejectRequestResponses, RemoveEventStaffData, RemoveEventStaffErrors, RemoveEventStaffResponses, ResetLiveDataData, ResetLiveDataErrors, ResetLiveDataResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SearchStaffAttendeesData, SearchStaffAttendeesErrors, SearchStaffAttendeesResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, SubmitManualRequestData, SubmitManualRequestErrors, SubmitManualRequestResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses, UpdateStaffSettingsData, UpdateStaffSettingsErrors, UpdateStaffSettingsResponses, UpsertEventHostData, UpsertEventHostErrors, UpsertEventHostResponses, VoidDrawResultData, VoidDrawResultErrors, VoidDrawResultResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -862,4 +862,115 @@ export const exportCheckinAttempts = <ThrowOnError extends boolean = false>(opti
         }],
     url: '/api/organization/events/{eventId}/exports/checkin-attempts',
     ...options
+});
+
+/**
+ * Create or reset the host password for this event; the password is shown once
+ */
+export const upsertEventHost = <ThrowOnError extends boolean = false>(options: Options<UpsertEventHostData, ThrowOnError>): RequestResult<UpsertEventHostResponses, UpsertEventHostErrors, ThrowOnError> => (options.client ?? client).post<UpsertEventHostResponses, UpsertEventHostErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/host',
+    ...options
+});
+
+/**
+ * Winners workbook; voided rows are kept and marked
+ */
+export const exportWinners = <ThrowOnError extends boolean = false>(options: Options<ExportWinnersData, ThrowOnError>): RequestResult<ExportWinnersResponses, ExportWinnersErrors, ThrowOnError> => (options.client ?? client).get<ExportWinnersResponses, ExportWinnersErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/exports/winners',
+    ...options
+});
+
+/**
+ * Draw log workbook in Asia/Shanghai
+ */
+export const exportDrawLog = <ThrowOnError extends boolean = false>(options: Options<ExportDrawLogData, ThrowOnError>): RequestResult<ExportDrawLogResponses, ExportDrawLogErrors, ThrowOnError> => (options.client ?? client).get<ExportDrawLogResponses, ExportDrawLogErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/exports/draw-log',
+    ...options
+});
+
+/**
+ * Sign in as the host of one event
+ */
+export const hostLogin = <ThrowOnError extends boolean = false>(options: Options<HostLoginData, ThrowOnError>): RequestResult<HostLoginResponses, HostLoginErrors, ThrowOnError> => (options.client ?? client).post<HostLoginResponses, HostLoginErrors, ThrowOnError>({
+    url: '/api/host/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Prizes, remaining quotas, check-in count and valid winners
+ */
+export const getHostSnapshot = <ThrowOnError extends boolean = false>(options?: Options<GetHostSnapshotData, ThrowOnError>): RequestResult<GetHostSnapshotResponses, GetHostSnapshotErrors, ThrowOnError> => (options?.client ?? client).get<GetHostSnapshotResponses, GetHostSnapshotErrors, ThrowOnError>({
+    security: [{
+            key: 'hostBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/host/snapshot',
+    ...options
+});
+
+/**
+ * People currently eligible for a draw
+ */
+export const getHostPool = <ThrowOnError extends boolean = false>(options?: Options<GetHostPoolData, ThrowOnError>): RequestResult<GetHostPoolResponses, GetHostPoolErrors, ThrowOnError> => (options?.client ?? client).get<GetHostPoolResponses, GetHostPoolErrors, ThrowOnError>({
+    security: [{
+            key: 'hostBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/host/pool',
+    ...options
+});
+
+/**
+ * Draw winners for one prize; same request_id returns the first result
+ */
+export const createDraw = <ThrowOnError extends boolean = false>(options: Options<CreateDrawData, ThrowOnError>): RequestResult<CreateDrawResponses, CreateDrawErrors, ThrowOnError> => (options.client ?? client).post<CreateDrawResponses, CreateDrawErrors, ThrowOnError>({
+    security: [{
+            key: 'hostBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/host/draws',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Mark a winner as void; already void rows stay as they are
+ */
+export const voidDrawResult = <ThrowOnError extends boolean = false>(options: Options<VoidDrawResultData, ThrowOnError>): RequestResult<VoidDrawResultResponses, VoidDrawResultErrors, ThrowOnError> => (options.client ?? client).post<VoidDrawResultResponses, VoidDrawResultErrors, ThrowOnError>({
+    security: [{
+            key: 'hostBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/host/results/{resultId}/void',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

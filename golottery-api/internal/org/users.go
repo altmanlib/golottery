@@ -70,7 +70,8 @@ func validEmail(email string) bool {
 	return err == nil && addr.Name == "" && addr.Address == email
 }
 
-func newTempPassword() (string, error) {
+// NewTempPassword returns a one-time password that avoids ambiguous characters.
+func NewTempPassword() (string, error) {
 	out := make([]byte, tempPasswordLen)
 	limit := big.NewInt(int64(len(tempPasswordAlphabet)))
 	for i := range out {
@@ -182,7 +183,7 @@ func (a *Accounts) orgExists(ctx context.Context, orgID uuid.UUID) error {
 }
 
 func newPasswordAndHash() (string, string, error) {
-	password, err := newTempPassword()
+	password, err := NewTempPassword()
 	if err != nil {
 		return "", "", bizerr.Wrap(bizerr.CodeInternal, err)
 	}

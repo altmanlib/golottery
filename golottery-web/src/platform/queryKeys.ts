@@ -5,4 +5,6 @@ export const platformKeys = {
   orgPage: (page: number) => [...platformKeys.orgs(), 'page', page] as const,
   org: (id: string) => [...platformKeys.orgs(), 'detail', id] as const,
   orgUsers: (id: string) => [...platformKeys.orgs(), 'users', id] as const,
+  orgEvents: (id: string) => [...platformKeys.orgs(), 'events', id] as const,
+  orgEventPage: (id: string, page: number) => [...platformKeys.orgEvents(id), 'page', page] as const,
 }

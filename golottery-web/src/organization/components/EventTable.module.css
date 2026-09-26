@@ -1,0 +1,30 @@
+.th {
+  background: var(--gl-surface-muted);
+  color: var(--gl-text-secondary);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--gl-border-subtle);
+}
+
+.td {
+  border-bottom: 1px solid var(--gl-border-subtle);
+}
+
+.name {
+  color: var(--gl-text);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+.meta {
+  color: var(--gl-text-tertiary);
+}
+
+.unset {
+  color: var(--gl-text-tertiary);
+}

@@ -9,6 +9,7 @@ import (
 	"golottery/api/internal/apihttp"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/config"
+	"golottery/api/internal/draw"
 	"golottery/api/internal/event"
 	"golottery/api/internal/guest"
 	"golottery/api/internal/httpapi"
@@ -106,6 +107,9 @@ func runServer() error {
 		Redis:      rdb,
 		Logger:     logger,
 	})
+	draws := draw.NewService(draw.Config{
+		DB: db.Gorm, Tokens: tokens, Limiter: limiter, Redis: rdb, Logger: logger,
+	})
 
 	router := httpapi.NewRouter(httpapi.Deps{
 		Logger:         logger,
@@ -127,6 +131,7 @@ func runServer() error {
 			Wechat:     wechatClient,
 			Limiter:    ratelimit.New(rdb, logger),
 		}),
+		Draws:  draws,
 		Logger: logger,
 	}); err != nil {
 		_ = closeAll()
@@ -138,5 +143,6 @@ func runServer() error {
 		Handler:    router,
 		Logger:     logger,
 		CloseStore: closeAll,
+		OnShutdown: draws.Hub().Close,
 	})
 }

@@ -14,6 +14,7 @@ type runDeps struct {
 	Handler    http.Handler
 	Logger     *slog.Logger
 	CloseStore func() error
+	OnShutdown func()
 }
 
 func run(parent context.Context, deps runDeps) error {
@@ -42,6 +43,9 @@ func run(parent context.Context, deps runDeps) error {
 	}
 
 	stop()
+	if deps.OnShutdown != nil {
+		deps.OnShutdown()
+	}
 	shutdownHTTP(server, deps.Logger)
 	if deps.CloseStore != nil {
 		if err := deps.CloseStore(); err != nil {
