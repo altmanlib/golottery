@@ -7,7 +7,9 @@ import {
   fromShanghaiInput,
   guestEntryUrl,
   importFailure,
+  parseTab,
   prizeErrorMessage,
+  readinessSteps,
   readyBlocker,
   readyCostHint,
   settingsFromEvent,
@@ -112,5 +114,33 @@ describe('roster and prizes', () => {
 
   it('builds the guest entry url on the current host', () => {
     expect(guestEntryUrl('https://golottery.ioclub.cn', event.public_id)).toBe('https://golottery.ioclub.cn/#/m/V1StGXR8_Z5jdHi6B-myT')
+  })
+})
+
+describe('detail overview', () => {
+  it('marks the steps the server requires before ready', () => {
+    const steps = readinessSteps({ ...event, attendee_count: 0, center_lat: null, center_lng: null, checkin_end: null })
+    expect(steps.map((s) => [s.label, s.done, s.required])).toEqual([
+      ['导入名单', false, true],
+      ['设定签到时间', false, true],
+      ['标注会场位置', false, true],
+      ['设置奖项', false, false],
+    ])
+    expect(
+      readinessSteps(event)
+        .filter((s) => s.required)
+        .every((s) => s.done),
+    ).toBe(true)
+  })
+
+  it('needs no fence in direct mode', () => {
+    const step = readinessSteps({ ...event, checkin_mode: 'direct', center_lat: null, center_lng: null })[2]
+    expect(step).toMatchObject({ label: '选择签到方式', done: true })
+  })
+
+  it('falls back to the overview for unknown tabs', () => {
+    expect(parseTab('roster')).toBe('roster')
+    expect(parseTab('nope')).toBe('overview')
+    expect(parseTab(null)).toBe('overview')
   })
 })

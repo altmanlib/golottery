@@ -369,13 +369,14 @@ Redis 约定：
 | `/organization/login` | 组织管理员登录；已有令牌时直接进入 `/organization` |
 | `/organization` | 组织控制台外壳，页头显示本组织名称；无令牌时去 `/organization/login`；首页重定向到 `/organization/events` |
 | `/organization/events` | 活动列表（页码写在 `?page=`）、剩余场次与创建弹窗 |
-| `/organization/events/:eventId` | 活动详情：状态操作（就绪前提示场次消耗，余额为 0 时禁用）、签到设置（时间按北京时间输入）、签到入口（网页地址与二维码、小程序码下载）、奖项、现场工作人员（一次性邀请链接与二维码、撤销）、大屏主持人（生成/重置口令）、现场数据（签到明细 / 中奖名单 / 抽奖日志导出、签到开始前重置）、名单（导入逐行报错、导出） |
+| `/organization/events/:eventId` | 活动详情，按标签页拆分（`?tab=`）：概览为开场前检查与签到入口；状态操作（就绪前提示场次消耗，余额为 0 时禁用）、签到设置（时间按北京时间输入）、签到入口（网页地址与二维码、小程序码下载）、奖项、现场工作人员（一次性邀请链接与二维码、撤销）、大屏主持人（生成/重置口令）、现场数据（签到明细 / 中奖名单 / 抽奖日志导出、签到开始前重置）、名单（导入逐行报错、导出） |
 | `/m/:publicId` | 宾客签到页（手机）：确认身份、签到、现场求助；求助待处理时每 10 秒刷新 |
 | `/m/:publicId/staff` | 现场工作台（手机）：`?invite=` 兑换邀请后去掉参数；签到进度与求助列表每 10 秒轮询、代签，`admin` 另有签到方式与围栏设置 |
 | `/host/:publicId/login` | 主持人登录；口令只对应该活动 |
 | `/host/:publicId` | 大屏：签到人数、抽奖控制、本轮结果、有效中奖；SSE 刷新；断线提示并重连 |
 
-- 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`
+- 设计 token 集中在 `src/tokens.ts`（原始色板、按用途命名且分 light / dark 的语义 token、尺寸），由 `src/theme.ts` 的 `cssVariablesResolver` 统一输出为 `--gl-*` CSS 变量；组件只引用变量。当前 `forceColorScheme="light"`，深色模式只需切换配色方案
+- 视觉方向「青墨侧栏」：运营后台与组织控制台共用左侧深青导航栏，暖灰底、白色卡片、金色点缀；`brand` 第 6 阶 `#1E4544`；标题用 Noto Serif SC
 - 字体 `@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500），自托管
 - 样式用 CSS Modules；结构用 Mantine 布局组件
 - 业务请求只从 `#/api-gen/sdk.gen` 与 `#/api-gen/types.gen` 引用

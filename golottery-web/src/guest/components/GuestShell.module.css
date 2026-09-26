@@ -1,11 +1,11 @@
 .root {
   min-height: 100dvh;
-  background: var(--mantine-color-gray-0);
+  background: var(--gl-canvas);
 }
 
 .header {
-  background: var(--mantine-color-brand-6);
-  color: var(--mantine-color-white);
+  background: var(--gl-sidebar);
+  color: var(--gl-sidebar-text-strong);
 }
 
 .body {

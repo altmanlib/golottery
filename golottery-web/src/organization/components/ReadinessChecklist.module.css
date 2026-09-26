@@ -1,0 +1,32 @@
+.row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gl-border-subtle);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.mark {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+
+  &[data-state='done'] {
+    background: var(--mantine-primary-color-filled);
+    color: var(--mantine-color-white);
+  }
+
+  &[data-state='todo'] {
+    border: 2px solid var(--gl-pending);
+  }
+
+  &[data-state='optional'] {
+    border: 2px solid var(--gl-border-strong);
+  }
+}
+
+.detail {
+  color: var(--gl-text-secondary);
+}

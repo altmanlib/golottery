@@ -1,0 +1,8 @@
+.muted {
+  color: var(--gl-sidebar-text-muted);
+}
+
+.credits {
+  color: var(--gl-accent);
+  line-height: 1.2;
+}

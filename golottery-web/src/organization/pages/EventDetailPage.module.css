@@ -1,0 +1,30 @@
+.tabList {
+  gap: 24px;
+
+  &::before {
+    display: none;
+  }
+}
+
+.tab {
+  padding: 10px 0 12px;
+  border-bottom-width: 2px;
+  color: var(--gl-text-secondary);
+  font-size: var(--mantine-font-size-md);
+  background: transparent;
+
+  &:hover {
+    background: transparent;
+    color: var(--gl-text);
+  }
+
+  &[data-active] {
+    color: var(--gl-text);
+    font-weight: 600;
+  }
+}
+
+.count {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+}

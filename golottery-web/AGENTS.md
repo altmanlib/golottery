@@ -20,14 +20,18 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 
 ## 约定
 
-- 视觉 token 定义在 `src/theme.ts` 的 Mantine 主题（`colors` / `radius` / `fontSizes` / `fontFamily` / `other`）；Mantine 生成 `--mantine-*`，主题词汇覆盖不到的值经 `cssVariablesResolver` 输出，`brand` 第 6 阶为 `#1E4544`
+- 设计 token 只写在 `src/tokens.ts`：`palette` 是原始色值，`semantic` 按用途命名（`canvas`、`surface`、`textSecondary`、`sidebar`、`statusReadyBg`……）且 `light` / `dark` 各一份，`scale` 放圆角、侧栏宽、页边距、标题字体。`src/theme.ts` 的 `cssVariablesResolver` 把它们统一输出为 `--gl-*`（`textSecondary` → `--gl-text-secondary`），并让 `--mantine-color-body` / `-text` / `-dimmed` / `-default-border` 指向同一组 token
+- 组件的 CSS Module 只用 `var(--gl-*)` 与 `var(--mantine-*)`，不写色值，不在页面里另起 CSS 变量。新增颜色先在 `semantic` 的 `light` 和 `dark` 里各补一项；要开启深色模式，只需把 `main.tsx` 的 `forceColorScheme="light"` 换成 `defaultColorScheme`，组件不用改
+- 视觉方向为「青墨侧栏」：深青侧栏 + 暖灰底 + 金色点缀，`brand` 第 6 阶为 `#1E4544`，页面标题用衬线体（`--gl-font-display`，Noto Serif SC 700）
 - CSS Modules 是 Mantine 官方推荐的组件样式方式（手册 *Consider using CSS modules first*：「CSS modules are the recommended way of styling Mantine components」，见 `docs/reference/mantine-ui-library.txt`）。选内联 `style`、CSS-in-JS 或 utility 类之前，先确认 CSS Modules 做不到：utility 类难以按 `data-*` 属性定制样式，styled-components 一类方案无法用静态选择器命中经 Portal 渲染到组件外的内部节点。本项目不引入其他样式方案
 - 样式用 CSS Modules：全局只留 `src/styles/base.css`（reset，`main.tsx` 引入）。组件视觉规则写在同目录 `*.module.css`，`import classes from './X.module.css'` 后用 `className={classes.x}`。Mantine 内部节点用 `classNames={classes}`（键名对齐 Styles API），不要用全局类名覆盖 `.mantine-*`。不新增全局样式文件，不跨组件复用类名；确实共用的壳做成组件再引用
-- 字体自托管：`@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500）
+- 字体自托管：`@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500）、`noto-serif-sc`（700，只用于标题）
 - 不做运行时配置；只请求相对路径
 - 图标统一用 `@tabler/icons-react`；控制台常见尺寸 `size={16}`，返回箭头 `14`
 - 插画取自本机 unDraw 库（`~/code/fishx/illustration/undraw`），拷入 `public/illustrations/`，并把默认主色 `#6c63ff` 改成品牌青 `#55807E`（brand-4）；装饰性插画一律 `alt=""`，空状态插画宽度 `132`，登录页 `min(280px, 68vw)`
-- 控制台与组织端密度按 Data-Dense：间距只用 `4/8/12/16/24`，卡片 padding `12`，主区 `16×24`，页面标题 `18`
+- 运营后台与组织控制台共用 `src/components/ConsoleShell`（左侧深色导航栏）；页面用 `src/components/Page` 的 `Page` / `PageHeader` / `PageBand` / `Card` / `Section` 装配，不自行处理页边距
+- 密度：间距用 `4/8/12/16/24`，页边距 `24×32`（`--gl-page-gutter-y` / `-x`），卡片 padding `20`、圆角 `12`，控件圆角 `8`，页面标题 `26`
+- 活动详情按标签页拆分（概览、签到设置、名单、奖项、现场与大屏、现场数据），当前标签写在 `?tab=`
 - 列表页不出现整页滚动，表格区撑满剩余高度并内部滚动（表头 sticky）
 - 列表走后端 `offset`/`limit` 分页（默认 40），页码写在 URL；底栏用 `Pagination`
 - 动效只做 CSS 微交互：路由淡入写在对应壳的 CSS Module；弹层用 Mantine `Modal`（默认 portal 到 `body`）；尊重 `prefers-reduced-motion`
