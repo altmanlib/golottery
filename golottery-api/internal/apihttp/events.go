@@ -250,3 +250,29 @@ func prizeBody(p event.Prize) api.Prize {
 func attendeeBody(a event.Attendee) api.Attendee {
 	return api.Attendee{Id: a.ID, Name: a.Name, Dept: a.Dept, PhoneLast4: a.PhoneLast4, Status: a.Status, CreatedAt: a.CreatedAt}
 }
+
+// ListOrgEvents lets an operator see an organization's events.
+func (s *Server) ListOrgEvents(ctx context.Context, request api.ListOrgEventsRequestObject) (api.ListOrgEventsResponseObject, error) {
+	if _, err := s.orgs.Get(ctx, request.OrgId); err != nil {
+		return nil, err
+	}
+	offset, limit := page(request.Params.Offset, request.Params.Limit)
+	rows, total, err := s.events.List(ctx, request.OrgId, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]api.Event, len(rows))
+	for i, row := range rows {
+		items[i] = eventBody(row)
+	}
+	return api.ListOrgEvents200JSONResponse{Items: items, Total: int(total)}, nil
+}
+
+// SetEventMaxAttendees changes one event's attendee limit on behalf of the organization.
+func (s *Server) SetEventMaxAttendees(ctx context.Context, request api.SetEventMaxAttendeesRequestObject) (api.SetEventMaxAttendeesResponseObject, error) {
+	view, err := s.events.SetMaxAttendees(ctx, request.OrgId, request.EventId, request.Body.MaxAttendees)
+	if err != nil {
+		return nil, err
+	}
+	return api.SetEventMaxAttendees200JSONResponse(eventBody(view)), nil
+}

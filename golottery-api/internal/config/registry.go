@@ -121,6 +121,22 @@ var Registry = []Spec{
 		Set: func(c *Config, v string) error { c.WechatAPIBase = strings.TrimRight(v, "/"); return nil },
 	},
 	{
+		Key: "GUEST_LOGIN_MODE", Kind: KindString, Group: GroupAuth, Scope: ScopeInfra, Default: "wechat",
+		Set: func(c *Config, v string) error {
+			switch v {
+			case "wechat", "web":
+				c.GuestLoginMode = v
+				return nil
+			}
+			return fmt.Errorf("invalid GUEST_LOGIN_MODE: %q (wechat or web)", v)
+		},
+	},
+	{
+		Key: "GUEST_SESSION_TTL", Kind: KindString, Group: GroupAuth,
+		Default: "24h", Scope: ScopeApp,
+		Set: durationSetter("GUEST_SESSION_TTL", func(c *Config, d time.Duration) { c.GuestSessionTTL = d }),
+	},
+	{
 		Key: "CONSOLE_SESSION_TTL", Kind: KindString, Group: GroupAuth,
 		Default: "12h", Scope: ScopeApp,
 		Set: durationSetter("CONSOLE_SESSION_TTL", func(c *Config, d time.Duration) { c.ConsoleSessionTTL = d }),

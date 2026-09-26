@@ -41,6 +41,7 @@ describe('token scopes', () => {
     expect(scopeOf('/api/platform/me')).toBe('platform')
     expect(scopeOf('http://localhost:3000/api/organization/events?page=2')).toBe('console')
     expect(scopeOf('/api/host/abc/draws')).toBe('host')
+    expect(scopeOf('/api/guest/checkin')).toBe('guest')
     expect(scopeOf('/healthz')).toBeNull()
     expect(scopeOf('/api/platformx')).toBeNull()
   })
@@ -58,6 +59,10 @@ describe('token scopes', () => {
     expect(loginRouteFor('platform')).toBe('/platform/login')
     expect(loginRouteFor('console')).toBe('/organization/login')
     expect(loginRouteFor('host')).toBeNull()
+    expect(loginRouteFor('guest')).toBeNull()
+    expect(redirectAfterExpiry('guest', '/m/abc')).toBeNull()
+    expect(expiredScope('/api/guest/checkin', 401)).toBe('guest')
+    expect(expiredScope('/api/guest/session', 401)).toBeNull()
   })
 
   it('redirects only when the user is still inside the expired scope', () => {

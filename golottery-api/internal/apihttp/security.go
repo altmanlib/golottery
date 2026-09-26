@@ -11,21 +11,26 @@ import (
 	api "golottery/api/api"
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
+	"golottery/api/internal/guest"
 )
 
-// schemeTokenTypes maps OpenAPI security schemes to the token type they accept.
-var schemeTokenTypes = map[string]string{
-	"platformBearer": auth.TokenTypePlatform,
-	"consoleBearer":  auth.TokenTypeConsole,
-}
+// Security schemes declared in openapi.yaml.
+const (
+	schemePlatform = "platformBearer"
+	schemeConsole  = "consoleBearer"
+	schemeGuest    = "guestBearer"
+)
 
-type tokenKey struct{}
+// authenticator checks a bearer token for one scheme and returns the request context
+// carrying the caller, or a bizerr.
+type authenticator func(ctx context.Context, plain string) (context.Context, error)
 
-// principalResolver runs after the token lookup for token types whose owner can be
-// disabled; it rejects stale owners and adds the resolved principal to the context.
-type principalResolver func(ctx context.Context, token auth.APIToken) (context.Context, error)
+type (
+	tokenKey struct{}
+	guestKey struct{}
+)
 
-// tokenFrom returns the token authenticated for the current request.
+// tokenFrom returns the back-office token authenticated for the current request.
 func tokenFrom(ctx context.Context) (auth.APIToken, error) {
 	token, ok := ctx.Value(tokenKey{}).(auth.APIToken)
 	if !ok {
@@ -34,9 +39,54 @@ func tokenFrom(ctx context.Context) (auth.APIToken, error) {
 	return token, nil
 }
 
-// securedOperations reads, from the embedded contract, the token type each operation requires.
-// Keys are the Go operation names the strict middleware receives.
-func securedOperations() (map[string]string, error) {
+// guestFrom returns the guest authenticated for the current request.
+func guestFrom(ctx context.Context) (guest.Guest, error) {
+	g, ok := ctx.Value(guestKey{}).(guest.Guest)
+	if !ok {
+		return guest.Guest{}, bizerr.New(bizerr.CodeUnauthorized)
+	}
+	return g, nil
+}
+
+// apiTokenAuth accepts api_tokens rows of typ; resolve, when set, also checks the owner
+// (for example that a console admin and its organization are still active).
+func apiTokenAuth(tokens *auth.TokenIssuer, typ string, resolve func(context.Context, auth.APIToken) (context.Context, error)) authenticator {
+	return func(ctx context.Context, plain string) (context.Context, error) {
+		token, err := tokens.Lookup(ctx, typ, plain)
+		if errors.Is(err, auth.ErrTokenNotFound) {
+			return nil, bizerr.New(bizerr.CodeUnauthorized)
+		}
+		if err != nil {
+			return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+		}
+		ctx = context.WithValue(ctx, tokenKey{}, token)
+		if resolve != nil {
+			return resolve(ctx, token)
+		}
+		return ctx, nil
+	}
+}
+
+// guestAuth accepts guest session tokens.
+func guestAuth(guests *guest.Service) authenticator {
+	return func(ctx context.Context, plain string) (context.Context, error) {
+		if guests == nil {
+			return nil, bizerr.New(bizerr.CodeUnauthorized)
+		}
+		g, err := guests.Lookup(ctx, plain)
+		if errors.Is(err, guest.ErrSessionNotFound) {
+			return nil, bizerr.New(bizerr.CodeUnauthorized)
+		}
+		if err != nil {
+			return nil, bizerr.Wrap(bizerr.CodeInternal, err)
+		}
+		return context.WithValue(ctx, guestKey{}, g), nil
+	}
+}
+
+// securedOperations reads, from the embedded contract, the security scheme each operation
+// requires. Keys are the Go operation names the strict middleware receives.
+func securedOperations(known map[string]authenticator) (map[string]string, error) {
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, fmt.Errorf("apihttp: load spec: %w", err)
@@ -49,11 +99,10 @@ func securedOperations() (map[string]string, error) {
 			}
 			for _, requirement := range *op.Security {
 				for scheme := range requirement {
-					typ, ok := schemeTokenTypes[scheme]
-					if !ok {
+					if _, ok := known[scheme]; !ok {
 						return nil, fmt.Errorf("apihttp: %s %s uses unknown security scheme %q", method, path, scheme)
 					}
-					out[goOperationName(op.OperationID)] = typ
+					out[goOperationName(op.OperationID)] = scheme
 				}
 			}
 		}
@@ -68,31 +117,22 @@ func goOperationName(operationID string) string {
 	return strings.ToUpper(operationID[:1]) + operationID[1:]
 }
 
-// authenticate requires a live bearer token of the declared type before secured operations.
-func authenticate(tokens *auth.TokenIssuer, secured map[string]string, resolvers map[string]principalResolver) api.StrictMiddlewareFunc {
+// authenticate requires a valid bearer token of the declared scheme before secured operations.
+func authenticate(secured map[string]string, auths map[string]authenticator) api.StrictMiddlewareFunc {
 	return func(next api.StrictHandlerFunc, operationID string) api.StrictHandlerFunc {
-		typ, ok := secured[operationID]
+		scheme, ok := secured[operationID]
 		if !ok {
 			return next
 		}
+		check := auths[scheme]
 		return func(c echo.Context, request any) (any, error) {
 			plain, ok := bearerToken(c.Request().Header.Get(echo.HeaderAuthorization))
 			if !ok {
 				return nil, bizerr.New(bizerr.CodeUnauthorized)
 			}
-			ctx := c.Request().Context()
-			token, err := tokens.Lookup(ctx, typ, plain)
-			if errors.Is(err, auth.ErrTokenNotFound) {
-				return nil, bizerr.New(bizerr.CodeUnauthorized)
-			}
+			ctx, err := check(c.Request().Context(), plain)
 			if err != nil {
-				return nil, bizerr.Wrap(bizerr.CodeInternal, err)
-			}
-			ctx = context.WithValue(ctx, tokenKey{}, token)
-			if resolve, ok := resolvers[typ]; ok {
-				if ctx, err = resolve(ctx, token); err != nil {
-					return nil, err
-				}
+				return nil, err
 			}
 			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c, request)

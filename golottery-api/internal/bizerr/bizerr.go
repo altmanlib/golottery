@@ -29,6 +29,14 @@ const (
 	CodeImportFile           Code = "E_IMPORT_FILE"
 	CodeImportInvalid        Code = "E_IMPORT_INVALID"
 	CodeWechatNotConfigured  Code = "E_WECHAT_NOT_CONFIGURED"
+	CodeAttendeeNotMatched   Code = "E_ATTENDEE_NOT_MATCHED"
+	CodeAttendeeTaken        Code = "E_ATTENDEE_TAKEN"
+	CodeNotBound             Code = "E_NOT_BOUND"
+	CodeEventNotOpen         Code = "E_EVENT_NOT_OPEN"
+	CodeWindowClosed         Code = "E_WINDOW_CLOSED"
+	CodeLowAccuracy          Code = "E_LOW_ACCURACY"
+	CodeOutOfRange           Code = "E_OUT_OF_RANGE"
+	CodeInviteInvalid        Code = "E_INVITE_INVALID"
 	CodeInternal             Code = "E_INTERNAL"
 	CodeStoreUnavailable     Code = "E_STORE_UNAVAILABLE"
 )
@@ -51,6 +59,14 @@ var messages = map[Code]string{
 	CodeImportFile:           "无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx",
 	CodeImportInvalid:        "有 %d 行需要修正，整份文件未导入",
 	CodeWechatNotConfigured:  "微信小程序尚未配置，暂时无法生成小程序码",
+	CodeAttendeeNotMatched:   "姓名或手机后四位与名单不符",
+	CodeAttendeeTaken:        "该名单人员已被其他设备绑定，请联系现场工作人员",
+	CodeNotBound:             "请先核对姓名与手机后四位",
+	CodeEventNotOpen:         "活动尚未开放签到",
+	CodeWindowClosed:         "当前不在签到时间内",
+	CodeLowAccuracy:          "定位精度不足，请到开阔处重试或联系现场工作人员",
+	CodeOutOfRange:           "不在签到范围内，距离约 %d 米",
+	CodeInviteInvalid:        "邀请链接无效、已使用或已过期",
 	CodeInternal:             "系统出错了，请稍后重试",
 	CodeStoreUnavailable:     "系统暂时不可用，请稍后重试",
 }
@@ -64,7 +80,7 @@ func StatusOf(code Code) int {
 		return http.StatusForbidden
 	case CodeNotFound:
 		return http.StatusNotFound
-	case CodeConflict, CodeNoEventCredits:
+	case CodeConflict, CodeNoEventCredits, CodeAttendeeTaken, CodeEventNotOpen, CodeWindowClosed:
 		return http.StatusConflict
 	case CodeTooManyAttempts:
 		return http.StatusTooManyRequests

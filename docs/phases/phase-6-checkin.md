@@ -2,7 +2,7 @@
 title: 阶段 6：现场签到
 type: design
 status: published
-updated: 2026-09-25
+updated: 2026-09-26
 ---
 
 # 阶段 6：现场签到
@@ -103,11 +103,11 @@ updated: 2026-09-25
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET · POST | `/api/organization/events/:id/staff` | 工作人员列表 · `{role}` 生成邀请，返回一次性邀请码与小程序码 |
+| GET · POST | `/api/organization/events/:id/staff` | 工作人员列表 · `{role}` 生成邀请，返回一次性邀请码与网页路径 `/#/m/<public_id>/staff?invite=<code>` |
 | DELETE | `/api/organization/events/:id/staff/:staffId` | 撤销授权 |
 | POST | `/api/guest/staff/join` | `{invite}`，把当前宾客会话的 openid 写入 `event_staff` |
 
-邀请码 24 小时有效、只能使用一次，库内只存 SHA-256。
+邀请码 24 小时有效、只能使用一次，库内只存 SHA-256。无效、已用或过期统一返回 `400 E_INVITE_INVALID`。
 
 ### 4.2 宾客接口
 
@@ -150,7 +150,7 @@ updated: 2026-09-25
 | POST | `/api/guest/staff/manual-requests/:id/reject` | 拒绝 |
 | POST | `/api/guest/staff/checkins/proxy` | `{attendee_id}` 代签到 |
 | GET | `/api/guest/staff/attendees?q=` | 按姓名搜索，供代签到选人 |
-| PATCH | `/api/guest/staff/checkin-settings` | `{checkin_mode, center_lat, center_lng, radius_m}`，字段可部分提交，仅 `admin`，PRD M5。切到 `geo` 时缺围栏返回 `400 E_BAD_REQUEST` |
+| PATCH | `/api/guest/staff/checkin-settings` | `{checkin_mode, center_lat, center_lng, radius_m, coord_type}`，字段可部分提交，仅 `admin`，PRD M5。`coord_type: wgs84`（网页定位）时服务端先把圆心换算成 GCJ-02。校验沿用控制台改活动的规则，就绪活动缺围栏时返回 `400 E_EVENT_INCOMPLETE` |
 
 无现场权限统一返回 `404 E_NOT_FOUND`。
 
@@ -160,9 +160,9 @@ updated: 2026-09-25
 | --- | --- | --- |
 | 已绑定者 | `{}` | 签到 |
 | 未绑定，名单有错字 | `{attendee_id}` | 关联已有人员并绑定 openid；该人员已绑定其他 openid 时返回 `409 E_CONFLICT` |
-| 未绑定，不在名单 | `{create: {name, dept, phone_last4}}` | 新增名单人员并绑定；受 `events.max_attendees` 约束 |
+| 未绑定，不在名单 | `{create: {name, dept, phone}}`（`phone` 可只填后四位） | 新增名单人员并绑定；受 `events.max_attendees` 约束 |
 
-三种结果都写 `checkin_method = manual` 与 `checkin_by`，并删除该 openid 的绑定失败计数。
+三种结果都写 `checkin_method = manual` 与 `checkin_by`，并删除该 openid 的绑定失败计数。活动须为 `ready`，否则返回 `409 E_EVENT_NOT_OPEN`。同一名单人员被第二个身份绑定时返回 `409 E_ATTENDEE_TAKEN`。
 
 重置现场数据：`POST /api/organization/events/:id/reset`，要求 `console` 令牌，入参 `{confirm_name}` 必须等于活动名称。
 
@@ -211,6 +211,21 @@ updated: 2026-09-25
 | 名单删除 | 已绑定或已签到的人员不能删除（补上阶段 5 的预留校验） |
 | 权限 | 普通宾客访问 staff 接口返回 `404` |
 
+### 4.6 首发的网页宾客端
+
+首发不等小程序上线：由 `golottery-web` 里的手机网页扮演小程序客户端，后端接口按本方案实现，不另开一套。小程序接入登记为 [ROADMAP P-25](../ROADMAP.md)，届时只换客户端与登录方式。
+
+| 项 | 网页宾客端 |
+| --- | --- |
+| 入口 | `/m/:publicId`；活动码与路径同时提供网页地址，印刷物使用网页地址的二维码 |
+| 登录 | 新增 ScopeInfra 配置 `GUEST_LOGIN_MODE`：`wechat`（默认，`code` 换 openid）或 `web`。`web` 模式下 `POST /api/guest/session` 接受 `{public_id, device_id}`，`device_id` 由浏览器生成并存在本地，服务端以 `web:<device_id>` 作为 openid。两种模式不同时开启 |
+| 坐标 | 浏览器定位为 WGS-84。签到请求增加 `coord_type`（`gcj02` 默认 / `wgs84`），服务端先换算成 GCJ-02 再判定与落库 |
+| 绑定限速 | 网页身份可以随意更换，按 openid 的锁定挡不住穷举。`web` 模式另按客户端 IP 限速：同一活动同一 IP 每 10 分钟最多 20 次绑定失败，超出返回 `429 E_TOO_MANY_ATTEMPTS`，计数放 Redis，复用 `internal/ratelimit` |
+| 工作人员 | 邀请、现场求助处理、代签到、签到进度与签到方式切换做成网页，路由 `/m/:publicId/staff`；邀请以网页链接发出 |
+| 定位权限 | 浏览器定位要求 HTTPS；被拒绝时引导使用现场求助 |
+
+网页身份没有微信背书，同一个人换浏览器即是新身份，绑定仍是「名单 + 后四位」一次性占用：一个名单人员只能被一个身份绑定，冒名者抢先绑定时，本人通过现场求助由工作人员处理。
+
 ## 5. 明确不做
 
 - 持续定位
@@ -220,11 +235,12 @@ updated: 2026-09-25
 ## 6. 完成定义
 
 - 真实 PostgreSQL 测试覆盖判定、幂等和权限
-- 小程序能用活动参数完成绑定、签到和现场求助（含名单匹配不上的情形）
+- 网页宾客端能用活动参数完成绑定、签到和现场求助（含名单匹配不上的情形）；工作人员网页能处理求助与代签到
+- 小程序页面与真机验证移到 [ROADMAP P-25](../ROADMAP.md)，不阻塞本阶段
 - API 格式、lint、测试全绿
 
 ## 7. 开放项
 
 | 问题 | 现状 | 需要在哪个阶段前定 |
 | --- | --- | --- |
-| OpenAPI 对外冻结前评审 | 契约版本 `0.1.0`，web 与 API 同步部署可随时调整；小程序一经提审，旧版本会在用户手机上长期存在，接口改名、字段语义变化都会变成不兼容改动。见 [ROADMAP P-23](../ROADMAP.md) | 阶段 6 开工前。评审路由与字段命名、错误码、分页参数、默认值语义、可空性、枚举取值，收回不该对外的内部开关；结论写回 [DESIGN.md](../DESIGN.md)，并提升 `info.version` |
+| OpenAPI 对外冻结前评审 | 契约版本 `0.1.0`，web 与 API 同步部署可随时调整；小程序一经提审，旧版本会在用户手机上长期存在，接口改名、字段语义变化都会变成不兼容改动。见 [ROADMAP P-23](../ROADMAP.md) | 小程序首次提审前（[ROADMAP P-25](../ROADMAP.md)）。首发客户端是与 API 同步部署的网页，接口仍可调整。评审路由与字段命名、错误码、分页参数、默认值语义、可空性、枚举取值，收回不该对外的内部开关；结论写回 [DESIGN.md](../DESIGN.md)，并提升 `info.version` |

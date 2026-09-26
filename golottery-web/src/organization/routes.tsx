@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router-dom'
 
 export const organizationRoutes: RouteObject[] = [
   {
@@ -9,9 +9,14 @@ export const organizationRoutes: RouteObject[] = [
     path: '/organization',
     lazy: async () => ({ Component: (await import('#/organization/components/OrganizationShell')).OrganizationShell }),
     children: [
+      { index: true, element: <Navigate to="events" replace /> },
       {
-        index: true,
-        lazy: async () => ({ Component: (await import('#/organization/pages/HomePage')).HomePage }),
+        path: 'events',
+        lazy: async () => ({ Component: (await import('#/organization/pages/EventListPage')).EventListPage }),
+      },
+      {
+        path: 'events/:eventId',
+        lazy: async () => ({ Component: (await import('#/organization/pages/EventDetailPage')).EventDetailPage }),
       },
     ],
   },

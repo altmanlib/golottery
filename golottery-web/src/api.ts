@@ -1,24 +1,27 @@
 import { client } from '#/api-gen/client.gen'
 
 /** Token scopes follow the API path prefix; the three token types are not interchangeable. */
-export type TokenScope = 'platform' | 'console' | 'host'
+export type TokenScope = 'platform' | 'console' | 'host' | 'guest'
 
 export const TOKEN_KEYS: Record<TokenScope, string> = {
   platform: 'gl.token.platform',
   console: 'gl.token.console',
   host: 'gl.token.host',
+  guest: 'gl.token.guest',
 }
 
 const SCOPE_PREFIXES: [string, TokenScope][] = [
   ['/api/platform/', 'platform'],
   ['/api/organization/', 'console'],
   ['/api/host/', 'host'],
+  ['/api/guest/', 'guest'],
 ]
 
 /** A 401 from these paths means wrong credentials, not an expired session. */
-const LOGIN_PATHS = new Set(['/api/platform/login', '/api/organization/login'])
+const LOGIN_PATHS = new Set(['/api/platform/login', '/api/organization/login', '/api/guest/session'])
 
-/** Where each scope goes after its token is rejected; host joins in phase 7. */
+/** Where each scope goes after its token is rejected; host joins in phase 7. Guests have no
+ * login page: their pages sign in again with the same device id. */
 const LOGIN_ROUTES: Partial<Record<TokenScope, string>> = {
   platform: '/platform/login',
   console: '/organization/login',
@@ -29,6 +32,7 @@ const ROUTE_PREFIXES: Record<TokenScope, string> = {
   platform: '/platform',
   console: '/organization',
   host: '/host',
+  guest: '/m',
 }
 
 /** Query-key roots owned by each scope, dropped when that scope's session ends. */
@@ -36,6 +40,7 @@ export const QUERY_ROOTS: Record<TokenScope, string> = {
   platform: 'platform',
   console: 'organization',
   host: 'host',
+  guest: 'guest',
 }
 
 export function loginRouteFor(scope: TokenScope): string | null {
@@ -58,12 +63,15 @@ const NETWORK_ERROR_MESSAGE = '无法连接服务器，请稍后重试'
 export class ApiError extends Error {
   code: string
   status: number
+  /** The parsed error body, for endpoints that add fields to `{code, message}`. */
+  body: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, body?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.body = body
   }
 }
 
@@ -106,7 +114,7 @@ export function setUnauthorizedHandler(handler: ((scope: TokenScope) => void) | 
 /** Builds an ApiError from a `{code, message}` body; other bodies keep the fallback text. */
 export function apiErrorFrom(status: number, body: unknown, fallback: string): ApiError {
   const { code, message } = (typeof body === 'object' && body !== null ? body : {}) as { code?: unknown; message?: unknown }
-  return new ApiError(status, typeof code === 'string' ? code : 'E_INTERNAL', typeof message === 'string' ? message : fallback)
+  return new ApiError(status, typeof code === 'string' ? code : 'E_INTERNAL', typeof message === 'string' ? message : fallback, body)
 }
 
 type SdkResult<T> = { data?: T; error?: unknown; response?: Response }
@@ -141,7 +149,11 @@ client.interceptors.response.use((response, request) => {
   const scope = expiredScope(request.url, response.status)
   if (scope) {
     setToken(scope, null)
-    unauthorizedHandler?.(scope)
+    // Guest calls sign in again and retry on their own; dropping their queries here
+    // would cancel that retry mid-flight.
+    if (scope !== 'guest') {
+      unauthorizedHandler?.(scope)
+    }
   }
   return response
 })

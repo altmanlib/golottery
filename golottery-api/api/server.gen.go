@@ -27,6 +27,45 @@ type ServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx echo.Context) error
+	// GuestBind Bind the guest to a roster person
+	// (POST /api/guest/bind)
+	GuestBind(ctx echo.Context) error
+	// GetGuestStatus Binding, check-in and help request status, with the current check-in mode
+	// (GET /api/guest/checkin)
+	GetGuestStatus(ctx echo.Context) error
+	// GuestCheckin Check in; geo mode needs coordinates, direct mode ignores them
+	// (POST /api/guest/checkin)
+	GuestCheckin(ctx echo.Context) error
+	// SubmitManualRequest Ask on-site staff for help
+	// (POST /api/guest/manual-requests)
+	SubmitManualRequest(ctx echo.Context) error
+	// GuestLogin Sign in a guest for one event
+	// (POST /api/guest/session)
+	GuestLogin(ctx echo.Context) error
+	// SearchStaffAttendees Find roster people by name, at most 20
+	// (GET /api/guest/staff/attendees)
+	SearchStaffAttendees(ctx echo.Context, params SearchStaffAttendeesParams) error
+	// UpdateStaffSettings Switch check-in mode or move the fence (admin role only)
+	// (PATCH /api/guest/staff/checkin-settings)
+	UpdateStaffSettings(ctx echo.Context) error
+	// ProxyCheckin Check a roster person in on their behalf
+	// (POST /api/guest/staff/checkins/proxy)
+	ProxyCheckin(ctx echo.Context) error
+	// JoinStaff Become staff of the event with an invite code
+	// (POST /api/guest/staff/join)
+	JoinStaff(ctx echo.Context) error
+	// ListPendingRequests Open help requests, oldest first
+	// (GET /api/guest/staff/manual-requests)
+	ListPendingRequests(ctx echo.Context) error
+	// ApproveRequest Bind when needed and check the person in
+	// (POST /api/guest/staff/manual-requests/{requestId}/approve)
+	ApproveRequest(ctx echo.Context, requestId RequestId) error
+	// RejectRequest Close a help request
+	// (POST /api/guest/staff/manual-requests/{requestId}/reject)
+	RejectRequest(ctx echo.Context, requestId RequestId) error
+	// GetStaffSummary Roster size, check-ins and open help requests
+	// (GET /api/guest/staff/summary)
+	GetStaffSummary(ctx echo.Context) error
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx echo.Context, params ListEventsParams) error
@@ -63,6 +102,9 @@ type ServerInterface interface {
 	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
 	// (GET /api/organization/events/{eventId}/exports/attendees)
 	ExportAttendees(ctx echo.Context, eventId EventId) error
+	// ExportCheckinAttempts Every check-in tap with coordinates, as xlsx in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/checkin-attempts)
+	ExportCheckinAttempts(ctx echo.Context, eventId EventId) error
 	// ListPrizes Prizes by sort_no
 	// (GET /api/organization/events/{eventId}/prizes)
 	ListPrizes(ctx echo.Context, eventId EventId) error
@@ -75,6 +117,18 @@ type ServerInterface interface {
 	// UpdatePrize Change a prize
 	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
 	UpdatePrize(ctx echo.Context, eventId EventId, prizeId PrizeId) error
+	// ResetLiveData Clear a trial run before check-in opens; the roster, prizes and staff stay
+	// (POST /api/organization/events/{eventId}/reset)
+	ResetLiveData(ctx echo.Context, eventId EventId) error
+	// ListEventStaff On-site staff of an event
+	// (GET /api/organization/events/{eventId}/staff)
+	ListEventStaff(ctx echo.Context, eventId EventId) error
+	// CreateStaffInvite Create a one-time invite for a role, valid 24 hours
+	// (POST /api/organization/events/{eventId}/staff)
+	CreateStaffInvite(ctx echo.Context, eventId EventId) error
+	// RemoveEventStaff Revoke a staff member
+	// (DELETE /api/organization/events/{eventId}/staff/{staffId})
+	RemoveEventStaff(ctx echo.Context, eventId EventId, staffId StaffId) error
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx echo.Context) error
@@ -114,6 +168,12 @@ type ServerInterface interface {
 	// EnableOrg Enable an organization; idempotent
 	// (POST /api/platform/orgs/{orgId}/enable)
 	EnableOrg(ctx echo.Context, orgId OrgId) error
+	// ListOrgEvents Events of an organization, newest first
+	// (GET /api/platform/orgs/{orgId}/events)
+	ListOrgEvents(ctx echo.Context, orgId OrgId, params ListOrgEventsParams) error
+	// SetEventMaxAttendees Raise or lower one event's attendee limit; never below its roster
+	// (PATCH /api/platform/orgs/{orgId}/events/{eventId})
+	SetEventMaxAttendees(ctx echo.Context, orgId OrgId, eventId EventId) error
 	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
 	// (POST /api/platform/orgs/{orgId}/max-attendees)
 	SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error
@@ -157,6 +217,146 @@ func (w *ServerInterfaceWrapper) GetApiInfo(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetApiInfo(ctx)
+	return err
+}
+
+// GuestBind converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestBind(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestBind(ctx)
+	return err
+}
+
+// GetGuestStatus converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGuestStatus(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetGuestStatus(ctx)
+	return err
+}
+
+// GuestCheckin converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestCheckin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestCheckin(ctx)
+	return err
+}
+
+// SubmitManualRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) SubmitManualRequest(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SubmitManualRequest(ctx)
+	return err
+}
+
+// GuestLogin converts echo context to params.
+func (w *ServerInterfaceWrapper) GuestLogin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GuestLogin(ctx)
+	return err
+}
+
+// SearchStaffAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) SearchStaffAttendees(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchStaffAttendeesParams
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", ctx.QueryParams(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter q: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SearchStaffAttendees(ctx, params)
+	return err
+}
+
+// UpdateStaffSettings converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateStaffSettings(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateStaffSettings(ctx)
+	return err
+}
+
+// ProxyCheckin converts echo context to params.
+func (w *ServerInterfaceWrapper) ProxyCheckin(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ProxyCheckin(ctx)
+	return err
+}
+
+// JoinStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) JoinStaff(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.JoinStaff(ctx)
+	return err
+}
+
+// ListPendingRequests converts echo context to params.
+func (w *ServerInterfaceWrapper) ListPendingRequests(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListPendingRequests(ctx)
+	return err
+}
+
+// ApproveRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) ApproveRequest(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", ctx.Param("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter requestId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ApproveRequest(ctx, requestId)
+	return err
+}
+
+// RejectRequest converts echo context to params.
+func (w *ServerInterfaceWrapper) RejectRequest(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", ctx.Param("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter requestId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RejectRequest(ctx, requestId)
+	return err
+}
+
+// GetStaffSummary converts echo context to params.
+func (w *ServerInterfaceWrapper) GetStaffSummary(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetStaffSummary(ctx)
 	return err
 }
 
@@ -386,6 +586,22 @@ func (w *ServerInterfaceWrapper) ExportAttendees(ctx echo.Context) error {
 	return err
 }
 
+// ExportCheckinAttempts converts echo context to params.
+func (w *ServerInterfaceWrapper) ExportCheckinAttempts(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ExportCheckinAttempts(ctx, eventId)
+	return err
+}
+
 // ListPrizes converts echo context to params.
 func (w *ServerInterfaceWrapper) ListPrizes(ctx echo.Context) error {
 	var err error
@@ -463,6 +679,78 @@ func (w *ServerInterfaceWrapper) UpdatePrize(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdatePrize(ctx, eventId, prizeId)
+	return err
+}
+
+// ResetLiveData converts echo context to params.
+func (w *ServerInterfaceWrapper) ResetLiveData(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ResetLiveData(ctx, eventId)
+	return err
+}
+
+// ListEventStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) ListEventStaff(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListEventStaff(ctx, eventId)
+	return err
+}
+
+// CreateStaffInvite converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateStaffInvite(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateStaffInvite(ctx, eventId)
+	return err
+}
+
+// RemoveEventStaff converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveEventStaff(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// ------------- Path parameter "staffId" -------------
+	var staffId StaffId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "staffId", ctx.Param("staffId"), &staffId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter staffId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RemoveEventStaff(ctx, eventId, staffId)
 	return err
 }
 
@@ -624,6 +912,62 @@ func (w *ServerInterfaceWrapper) EnableOrg(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.EnableOrg(ctx, orgId)
+	return err
+}
+
+// ListOrgEvents converts echo context to params.
+func (w *ServerInterfaceWrapper) ListOrgEvents(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOrgEventsParams
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", ctx.QueryParams(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter offset: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", ctx.QueryParams(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListOrgEvents(ctx, orgId, params)
+	return err
+}
+
+// SetEventMaxAttendees converts echo context to params.
+func (w *ServerInterfaceWrapper) SetEventMaxAttendees(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orgId" -------------
+	var orgId OrgId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orgId", ctx.Param("orgId"), &orgId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orgId: %s", err))
+	}
+
+	// ------------- Path parameter "eventId" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", ctx.Param("eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eventId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SetEventMaxAttendees(ctx, orgId, eventId)
 	return err
 }
 
@@ -870,6 +1214,26 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/organization/events/:eventId/attendees/import", wrapper.ImportAttendees, options.OperationMiddlewares["importAttendees"]...)
 	router.GET(options.BaseURL+"/api/organization/events/:eventId/exports/attendees", wrapper.ExportAttendees, options.OperationMiddlewares["exportAttendees"]...)
 	router.GET(options.BaseURL+"/api/organization/events/:eventId/entry/qrcode", wrapper.GetEventQRCode, options.OperationMiddlewares["getEventQRCode"]...)
+	router.GET(options.BaseURL+"/api/platform/orgs/:orgId/events", wrapper.ListOrgEvents, options.OperationMiddlewares["listOrgEvents"]...)
+	router.PATCH(options.BaseURL+"/api/platform/orgs/:orgId/events/:eventId", wrapper.SetEventMaxAttendees, options.OperationMiddlewares["setEventMaxAttendees"]...)
+	router.POST(options.BaseURL+"/api/guest/session", wrapper.GuestLogin, options.OperationMiddlewares["guestLogin"]...)
+	router.POST(options.BaseURL+"/api/guest/bind", wrapper.GuestBind, options.OperationMiddlewares["guestBind"]...)
+	router.GET(options.BaseURL+"/api/guest/checkin", wrapper.GetGuestStatus, options.OperationMiddlewares["getGuestStatus"]...)
+	router.POST(options.BaseURL+"/api/guest/checkin", wrapper.GuestCheckin, options.OperationMiddlewares["guestCheckin"]...)
+	router.POST(options.BaseURL+"/api/guest/manual-requests", wrapper.SubmitManualRequest, options.OperationMiddlewares["submitManualRequest"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/staff", wrapper.ListEventStaff, options.OperationMiddlewares["listEventStaff"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/staff", wrapper.CreateStaffInvite, options.OperationMiddlewares["createStaffInvite"]...)
+	router.DELETE(options.BaseURL+"/api/organization/events/:eventId/staff/:staffId", wrapper.RemoveEventStaff, options.OperationMiddlewares["removeEventStaff"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/join", wrapper.JoinStaff, options.OperationMiddlewares["joinStaff"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/summary", wrapper.GetStaffSummary, options.OperationMiddlewares["getStaffSummary"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/manual-requests", wrapper.ListPendingRequests, options.OperationMiddlewares["listPendingRequests"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/manual-requests/:requestId/approve", wrapper.ApproveRequest, options.OperationMiddlewares["approveRequest"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/manual-requests/:requestId/reject", wrapper.RejectRequest, options.OperationMiddlewares["rejectRequest"]...)
+	router.POST(options.BaseURL+"/api/guest/staff/checkins/proxy", wrapper.ProxyCheckin, options.OperationMiddlewares["proxyCheckin"]...)
+	router.GET(options.BaseURL+"/api/guest/staff/attendees", wrapper.SearchStaffAttendees, options.OperationMiddlewares["searchStaffAttendees"]...)
+	router.PATCH(options.BaseURL+"/api/guest/staff/checkin-settings", wrapper.UpdateStaffSettings, options.OperationMiddlewares["updateStaffSettings"]...)
+	router.POST(options.BaseURL+"/api/organization/events/:eventId/reset", wrapper.ResetLiveData, options.OperationMiddlewares["resetLiveData"]...)
+	router.GET(options.BaseURL+"/api/organization/events/:eventId/exports/checkin-attempts", wrapper.ExportCheckinAttempts, options.OperationMiddlewares["exportCheckinAttempts"]...)
 
 }
 
@@ -892,6 +1256,796 @@ func (response GetApiInfo200JSONResponse) VisitGetApiInfoResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBindRequestObject struct {
+	Body *GuestBindJSONRequestBody
+}
+
+type GuestBindResponseObject interface {
+	VisitGuestBindResponse(w http.ResponseWriter) error
+}
+
+type GuestBind200JSONResponse GuestStatus
+
+func (response GuestBind200JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestBind400JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind401JSONResponse Error
+
+func (response GuestBind401JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind409JSONResponse Error
+
+func (response GuestBind409JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestBind429JSONResponse Error
+
+func (response GuestBind429JSONResponse) VisitGuestBindResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetGuestStatusRequestObject struct {
+}
+
+type GetGuestStatusResponseObject interface {
+	VisitGetGuestStatusResponse(w http.ResponseWriter) error
+}
+
+type GetGuestStatus200JSONResponse GuestStatus
+
+func (response GetGuestStatus200JSONResponse) VisitGetGuestStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetGuestStatus401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetGuestStatus401JSONResponse) VisitGetGuestStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckinRequestObject struct {
+	Body *GuestCheckinJSONRequestBody
+}
+
+type GuestCheckinResponseObject interface {
+	VisitGuestCheckinResponse(w http.ResponseWriter) error
+}
+
+type GuestCheckin200JSONResponse GuestStatus
+
+func (response GuestCheckin200JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestCheckin400JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin401JSONResponse Error
+
+func (response GuestCheckin401JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin409JSONResponse Error
+
+func (response GuestCheckin409JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestCheckin429JSONResponse Error
+
+func (response GuestCheckin429JSONResponse) VisitGuestCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequestRequestObject struct {
+	Body *SubmitManualRequestJSONRequestBody
+}
+
+type SubmitManualRequestResponseObject interface {
+	VisitSubmitManualRequestResponse(w http.ResponseWriter) error
+}
+
+type SubmitManualRequest201JSONResponse GuestStatus
+
+func (response SubmitManualRequest201JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest400JSONResponse struct{ ErrorJSONResponse }
+
+func (response SubmitManualRequest400JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest401JSONResponse Error
+
+func (response SubmitManualRequest401JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitManualRequest409JSONResponse Error
+
+func (response SubmitManualRequest409JSONResponse) VisitSubmitManualRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLoginRequestObject struct {
+	Body *GuestLoginJSONRequestBody
+}
+
+type GuestLoginResponseObject interface {
+	VisitGuestLoginResponse(w http.ResponseWriter) error
+}
+
+type GuestLogin200JSONResponse SessionToken
+
+func (response GuestLogin200JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GuestLogin400JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin401JSONResponse Error
+
+func (response GuestLogin401JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin404JSONResponse Error
+
+func (response GuestLogin404JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GuestLogin503JSONResponse Error
+
+func (response GuestLogin503JSONResponse) VisitGuestLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendeesRequestObject struct {
+	Params SearchStaffAttendeesParams
+}
+
+type SearchStaffAttendeesResponseObject interface {
+	VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error
+}
+
+type SearchStaffAttendees200JSONResponse []StaffAttendee
+
+func (response SearchStaffAttendees200JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendees401JSONResponse struct{ ErrorJSONResponse }
+
+func (response SearchStaffAttendees401JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchStaffAttendees404JSONResponse Error
+
+func (response SearchStaffAttendees404JSONResponse) VisitSearchStaffAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettingsRequestObject struct {
+	Body *UpdateStaffSettingsJSONRequestBody
+}
+
+type UpdateStaffSettingsResponseObject interface {
+	VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateStaffSettings200JSONResponse GuestStatus
+
+func (response UpdateStaffSettings200JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings400JSONResponse struct{ ErrorJSONResponse }
+
+func (response UpdateStaffSettings400JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings401JSONResponse Error
+
+func (response UpdateStaffSettings401JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings404JSONResponse Error
+
+func (response UpdateStaffSettings404JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateStaffSettings409JSONResponse Error
+
+func (response UpdateStaffSettings409JSONResponse) VisitUpdateStaffSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckinRequestObject struct {
+	Body *ProxyCheckinJSONRequestBody
+}
+
+type ProxyCheckinResponseObject interface {
+	VisitProxyCheckinResponse(w http.ResponseWriter) error
+}
+
+type ProxyCheckin200JSONResponse StaffAttendee
+
+func (response ProxyCheckin200JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ProxyCheckin401JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin404JSONResponse Error
+
+func (response ProxyCheckin404JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProxyCheckin409JSONResponse Error
+
+func (response ProxyCheckin409JSONResponse) VisitProxyCheckinResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaffRequestObject struct {
+	Body *JoinStaffJSONRequestBody
+}
+
+type JoinStaffResponseObject interface {
+	VisitJoinStaffResponse(w http.ResponseWriter) error
+}
+
+type JoinStaff200JSONResponse GuestStatus
+
+func (response JoinStaff200JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaff400JSONResponse struct{ ErrorJSONResponse }
+
+func (response JoinStaff400JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinStaff401JSONResponse Error
+
+func (response JoinStaff401JSONResponse) VisitJoinStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequestsRequestObject struct {
+}
+
+type ListPendingRequestsResponseObject interface {
+	VisitListPendingRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListPendingRequests200JSONResponse []PendingRequest
+
+func (response ListPendingRequests200JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequests401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListPendingRequests401JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPendingRequests404JSONResponse Error
+
+func (response ListPendingRequests404JSONResponse) VisitListPendingRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Body      *ApproveRequestJSONRequestBody
+}
+
+type ApproveRequestResponseObject interface {
+	VisitApproveRequestResponse(w http.ResponseWriter) error
+}
+
+type ApproveRequest204Response struct {
+}
+
+func (response ApproveRequest204Response) VisitApproveRequestResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ApproveRequest400JSONResponse struct{ ErrorJSONResponse }
+
+func (response ApproveRequest400JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest401JSONResponse Error
+
+func (response ApproveRequest401JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest404JSONResponse Error
+
+func (response ApproveRequest404JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRequest409JSONResponse Error
+
+func (response ApproveRequest409JSONResponse) VisitApproveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+}
+
+type RejectRequestResponseObject interface {
+	VisitRejectRequestResponse(w http.ResponseWriter) error
+}
+
+type RejectRequest204Response struct {
+}
+
+func (response RejectRequest204Response) VisitRejectRequestResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RejectRequest401JSONResponse struct{ ErrorJSONResponse }
+
+func (response RejectRequest401JSONResponse) VisitRejectRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRequest404JSONResponse Error
+
+func (response RejectRequest404JSONResponse) VisitRejectRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummaryRequestObject struct {
+}
+
+type GetStaffSummaryResponseObject interface {
+	VisitGetStaffSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetStaffSummary200JSONResponse StaffSummary
+
+func (response GetStaffSummary200JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummary401JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetStaffSummary401JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetStaffSummary404JSONResponse Error
+
+func (response GetStaffSummary404JSONResponse) VisitGetStaffSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1665,6 +2819,70 @@ func (response ExportAttendees404JSONResponse) VisitExportAttendeesResponse(w ht
 	return err
 }
 
+type ExportCheckinAttemptsRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ExportCheckinAttemptsResponseObject interface {
+	VisitExportCheckinAttemptsResponse(w http.ResponseWriter) error
+}
+
+type ExportCheckinAttempts200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportCheckinAttempts200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	Headers       ExportCheckinAttempts200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportCheckinAttempts200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportCheckinAttemptsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportCheckinAttempts401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ExportCheckinAttempts401JSONResponse) VisitExportCheckinAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportCheckinAttempts404JSONResponse Error
+
+func (response ExportCheckinAttempts404JSONResponse) VisitExportCheckinAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPrizesRequestObject struct {
 	EventId EventId `json:"eventId"`
 }
@@ -1929,6 +3147,259 @@ func (response UpdatePrize409JSONResponse) VisitUpdatePrizeResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetLiveDataRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *ResetLiveDataJSONRequestBody
+}
+
+type ResetLiveDataResponseObject interface {
+	VisitResetLiveDataResponse(w http.ResponseWriter) error
+}
+
+type ResetLiveData200JSONResponse ResetResult
+
+func (response ResetLiveData200JSONResponse) VisitResetLiveDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetLiveData400JSONResponse struct{ ErrorJSONResponse }
+
+func (response ResetLiveData400JSONResponse) VisitResetLiveDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetLiveData401JSONResponse Error
+
+func (response ResetLiveData401JSONResponse) VisitResetLiveDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetLiveData404JSONResponse Error
+
+func (response ResetLiveData404JSONResponse) VisitResetLiveDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetLiveData409JSONResponse Error
+
+func (response ResetLiveData409JSONResponse) VisitResetLiveDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaffRequestObject struct {
+	EventId EventId `json:"eventId"`
+}
+
+type ListEventStaffResponseObject interface {
+	VisitListEventStaffResponse(w http.ResponseWriter) error
+}
+
+type ListEventStaff200JSONResponse []StaffMember
+
+func (response ListEventStaff200JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaff401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListEventStaff401JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventStaff404JSONResponse Error
+
+func (response ListEventStaff404JSONResponse) VisitListEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInviteRequestObject struct {
+	EventId EventId `json:"eventId"`
+	Body    *CreateStaffInviteJSONRequestBody
+}
+
+type CreateStaffInviteResponseObject interface {
+	VisitCreateStaffInviteResponse(w http.ResponseWriter) error
+}
+
+type CreateStaffInvite201JSONResponse StaffInvite
+
+func (response CreateStaffInvite201JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CreateStaffInvite400JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite401JSONResponse Error
+
+func (response CreateStaffInvite401JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite404JSONResponse Error
+
+func (response CreateStaffInvite404JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateStaffInvite409JSONResponse Error
+
+func (response CreateStaffInvite409JSONResponse) VisitCreateStaffInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveEventStaffRequestObject struct {
+	EventId EventId `json:"eventId"`
+	StaffId StaffId `json:"staffId"`
+}
+
+type RemoveEventStaffResponseObject interface {
+	VisitRemoveEventStaffResponse(w http.ResponseWriter) error
+}
+
+type RemoveEventStaff204Response struct {
+}
+
+func (response RemoveEventStaff204Response) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveEventStaff401JSONResponse struct{ ErrorJSONResponse }
+
+func (response RemoveEventStaff401JSONResponse) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveEventStaff404JSONResponse Error
+
+func (response RemoveEventStaff404JSONResponse) VisitRemoveEventStaffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2514,6 +3985,137 @@ func (response EnableOrg404JSONResponse) VisitEnableOrgResponse(w http.ResponseW
 	return err
 }
 
+type ListOrgEventsRequestObject struct {
+	OrgId  OrgId `json:"orgId"`
+	Params ListOrgEventsParams
+}
+
+type ListOrgEventsResponseObject interface {
+	VisitListOrgEventsResponse(w http.ResponseWriter) error
+}
+
+type ListOrgEvents200JSONResponse EventPage
+
+func (response ListOrgEvents200JSONResponse) VisitListOrgEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgEvents401JSONResponse struct{ ErrorJSONResponse }
+
+func (response ListOrgEvents401JSONResponse) VisitListOrgEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOrgEvents404JSONResponse Error
+
+func (response ListOrgEvents404JSONResponse) VisitListOrgEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetEventMaxAttendeesRequestObject struct {
+	OrgId   OrgId   `json:"orgId"`
+	EventId EventId `json:"eventId"`
+	Body    *SetEventMaxAttendeesJSONRequestBody
+}
+
+type SetEventMaxAttendeesResponseObject interface {
+	VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error
+}
+
+type SetEventMaxAttendees200JSONResponse Event
+
+func (response SetEventMaxAttendees200JSONResponse) VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetEventMaxAttendees400JSONResponse struct{ ErrorJSONResponse }
+
+func (response SetEventMaxAttendees400JSONResponse) VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetEventMaxAttendees401JSONResponse Error
+
+func (response SetEventMaxAttendees401JSONResponse) VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetEventMaxAttendees404JSONResponse Error
+
+func (response SetEventMaxAttendees404JSONResponse) VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetEventMaxAttendees409JSONResponse Error
+
+func (response SetEventMaxAttendees409JSONResponse) VisitSetEventMaxAttendeesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetOrgMaxAttendeesRequestObject struct {
 	OrgId OrgId `json:"orgId"`
 	Body  *SetOrgMaxAttendeesJSONRequestBody
@@ -2995,6 +4597,45 @@ type StrictServerInterface interface {
 	// GetApiInfo Service metadata
 	// (GET /api)
 	GetApiInfo(ctx context.Context, request GetApiInfoRequestObject) (GetApiInfoResponseObject, error)
+	// GuestBind Bind the guest to a roster person
+	// (POST /api/guest/bind)
+	GuestBind(ctx context.Context, request GuestBindRequestObject) (GuestBindResponseObject, error)
+	// GetGuestStatus Binding, check-in and help request status, with the current check-in mode
+	// (GET /api/guest/checkin)
+	GetGuestStatus(ctx context.Context, request GetGuestStatusRequestObject) (GetGuestStatusResponseObject, error)
+	// GuestCheckin Check in; geo mode needs coordinates, direct mode ignores them
+	// (POST /api/guest/checkin)
+	GuestCheckin(ctx context.Context, request GuestCheckinRequestObject) (GuestCheckinResponseObject, error)
+	// SubmitManualRequest Ask on-site staff for help
+	// (POST /api/guest/manual-requests)
+	SubmitManualRequest(ctx context.Context, request SubmitManualRequestRequestObject) (SubmitManualRequestResponseObject, error)
+	// GuestLogin Sign in a guest for one event
+	// (POST /api/guest/session)
+	GuestLogin(ctx context.Context, request GuestLoginRequestObject) (GuestLoginResponseObject, error)
+	// SearchStaffAttendees Find roster people by name, at most 20
+	// (GET /api/guest/staff/attendees)
+	SearchStaffAttendees(ctx context.Context, request SearchStaffAttendeesRequestObject) (SearchStaffAttendeesResponseObject, error)
+	// UpdateStaffSettings Switch check-in mode or move the fence (admin role only)
+	// (PATCH /api/guest/staff/checkin-settings)
+	UpdateStaffSettings(ctx context.Context, request UpdateStaffSettingsRequestObject) (UpdateStaffSettingsResponseObject, error)
+	// ProxyCheckin Check a roster person in on their behalf
+	// (POST /api/guest/staff/checkins/proxy)
+	ProxyCheckin(ctx context.Context, request ProxyCheckinRequestObject) (ProxyCheckinResponseObject, error)
+	// JoinStaff Become staff of the event with an invite code
+	// (POST /api/guest/staff/join)
+	JoinStaff(ctx context.Context, request JoinStaffRequestObject) (JoinStaffResponseObject, error)
+	// ListPendingRequests Open help requests, oldest first
+	// (GET /api/guest/staff/manual-requests)
+	ListPendingRequests(ctx context.Context, request ListPendingRequestsRequestObject) (ListPendingRequestsResponseObject, error)
+	// ApproveRequest Bind when needed and check the person in
+	// (POST /api/guest/staff/manual-requests/{requestId}/approve)
+	ApproveRequest(ctx context.Context, request ApproveRequestRequestObject) (ApproveRequestResponseObject, error)
+	// RejectRequest Close a help request
+	// (POST /api/guest/staff/manual-requests/{requestId}/reject)
+	RejectRequest(ctx context.Context, request RejectRequestRequestObject) (RejectRequestResponseObject, error)
+	// GetStaffSummary Roster size, check-ins and open help requests
+	// (GET /api/guest/staff/summary)
+	GetStaffSummary(ctx context.Context, request GetStaffSummaryRequestObject) (GetStaffSummaryResponseObject, error)
 	// ListEvents Events of the current organization, newest first
 	// (GET /api/organization/events)
 	ListEvents(ctx context.Context, request ListEventsRequestObject) (ListEventsResponseObject, error)
@@ -3031,6 +4672,9 @@ type StrictServerInterface interface {
 	// ExportAttendees Roster as xlsx, times in Asia/Shanghai
 	// (GET /api/organization/events/{eventId}/exports/attendees)
 	ExportAttendees(ctx context.Context, request ExportAttendeesRequestObject) (ExportAttendeesResponseObject, error)
+	// ExportCheckinAttempts Every check-in tap with coordinates, as xlsx in Asia/Shanghai
+	// (GET /api/organization/events/{eventId}/exports/checkin-attempts)
+	ExportCheckinAttempts(ctx context.Context, request ExportCheckinAttemptsRequestObject) (ExportCheckinAttemptsResponseObject, error)
 	// ListPrizes Prizes by sort_no
 	// (GET /api/organization/events/{eventId}/prizes)
 	ListPrizes(ctx context.Context, request ListPrizesRequestObject) (ListPrizesResponseObject, error)
@@ -3043,6 +4687,18 @@ type StrictServerInterface interface {
 	// UpdatePrize Change a prize
 	// (PATCH /api/organization/events/{eventId}/prizes/{prizeId})
 	UpdatePrize(ctx context.Context, request UpdatePrizeRequestObject) (UpdatePrizeResponseObject, error)
+	// ResetLiveData Clear a trial run before check-in opens; the roster, prizes and staff stay
+	// (POST /api/organization/events/{eventId}/reset)
+	ResetLiveData(ctx context.Context, request ResetLiveDataRequestObject) (ResetLiveDataResponseObject, error)
+	// ListEventStaff On-site staff of an event
+	// (GET /api/organization/events/{eventId}/staff)
+	ListEventStaff(ctx context.Context, request ListEventStaffRequestObject) (ListEventStaffResponseObject, error)
+	// CreateStaffInvite Create a one-time invite for a role, valid 24 hours
+	// (POST /api/organization/events/{eventId}/staff)
+	CreateStaffInvite(ctx context.Context, request CreateStaffInviteRequestObject) (CreateStaffInviteResponseObject, error)
+	// RemoveEventStaff Revoke a staff member
+	// (DELETE /api/organization/events/{eventId}/staff/{staffId})
+	RemoveEventStaff(ctx context.Context, request RemoveEventStaffRequestObject) (RemoveEventStaffResponseObject, error)
 	// OrganizationLogin Organization admin login
 	// (POST /api/organization/login)
 	OrganizationLogin(ctx context.Context, request OrganizationLoginRequestObject) (OrganizationLoginResponseObject, error)
@@ -3082,6 +4738,12 @@ type StrictServerInterface interface {
 	// EnableOrg Enable an organization; idempotent
 	// (POST /api/platform/orgs/{orgId}/enable)
 	EnableOrg(ctx context.Context, request EnableOrgRequestObject) (EnableOrgResponseObject, error)
+	// ListOrgEvents Events of an organization, newest first
+	// (GET /api/platform/orgs/{orgId}/events)
+	ListOrgEvents(ctx context.Context, request ListOrgEventsRequestObject) (ListOrgEventsResponseObject, error)
+	// SetEventMaxAttendees Raise or lower one event's attendee limit; never below its roster
+	// (PATCH /api/platform/orgs/{orgId}/events/{eventId})
+	SetEventMaxAttendees(ctx context.Context, request SetEventMaxAttendeesRequestObject) (SetEventMaxAttendeesResponseObject, error)
 	// SetOrgMaxAttendees Change the default attendee limit for events created afterwards
 	// (POST /api/platform/orgs/{orgId}/max-attendees)
 	SetOrgMaxAttendees(ctx context.Context, request SetOrgMaxAttendeesRequestObject) (SetOrgMaxAttendeesResponseObject, error)
@@ -3143,6 +4805,439 @@ func (sh *strictHandler) GetApiInfo(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(GetApiInfoResponseObject); ok {
 		return validResponse.VisitGetApiInfoResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestBind operation middleware
+func (sh *strictHandler) GuestBind(ctx echo.Context) error {
+	var request GuestBindRequestObject
+
+	var body GuestBindJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestBind(ctx.Request().Context(), request.(GuestBindRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestBind")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestBindResponseObject); ok {
+		return validResponse.VisitGuestBindResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetGuestStatus operation middleware
+func (sh *strictHandler) GetGuestStatus(ctx echo.Context) error {
+	var request GetGuestStatusRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetGuestStatus(ctx.Request().Context(), request.(GetGuestStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetGuestStatus")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetGuestStatusResponseObject); ok {
+		return validResponse.VisitGetGuestStatusResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestCheckin operation middleware
+func (sh *strictHandler) GuestCheckin(ctx echo.Context) error {
+	var request GuestCheckinRequestObject
+
+	var body GuestCheckinJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestCheckin(ctx.Request().Context(), request.(GuestCheckinRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestCheckin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestCheckinResponseObject); ok {
+		return validResponse.VisitGuestCheckinResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SubmitManualRequest operation middleware
+func (sh *strictHandler) SubmitManualRequest(ctx echo.Context) error {
+	var request SubmitManualRequestRequestObject
+
+	var body SubmitManualRequestJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitManualRequest(ctx.Request().Context(), request.(SubmitManualRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitManualRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SubmitManualRequestResponseObject); ok {
+		return validResponse.VisitSubmitManualRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GuestLogin operation middleware
+func (sh *strictHandler) GuestLogin(ctx echo.Context) error {
+	var request GuestLoginRequestObject
+
+	var body GuestLoginJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GuestLogin(ctx.Request().Context(), request.(GuestLoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GuestLogin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GuestLoginResponseObject); ok {
+		return validResponse.VisitGuestLoginResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SearchStaffAttendees operation middleware
+func (sh *strictHandler) SearchStaffAttendees(ctx echo.Context, params SearchStaffAttendeesParams) error {
+	var request SearchStaffAttendeesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchStaffAttendees(ctx.Request().Context(), request.(SearchStaffAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchStaffAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SearchStaffAttendeesResponseObject); ok {
+		return validResponse.VisitSearchStaffAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdateStaffSettings operation middleware
+func (sh *strictHandler) UpdateStaffSettings(ctx echo.Context) error {
+	var request UpdateStaffSettingsRequestObject
+
+	var body UpdateStaffSettingsJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateStaffSettings(ctx.Request().Context(), request.(UpdateStaffSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateStaffSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdateStaffSettingsResponseObject); ok {
+		return validResponse.VisitUpdateStaffSettingsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ProxyCheckin operation middleware
+func (sh *strictHandler) ProxyCheckin(ctx echo.Context) error {
+	var request ProxyCheckinRequestObject
+
+	var body ProxyCheckinJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ProxyCheckin(ctx.Request().Context(), request.(ProxyCheckinRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ProxyCheckin")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ProxyCheckinResponseObject); ok {
+		return validResponse.VisitProxyCheckinResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// JoinStaff operation middleware
+func (sh *strictHandler) JoinStaff(ctx echo.Context) error {
+	var request JoinStaffRequestObject
+
+	var body JoinStaffJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.JoinStaff(ctx.Request().Context(), request.(JoinStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "JoinStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(JoinStaffResponseObject); ok {
+		return validResponse.VisitJoinStaffResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListPendingRequests operation middleware
+func (sh *strictHandler) ListPendingRequests(ctx echo.Context) error {
+	var request ListPendingRequestsRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPendingRequests(ctx.Request().Context(), request.(ListPendingRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPendingRequests")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListPendingRequestsResponseObject); ok {
+		return validResponse.VisitListPendingRequestsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ApproveRequest operation middleware
+func (sh *strictHandler) ApproveRequest(ctx echo.Context, requestId RequestId) error {
+	var request ApproveRequestRequestObject
+
+	request.RequestId = requestId
+
+	var body ApproveRequestJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRequest(ctx.Request().Context(), request.(ApproveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ApproveRequestResponseObject); ok {
+		return validResponse.VisitApproveRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// RejectRequest operation middleware
+func (sh *strictHandler) RejectRequest(ctx echo.Context, requestId RequestId) error {
+	var request RejectRequestRequestObject
+
+	request.RequestId = requestId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectRequest(ctx.Request().Context(), request.(RejectRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectRequest")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(RejectRequestResponseObject); ok {
+		return validResponse.VisitRejectRequestResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetStaffSummary operation middleware
+func (sh *strictHandler) GetStaffSummary(ctx echo.Context) error {
+	var request GetStaffSummaryRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaffSummary(ctx.Request().Context(), request.(GetStaffSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaffSummary")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetStaffSummaryResponseObject); ok {
+		return validResponse.VisitGetStaffSummaryResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -3520,6 +5615,31 @@ func (sh *strictHandler) ExportAttendees(ctx echo.Context, eventId EventId) erro
 	return nil
 }
 
+// ExportCheckinAttempts operation middleware
+func (sh *strictHandler) ExportCheckinAttempts(ctx echo.Context, eventId EventId) error {
+	var request ExportCheckinAttemptsRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportCheckinAttempts(ctx.Request().Context(), request.(ExportCheckinAttemptsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportCheckinAttempts")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ExportCheckinAttemptsResponseObject); ok {
+		return validResponse.VisitExportCheckinAttemptsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // ListPrizes operation middleware
 func (sh *strictHandler) ListPrizes(ctx echo.Context, eventId EventId) error {
 	var request ListPrizesRequestObject
@@ -3648,6 +5768,139 @@ func (sh *strictHandler) UpdatePrize(ctx echo.Context, eventId EventId, prizeId 
 		return err
 	} else if validResponse, ok := response.(UpdatePrizeResponseObject); ok {
 		return validResponse.VisitUpdatePrizeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ResetLiveData operation middleware
+func (sh *strictHandler) ResetLiveData(ctx echo.Context, eventId EventId) error {
+	var request ResetLiveDataRequestObject
+
+	request.EventId = eventId
+
+	var body ResetLiveDataJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetLiveData(ctx.Request().Context(), request.(ResetLiveDataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetLiveData")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ResetLiveDataResponseObject); ok {
+		return validResponse.VisitResetLiveDataResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// ListEventStaff operation middleware
+func (sh *strictHandler) ListEventStaff(ctx echo.Context, eventId EventId) error {
+	var request ListEventStaffRequestObject
+
+	request.EventId = eventId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEventStaff(ctx.Request().Context(), request.(ListEventStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEventStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListEventStaffResponseObject); ok {
+		return validResponse.VisitListEventStaffResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateStaffInvite operation middleware
+func (sh *strictHandler) CreateStaffInvite(ctx echo.Context, eventId EventId) error {
+	var request CreateStaffInviteRequestObject
+
+	request.EventId = eventId
+
+	var body CreateStaffInviteJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStaffInvite(ctx.Request().Context(), request.(CreateStaffInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStaffInvite")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateStaffInviteResponseObject); ok {
+		return validResponse.VisitCreateStaffInviteResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// RemoveEventStaff operation middleware
+func (sh *strictHandler) RemoveEventStaff(ctx echo.Context, eventId EventId, staffId StaffId) error {
+	var request RemoveEventStaffRequestObject
+
+	request.EventId = eventId
+	request.StaffId = staffId
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveEventStaff(ctx.Request().Context(), request.(RemoveEventStaffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveEventStaff")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(RemoveEventStaffResponseObject); ok {
+		return validResponse.VisitRemoveEventStaffResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -4043,6 +6296,74 @@ func (sh *strictHandler) EnableOrg(ctx echo.Context, orgId OrgId) error {
 	return nil
 }
 
+// ListOrgEvents operation middleware
+func (sh *strictHandler) ListOrgEvents(ctx echo.Context, orgId OrgId, params ListOrgEventsParams) error {
+	var request ListOrgEventsRequestObject
+
+	request.OrgId = orgId
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOrgEvents(ctx.Request().Context(), request.(ListOrgEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOrgEvents")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListOrgEventsResponseObject); ok {
+		return validResponse.VisitListOrgEventsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// SetEventMaxAttendees operation middleware
+func (sh *strictHandler) SetEventMaxAttendees(ctx echo.Context, orgId OrgId, eventId EventId) error {
+	var request SetEventMaxAttendeesRequestObject
+
+	request.OrgId = orgId
+	request.EventId = eventId
+
+	var body SetEventMaxAttendeesJSONRequestBody
+	var err error
+	if binder, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+		// Bind only the request body, so that path and query parameters
+		// are not also bound into the body struct.
+		err = binder.BindBody(ctx, &body)
+	} else {
+		// A custom binder is installed on the Echo instance; defer to it
+		// entirely, since echo.Binder does not expose body-only binding.
+		err = ctx.Bind(&body)
+	}
+	if err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SetEventMaxAttendees(ctx.Request().Context(), request.(SetEventMaxAttendeesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetEventMaxAttendees")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(SetEventMaxAttendeesResponseObject); ok {
+		return validResponse.VisitSetEventMaxAttendeesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // SetOrgMaxAttendees operation middleware
 func (sh *strictHandler) SetOrgMaxAttendees(ctx echo.Context, orgId OrgId) error {
 	var request SetOrgMaxAttendeesRequestObject
@@ -4341,79 +6662,112 @@ func (sh *strictHandler) GetOpenAPIYaml(ctx echo.Context) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"o7/dH++P9w8Onzz56msVSP7/AQA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

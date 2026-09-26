@@ -9,18 +9,60 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CheckinMethod.
+const (
+	CheckinMethodDirect CheckinMethod = "direct"
+	CheckinMethodGeo    CheckinMethod = "geo"
+	CheckinMethodManual CheckinMethod = "manual"
+	CheckinMethodProxy  CheckinMethod = "proxy"
+)
+
+// Valid indicates whether the value is a known member of the CheckinMethod enum.
+func (e CheckinMethod) Valid() bool {
+	switch e {
+	case CheckinMethodDirect:
+		return true
+	case CheckinMethodGeo:
+		return true
+	case CheckinMethodManual:
+		return true
+	case CheckinMethodProxy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CheckinMode.
 const (
-	Direct CheckinMode = "direct"
-	Geo    CheckinMode = "geo"
+	CheckinModeDirect CheckinMode = "direct"
+	CheckinModeGeo    CheckinMode = "geo"
 )
 
 // Valid indicates whether the value is a known member of the CheckinMode enum.
 func (e CheckinMode) Valid() bool {
 	switch e {
-	case Direct:
+	case CheckinModeDirect:
 		return true
-	case Geo:
+	case CheckinModeGeo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CoordType.
+const (
+	Gcj02 CoordType = "gcj02"
+	Wgs84 CoordType = "wgs84"
+)
+
+// Valid indicates whether the value is a known member of the CoordType enum.
+func (e CoordType) Valid() bool {
+	switch e {
+	case Gcj02:
+		return true
+	case Wgs84:
 		return true
 	default:
 		return false
@@ -42,6 +84,27 @@ func (e EventStatus) Valid() bool {
 	case Draft:
 		return true
 	case Ready:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GuestRequestStatus.
+const (
+	Approved GuestRequestStatus = "approved"
+	Pending  GuestRequestStatus = "pending"
+	Rejected GuestRequestStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the GuestRequestStatus enum.
+func (e GuestRequestStatus) Valid() bool {
+	switch e {
+	case Approved:
+		return true
+	case Pending:
+		return true
+	case Rejected:
 		return true
 	default:
 		return false
@@ -126,6 +189,24 @@ func (e OrgUserStatus) Valid() bool {
 	}
 }
 
+// Defines values for StaffRole.
+const (
+	Admin StaffRole = "admin"
+	Staff StaffRole = "staff"
+)
+
+// Valid indicates whether the value is a known member of the StaffRole enum.
+func (e StaffRole) Valid() bool {
+	switch e {
+	case Admin:
+		return true
+	case Staff:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdjustCreditsRequest defines model for AdjustCreditsRequest.
 type AdjustCreditsRequest struct {
 	// Delta Non-zero; negative removes credits
@@ -145,6 +226,12 @@ type ApiInfo struct {
 
 	// Stack Example: echo+gorm+postgresql
 	Stack string `json:"stack"`
+}
+
+// ApproveRequest Empty for a bound guest; otherwise link an existing person or create one.
+type ApproveRequest struct {
+	AttendeeId *openapi_types.UUID `json:"attendee_id,omitempty"`
+	Create     *AttendeeInput      `json:"create,omitempty"`
 }
 
 // Attendee defines model for Attendee.
@@ -185,8 +272,14 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password"`
 }
 
+// CheckinMethod defines model for CheckinMethod.
+type CheckinMethod string
+
 // CheckinMode defines model for CheckinMode.
 type CheckinMode string
+
+// CoordType Browsers report wgs84; the mini program reports gcj02
+type CoordType string
 
 // CreateEventRequest defines model for CreateEventRequest.
 type CreateEventRequest struct {
@@ -257,6 +350,68 @@ type EventPage struct {
 // EventStatus defines model for EventStatus.
 type EventStatus string
 
+// GuestAttendee defines model for GuestAttendee.
+type GuestAttendee struct {
+	CheckedIn     bool           `json:"checked_in"`
+	CheckinAt     *time.Time     `json:"checkin_at,omitempty"`
+	CheckinMethod *CheckinMethod `json:"checkin_method,omitempty"`
+	Dept          string         `json:"dept"`
+	Name          string         `json:"name"`
+}
+
+// GuestBindRequest defines model for GuestBindRequest.
+type GuestBindRequest struct {
+	Name       string `json:"name"`
+	PhoneLast4 string `json:"phone_last4"`
+}
+
+// GuestCheckinRequest defines model for GuestCheckinRequest.
+type GuestCheckinRequest struct {
+	// Accuracy Horizontal accuracy in meters
+	Accuracy *float64 `json:"accuracy,omitempty"`
+
+	// CoordType Browsers report wgs84; the mini program reports gcj02
+	CoordType *CoordType `json:"coord_type,omitempty"`
+	Lat       *float64   `json:"lat,omitempty"`
+	Lng       *float64   `json:"lng,omitempty"`
+}
+
+// GuestEvent defines model for GuestEvent.
+type GuestEvent struct {
+	CheckinEnd   *time.Time  `json:"checkin_end,omitempty"`
+	CheckinMode  CheckinMode `json:"checkin_mode"`
+	CheckinStart *time.Time  `json:"checkin_start,omitempty"`
+	Name         string      `json:"name"`
+	Status       EventStatus `json:"status"`
+}
+
+// GuestLoginRequest defines model for GuestLoginRequest.
+type GuestLoginRequest struct {
+	// Code Mini program login code (wechat mode)
+	Code *string `json:"code,omitempty"`
+
+	// DeviceId Random id kept by the browser, 16-60 of [A-Za-z0-9_-] (web mode)
+	DeviceId *string `json:"device_id,omitempty"`
+	PublicId string  `json:"public_id"`
+}
+
+// GuestRequest defines model for GuestRequest.
+type GuestRequest struct {
+	CreatedAt time.Time          `json:"created_at"`
+	Status    GuestRequestStatus `json:"status"`
+}
+
+// GuestRequestStatus defines model for GuestRequest.Status.
+type GuestRequestStatus string
+
+// GuestStatus defines model for GuestStatus.
+type GuestStatus struct {
+	Attendee  *GuestAttendee `json:"attendee,omitempty"`
+	Event     GuestEvent     `json:"event"`
+	Request   *GuestRequest  `json:"request,omitempty"`
+	StaffRole *StaffRole     `json:"staff_role,omitempty"`
+}
+
 // Healthz defines model for Healthz.
 type Healthz struct {
 	// Db Database status
@@ -297,6 +452,11 @@ type ImportRowError struct {
 	Row int `json:"row"`
 }
 
+// JoinStaffRequest defines model for JoinStaffRequest.
+type JoinStaffRequest struct {
+	Invite string `json:"invite"`
+}
+
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {
 	BalanceAfter int                 `json:"balance_after"`
@@ -309,6 +469,16 @@ type LedgerEntry struct {
 	// OperatorType principal_type of the token that made the change
 	OperatorType string `json:"operator_type"`
 	Reason       string `json:"reason"`
+}
+
+// ManualRequestInput defines model for ManualRequestInput.
+type ManualRequestInput struct {
+	// Name Required before binding
+	Name *string `json:"name,omitempty"`
+
+	// PhoneLast4 Required before binding
+	PhoneLast4 *string `json:"phone_last4,omitempty"`
+	Reason     *string `json:"reason,omitempty"`
 }
 
 // OneTimePassword defines model for OneTimePassword.
@@ -393,6 +563,16 @@ type OrganizationSession struct {
 	Token string `json:"token"`
 }
 
+// PendingRequest defines model for PendingRequest.
+type PendingRequest struct {
+	Attendee          *StaffAttendee     `json:"attendee,omitempty"`
+	ClaimedName       string             `json:"claimed_name"`
+	ClaimedPhoneLast4 string             `json:"claimed_phone_last4"`
+	CreatedAt         time.Time          `json:"created_at"`
+	Id                openapi_types.UUID `json:"id"`
+	Reason            string             `json:"reason"`
+}
+
 // PlatformLoginRequest defines model for PlatformLoginRequest.
 type PlatformLoginRequest struct {
 	Password string `json:"password"`
@@ -429,6 +609,27 @@ type PrizeUpdate struct {
 	SortNo *int    `json:"sort_no,omitempty"`
 }
 
+// ProxyCheckinRequest defines model for ProxyCheckinRequest.
+type ProxyCheckinRequest struct {
+	AttendeeId openapi_types.UUID `json:"attendee_id"`
+}
+
+// ResetRequest defines model for ResetRequest.
+type ResetRequest struct {
+	// ConfirmName Must equal the event name
+	ConfirmName string `json:"confirm_name"`
+}
+
+// ResetResult defines model for ResetResult.
+type ResetResult struct {
+	Attempts int `json:"attempts"`
+	Requests int `json:"requests"`
+	Sessions int `json:"sessions"`
+
+	// Unbound Roster people whose binding or check-in was cleared
+	Unbound int `json:"unbound"`
+}
+
 // SessionToken defines model for SessionToken.
 type SessionToken struct {
 	ExpiresAt time.Time `json:"expires_at"`
@@ -440,6 +641,63 @@ type SessionToken struct {
 // SetMaxAttendeesRequest defines model for SetMaxAttendeesRequest.
 type SetMaxAttendeesRequest struct {
 	MaxAttendees int `json:"max_attendees"`
+}
+
+// StaffAttendee defines model for StaffAttendee.
+type StaffAttendee struct {
+	Bound         bool               `json:"bound"`
+	CheckedIn     bool               `json:"checked_in"`
+	CheckinMethod *CheckinMethod     `json:"checkin_method,omitempty"`
+	Dept          string             `json:"dept"`
+	Id            openapi_types.UUID `json:"id"`
+	Name          string             `json:"name"`
+	PhoneLast4    string             `json:"phone_last4"`
+}
+
+// StaffInvite defines model for StaffInvite.
+type StaffInvite struct {
+	// Code One-time invite code; returned only once
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Path Web path that opens the invite, relative to the site root
+	Path string    `json:"path"`
+	Role StaffRole `json:"role"`
+}
+
+// StaffInviteRequest defines model for StaffInviteRequest.
+type StaffInviteRequest struct {
+	Role StaffRole `json:"role"`
+}
+
+// StaffMember defines model for StaffMember.
+type StaffMember struct {
+	// AttendeeName Roster name the staff identity is bound to, if any
+	AttendeeName *string            `json:"attendee_name,omitempty"`
+	CreatedAt    time.Time          `json:"created_at"`
+	Id           openapi_types.UUID `json:"id"`
+	Role         StaffRole          `json:"role"`
+}
+
+// StaffRole defines model for StaffRole.
+type StaffRole string
+
+// StaffSettingsRequest defines model for StaffSettingsRequest.
+type StaffSettingsRequest struct {
+	CenterLat   *float64     `json:"center_lat,omitempty"`
+	CenterLng   *float64     `json:"center_lng,omitempty"`
+	CheckinMode *CheckinMode `json:"checkin_mode,omitempty"`
+
+	// CoordType Browsers report wgs84; the mini program reports gcj02
+	CoordType *CoordType `json:"coord_type,omitempty"`
+	RadiusM   *int       `json:"radius_m,omitempty"`
+}
+
+// StaffSummary defines model for StaffSummary.
+type StaffSummary struct {
+	CheckedIn       int `json:"checked_in"`
+	PendingRequests int `json:"pending_requests"`
+	Total           int `json:"total"`
 }
 
 // UpdateEventRequest Only the fields present change.
@@ -473,8 +731,22 @@ type OrgId = openapi_types.UUID
 // PrizeId defines model for PrizeId.
 type PrizeId = openapi_types.UUID
 
+// Query defines model for Query.
+type Query = string
+
+// RequestId defines model for RequestId.
+type RequestId = openapi_types.UUID
+
+// StaffId defines model for StaffId.
+type StaffId = openapi_types.UUID
+
 // UserId defines model for UserId.
 type UserId = openapi_types.UUID
+
+// SearchStaffAttendeesParams defines parameters for SearchStaffAttendees.
+type SearchStaffAttendeesParams struct {
+	Q *Query `form:"q,omitempty" json:"q,omitempty"`
+}
 
 // ListEventsParams defines parameters for ListEvents.
 type ListEventsParams struct {
@@ -499,6 +771,36 @@ type ListOrgsParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListOrgEventsParams defines parameters for ListOrgEvents.
+type ListOrgEventsParams struct {
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GuestBindJSONRequestBody defines body for GuestBind for application/json ContentType.
+type GuestBindJSONRequestBody = GuestBindRequest
+
+// GuestCheckinJSONRequestBody defines body for GuestCheckin for application/json ContentType.
+type GuestCheckinJSONRequestBody = GuestCheckinRequest
+
+// SubmitManualRequestJSONRequestBody defines body for SubmitManualRequest for application/json ContentType.
+type SubmitManualRequestJSONRequestBody = ManualRequestInput
+
+// GuestLoginJSONRequestBody defines body for GuestLogin for application/json ContentType.
+type GuestLoginJSONRequestBody = GuestLoginRequest
+
+// UpdateStaffSettingsJSONRequestBody defines body for UpdateStaffSettings for application/json ContentType.
+type UpdateStaffSettingsJSONRequestBody = StaffSettingsRequest
+
+// ProxyCheckinJSONRequestBody defines body for ProxyCheckin for application/json ContentType.
+type ProxyCheckinJSONRequestBody = ProxyCheckinRequest
+
+// JoinStaffJSONRequestBody defines body for JoinStaff for application/json ContentType.
+type JoinStaffJSONRequestBody = JoinStaffRequest
+
+// ApproveRequestJSONRequestBody defines body for ApproveRequest for application/json ContentType.
+type ApproveRequestJSONRequestBody = ApproveRequest
+
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody = CreateEventRequest
 
@@ -520,6 +822,12 @@ type CreatePrizeJSONRequestBody = PrizeInput
 // UpdatePrizeJSONRequestBody defines body for UpdatePrize for application/json ContentType.
 type UpdatePrizeJSONRequestBody = PrizeUpdate
 
+// ResetLiveDataJSONRequestBody defines body for ResetLiveData for application/json ContentType.
+type ResetLiveDataJSONRequestBody = ResetRequest
+
+// CreateStaffInviteJSONRequestBody defines body for CreateStaffInvite for application/json ContentType.
+type CreateStaffInviteJSONRequestBody = StaffInviteRequest
+
 // OrganizationLoginJSONRequestBody defines body for OrganizationLogin for application/json ContentType.
 type OrganizationLoginJSONRequestBody = OrganizationLoginRequest
 
@@ -534,6 +842,9 @@ type CreateOrgJSONRequestBody = CreateOrgRequest
 
 // AdjustOrgCreditsJSONRequestBody defines body for AdjustOrgCredits for application/json ContentType.
 type AdjustOrgCreditsJSONRequestBody = AdjustCreditsRequest
+
+// SetEventMaxAttendeesJSONRequestBody defines body for SetEventMaxAttendees for application/json ContentType.
+type SetEventMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest
 
 // SetOrgMaxAttendeesJSONRequestBody defines body for SetOrgMaxAttendees for application/json ContentType.
 type SetOrgMaxAttendeesJSONRequestBody = SetMaxAttendeesRequest

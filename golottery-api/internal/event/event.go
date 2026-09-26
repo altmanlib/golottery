@@ -211,6 +211,11 @@ func (s *Service) Update(ctx context.Context, orgID, id uuid.UUID, p Patch, by o
 				return err
 			}
 		}
+		if from == StatusReady && to == StatusDraft {
+			if err := checkNoLiveData(ctx, tx, ev.ID); err != nil {
+				return err
+			}
+		}
 		now := s.now().UTC()
 		if from == StatusDraft && to == StatusReady && ev.CreditConsumedAt == nil {
 			if err := org.ConsumeEventCredit(ctx, tx, orgID, ev.ID, by, now); err != nil {
@@ -320,6 +325,22 @@ func checkComplete(ctx context.Context, tx *gorm.DB, ev Event) error {
 	return nil
 }
 
+// checkNoLiveData keeps a ready event from going back to draft once guests have used it;
+// a trial run is cleared with the reset first.
+func checkNoLiveData(ctx context.Context, tx *gorm.DB, eventID uuid.UUID) error {
+	var live int64
+	err := tx.WithContext(ctx).Raw(`SELECT
+		(SELECT count(*) FROM attendees WHERE event_id = ? AND (openid IS NOT NULL OR status <> 'pending')) +
+		(SELECT count(*) FROM manual_requests WHERE event_id = ?)`, eventID, eventID).Scan(&live).Error
+	if err != nil {
+		return fmt.Errorf("event: count live data: %w", err)
+	}
+	if live > 0 {
+		return bizerr.New(bizerr.CodeConflict)
+	}
+	return nil
+}
+
 func (s *Service) views(ctx context.Context) *gorm.DB {
 	return s.db.WithContext(ctx).Table("events").Select(`events.*,
 		(SELECT count(*) FROM attendees WHERE attendees.event_id = events.id) AS attendee_count,
@@ -366,4 +387,30 @@ func asBizErr(err error) error {
 		return err
 	}
 	return bizerr.Wrap(bizerr.CodeInternal, err)
+}
+
+// SetMaxAttendees lets an operator change one event's limit. It never drops below the
+// current roster and does not touch credits.
+func (s *Service) SetMaxAttendees(ctx context.Context, orgID, id uuid.UUID, maxAttendees int) (View, error) {
+	if maxAttendees <= 0 {
+		return View{}, bizerr.New(bizerr.CodeBadRequest)
+	}
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		ev, err := lockEvent(ctx, tx, orgID, id)
+		if err != nil {
+			return err
+		}
+		var count int64
+		if err := tx.Model(&Attendee{}).Where("event_id = ?", id).Count(&count).Error; err != nil {
+			return fmt.Errorf("event: count attendees: %w", err)
+		}
+		if int64(maxAttendees) < count {
+			return bizerr.New(bizerr.CodeConflict)
+		}
+		return tx.Model(&ev).Updates(map[string]any{"max_attendees": maxAttendees, "updated_at": s.now().UTC()}).Error
+	})
+	if err != nil {
+		return View{}, asBizErr(err)
+	}
+	return s.Get(ctx, orgID, id)
 }

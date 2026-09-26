@@ -18,6 +18,7 @@ import (
 	"golottery/api/internal/auth"
 	"golottery/api/internal/bizerr"
 	"golottery/api/internal/event"
+	"golottery/api/internal/guest"
 	"golottery/api/internal/org"
 	"golottery/api/internal/platform"
 	"golottery/api/internal/redisx"
@@ -35,6 +36,7 @@ type Deps struct {
 	Accounts *org.Accounts
 	Events   *event.Service
 	Wechat   *wechat.Client
+	Guests   *guest.Service
 	Logger   *slog.Logger
 }
 
@@ -47,6 +49,8 @@ type Server struct {
 	accounts *org.Accounts
 	events   *event.Service
 	wechat   *wechat.Client
+	guests   *guest.Service
+	logger   *slog.Logger
 }
 
 var _ api.StrictServerInterface = (*Server)(nil)
@@ -54,23 +58,26 @@ var _ api.StrictServerInterface = (*Server)(nil)
 // Register mounts generated routes, enforces the contract's security
 // requirements and translates bizerr values to JSON.
 func Register(engine *echo.Echo, deps Deps) error {
-	secured, err := securedOperations()
-	if err != nil {
-		return err
-	}
 	logger := deps.Logger
 	if logger == nil {
 		logger = slog.Default()
 	}
-	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat}
+	server := &Server{db: deps.DB, redis: deps.Redis, platform: deps.Platform, orgs: deps.Orgs, accounts: deps.Accounts, events: deps.Events, wechat: deps.Wechat, guests: deps.Guests, logger: logger}
+	auths := map[string]authenticator{
+		schemePlatform: apiTokenAuth(deps.Tokens, auth.TokenTypePlatform, nil),
+		schemeConsole:  apiTokenAuth(deps.Tokens, auth.TokenTypeConsole, server.resolveAdmin),
+		schemeGuest:    guestAuth(deps.Guests),
+	}
+	secured, err := securedOperations(auths)
+	if err != nil {
+		return err
+	}
 	// The last middleware wraps outermost, so recoverBizErr also renders authentication errors.
 	handler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
-		authenticate(deps.Tokens, secured, map[string]principalResolver{
-			auth.TokenTypeConsole: server.resolveAdmin,
-		}),
+		authenticate(secured, auths),
 		recoverBizErr(logger),
 	})
-	api.RegisterHandlers(engine, handler)
+	api.RegisterHandlers(engine.Group("", withClientIP), handler)
 	return nil
 }
 

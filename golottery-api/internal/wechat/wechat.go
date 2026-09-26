@@ -163,6 +163,40 @@ func (c *Client) fetchStableToken(ctx context.Context) (string, int, error) {
 	return out.AccessToken, out.ExpiresIn, nil
 }
 
+// Code2Session exchanges a mini program login code for the user's openid.
+func (c *Client) Code2Session(ctx context.Context, code string) (string, error) {
+	if !c.Configured() {
+		return "", ErrNotConfigured
+	}
+	query := url.Values{
+		"appid":      {c.cfg.AppID},
+		"secret":     {c.cfg.AppSecret},
+		"js_code":    {code},
+		"grant_type": {"authorization_code"},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.cfg.BaseURL+"/sns/jscode2session?"+query.Encode(), nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.cfg.HTTP.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("wechat: jscode2session: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	var out struct {
+		OpenID  string `json:"openid"`
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&out); err != nil {
+		return "", fmt.Errorf("wechat: jscode2session: decode: %w", err)
+	}
+	if out.ErrCode != 0 || out.OpenID == "" {
+		return "", &APIError{Op: "jscode2session", Code: out.ErrCode, Message: out.ErrMsg}
+	}
+	return out.OpenID, nil
+}
+
 // UnlimitedQRCode returns a PNG mini program code that opens page with scene.
 // A rejected token is dropped and fetched again once.
 func (c *Client) UnlimitedQRCode(ctx context.Context, scene, page string) ([]byte, error) {

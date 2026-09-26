@@ -2,7 +2,7 @@
 title: 定位签到抽奖 · 技术方案
 type: design
 status: published
-updated: 2026-09-25
+updated: 2026-09-26
 ---
 
 # 定位签到抽奖 · 技术方案
@@ -261,6 +261,7 @@ Redis 约定：
 
 - 签发：32 字节 `crypto/rand`，十六进制明文返回一次；库内保存 `sha256`
 - `typ`：`console`（组织管理员）、`host`（主持人）、`platform`（平台运营）
+- 宾客令牌存在独立的 `guest_sessions`，按 `(event_id, openid)` 一行，重新登录即轮换；有效期 `GUEST_SESSION_TTL`，契约里对应 `guestBearer`
 - 校验按 `typ` 分开，三种令牌不可互换
 - 有效期来自 `CONSOLE_SESSION_TTL` / `HOST_SESSION_TTL` / `PLATFORM_SESSION_TTL`
 - 需要令牌的接口在 `openapi.yaml` 中用 `security` 声明（`platformBearer` → `platform`，`consoleBearer` → `console`）；`apihttp` 启动时从内嵌契约读出这些接口，校验 `Authorization: Bearer` 且类型匹配，失败统一 `401 E_UNAUTHORIZED`
@@ -301,6 +302,9 @@ Redis 约定：
 | `POST /api/organization/login` | 无 | `apihttp` → `org` |
 | `/api/organization/*` 其余接口（[阶段 4 §4.3](phases/phase-4-org-admin-auth.md#43-管理员接口)） | console 令牌 | `apihttp` → `org` |
 | `/api/organization/events` 下的活动、名单、奖项、导入导出、活动码（[阶段 5 §4.2](phases/phase-5-event-setup.md#42-接口)） | console 令牌 | `apihttp` → `event`、`wechat` |
+| `/api/organization/events/:id` 下的工作人员邀请、重置现场数据、签到明细导出（[阶段 6 §4.1](phases/phase-6-checkin.md#41-数据)、[§4.3](phases/phase-6-checkin.md#43-现场管理接口)） | console 令牌 | `apihttp` → `guest` |
+| `POST /api/guest/session` | 无 | `apihttp` → `guest` |
+| `/api/guest/*` 其余接口：绑定、签到、现场求助与工作人员接口（[阶段 6 §4.2](phases/phase-6-checkin.md#42-宾客接口)、[§4.3](phases/phase-6-checkin.md#43-现场管理接口)） | guest 令牌 | `apihttp` → `guest` |
 
 列表接口统一用 `offset` / `limit` 查询参数（`limit` 默认 40，最大 100），返回 `{items, total}`；越界值按边界处理，不报错。
 | 其余路径 | 空体 `404` | `httpapi` |
@@ -334,6 +338,14 @@ Redis 约定：
 | 400 | `E_IMPORT_FILE` | 无法读取文件，请上传 5 MB 以内、表头为姓名、部门、手机号的 xlsx |
 | 400 | `E_IMPORT_INVALID` | 有 %d 行需要修正，整份文件未导入 |
 | 503 | `E_WECHAT_NOT_CONFIGURED` | 微信小程序尚未配置，暂时无法生成小程序码 |
+| 400 | `E_ATTENDEE_NOT_MATCHED` | 姓名或手机后四位与名单不符 |
+| 409 | `E_ATTENDEE_TAKEN` | 该名单人员已被其他设备绑定，请联系现场工作人员 |
+| 400 | `E_NOT_BOUND` | 请先核对姓名与手机后四位 |
+| 409 | `E_EVENT_NOT_OPEN` | 活动尚未开放签到 |
+| 409 | `E_WINDOW_CLOSED` | 当前不在签到时间内 |
+| 400 | `E_LOW_ACCURACY` | 定位精度不足，请到开阔处重试或联系现场工作人员 |
+| 400 | `E_OUT_OF_RANGE` | 不在签到范围内，距离约 %d 米 |
+| 400 | `E_INVITE_INVALID` | 邀请链接无效、已使用或已过期 |
 
 面向用户的文案句尾不用中文句号 `。`。带 `%d` / `%s` 的文案由调用方传入参数。名单导入的 400 响应另带 `rows: [{row, reason}]`，行号按表格计，表头为第 1 行。
 
@@ -345,7 +357,7 @@ Redis 约定：
 
 ## 8. 前端结构
 
-一个 SPA，运营后台、组织端与大屏三条入口，各自懒加载。组织端在阶段 4 加入，大屏在阶段 7 替换占位。
+一个 SPA，运营后台、组织端、宾客网页与大屏四条入口，各自懒加载。组织端在阶段 4 加入，大屏在阶段 7 替换占位。
 
 | 路由 | 页面 |
 | --- | --- |
@@ -355,14 +367,19 @@ Redis 约定：
 | `/platform/orgs` | 组织列表（页码写在 `?page=`）与开通弹窗 |
 | `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、管理员（创建、重置口令、停用 / 启用）、最近 20 条流水 |
 | `/organization/login` | 组织管理员登录；已有令牌时直接进入 `/organization` |
-| `/organization` | 组织控制台首页，显示本组织名称；无令牌时去 `/organization/login` |
+| `/organization` | 组织控制台外壳，页头显示本组织名称；无令牌时去 `/organization/login`；首页重定向到 `/organization/events` |
+| `/organization/events` | 活动列表（页码写在 `?page=`）、剩余场次与创建弹窗 |
+| `/organization/events/:eventId` | 活动详情：状态操作（就绪前提示场次消耗，余额为 0 时禁用）、签到设置（时间按北京时间输入）、签到入口（网页地址与二维码、小程序码下载）、奖项、现场工作人员（一次性邀请链接与二维码、撤销）、现场数据（签到明细导出、签到开始前重置）、名单（导入逐行报错、导出） |
+| `/m/:publicId` | 宾客签到页（手机）：确认身份、签到、现场求助；求助待处理时每 10 秒刷新 |
+| `/m/:publicId/staff` | 现场工作台（手机）：`?invite=` 兑换邀请后去掉参数；签到进度与求助列表每 10 秒轮询、代签，`admin` 另有签到方式与围栏设置 |
 | `/host` | 大屏占位 |
 
 - 视觉 token 定义在 `src/theme.ts`：`brand` 第 6 阶 `#1E4544`，`forceColorScheme="light"`
 - 字体 `@fontsource/roboto`（400/500/700）、`roboto-condensed`（700）、`roboto-mono`（500），自托管
 - 样式用 CSS Modules；结构用 Mantine 布局组件
 - 业务请求只从 `#/api-gen/sdk.gen` 与 `#/api-gen/types.gen` 引用
-- `src/api.ts` 按路径前缀附加 Bearer：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
+- `src/api.ts` 按路径前缀附加 Bearer：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`，`/api/guest/*` 用 `gl.token.guest`
+- 宾客网页没有登录页：浏览器生成的设备号存在 `gl.device`，令牌只属于 `gl.guest.event` 记录的活动；并发调用共用一次登录，`401` 时重新登录并重试一次，不走全局跳转
 - `401` 删除对应令牌，只清该入口的查询缓存；当前页面仍在该入口内时，经 `router.navigate` 跳到它的登录页（`/platform/login`、`/organization/login`），已离开该入口则不跳。登录接口自身的 `401` 只展示错误，不跳转
 - 同一浏览器可同时登录运营后台与组织控制台，令牌与缓存互不影响
 - 临时口令只放在组件状态里展示一次，关闭即丢弃，不进查询缓存
@@ -411,6 +428,8 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `PLATFORM_SESSION_TTL` | App | `8h` | | 运营令牌有效期 |
 | `LOGIN_MAX_FAILURES` | App | `5` | | 限速阈值 |
 | `LOGIN_WINDOW` | App | `15m` | | 限速窗口 |
+| `GUEST_LOGIN_MODE` | Infra | `wechat` | | 宾客登录方式：`wechat`（小程序 `code`）或 `web`（浏览器设备号，首发使用） |
+| `GUEST_SESSION_TTL` | App | `24h` | | 宾客令牌有效期 |
 
 仅宿主机使用、不进容器的键：`POSTGRES_PASSWORD`、`POSTGRES_PORT`、`POSTGRES_DB`、`POSTGRES_USER`。
 
@@ -429,7 +448,8 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `org` | 开通的三行同事务（含回滚）、初始场次为 0 不写流水、调整与 `balance_after` 一致、扣成负数拒绝且余额不变、并发扣减不为负、停用启用幂等且不动配额、分页顺序 |
 | `httpapi` | `/readyz` 成功 200、失败空体 503；未知路径空体 404；安全响应头；不可信 `X-Request-Id` 被丢弃 |
 | `apihttp` | `/healthz` 在库可达时 `ok=true, db=up`，不可达时 503；`redis` 字段为 `up` / `down` / `skipped` 且不影响 `ok`；运营登录、限速、登出、`me`、改密的 HTTP 行为；受保护接口与契约的 `security` 一致 |
-| 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；`401` 跳转目标只在本入口内；登录表单的提交参数与错误展示；临时口令只展示一次 |
+| `guest` | 围栏判定与精度抵扣、WGS-84 换算、限流、幂等签到、绑定占用与锁定、邀请单次使用、三种求助处理、代签、现场切换签到方式与移动围栏、重置只在签到开始前 |
+| 前端 | `ApiError` 解析；路径前缀到令牌的映射；`401` 清令牌但登录接口除外；`401` 跳转目标只在本入口内；登录表单的提交参数与错误展示；临时口令只展示一次；宾客会话按活动隔离、并发共用一次登录、过期后重登重试 |
 
 `make test` 即 `go test -p=1 ./...`。禁止用 SQLite 证明持久化路径。
 
@@ -444,6 +464,7 @@ ScopeInfra 只来自 `.env` / 环境变量 / 默认值。ScopeApp 额外可由 `
 | `003_org_quota.sql` | `orgs`、`org_quotas`、`credit_ledger` |
 | `004_org_users.sql` | `org_users` |
 | `005_event_setup.sql` | `events`、`attendees`、`prizes`；`credit_ledger.event_id` 外键与每场只扣一次的唯一索引 |
+| `006_checkin.sql` | `guest_sessions`、`checkin_attempts`、`manual_requests`、`event_staff`、`staff_invites`；`attendees` 追加绑定与签到字段 |
 
 仓库尚无生产数据。业务表以新增迁移追加，不改已发布迁移文件。
 

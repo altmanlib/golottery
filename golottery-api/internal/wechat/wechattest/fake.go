@@ -43,6 +43,7 @@ func New() *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /cgi-bin/stable_token", s.stableToken)
 	mux.HandleFunc("POST /wxa/getwxacodeunlimit", s.qrcode)
+	mux.HandleFunc("GET /sns/jscode2session", s.code2session)
 	s.Server = httptest.NewServer(mux)
 	return s
 }
@@ -82,6 +83,16 @@ func (s *Server) qrcode(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write(sampleJPEG())
 	}
+}
+
+// code2session maps code "c-<name>" to openid "o-<name>"; any other code is invalid.
+func (s *Server) code2session(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("js_code")
+	if len(code) > 2 && code[:2] == "c-" {
+		_ = json.NewEncoder(w).Encode(map[string]any{"openid": "o-" + code[2:], "session_key": "k"})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"errcode": 40029, "errmsg": "invalid code"})
 }
 
 // TokenCalls is how many times stable_token was called.

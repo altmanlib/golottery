@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses } from './types.gen';
+import type { AdjustOrgCreditsData, AdjustOrgCreditsErrors, AdjustOrgCreditsResponses, ApproveRequestData, ApproveRequestErrors, ApproveRequestResponses, ChangeOrganizationPasswordData, ChangeOrganizationPasswordErrors, ChangeOrganizationPasswordResponses, ChangePlatformPasswordData, ChangePlatformPasswordErrors, ChangePlatformPasswordResponses, CreateAttendeeData, CreateAttendeeErrors, CreateAttendeeResponses, CreateEventData, CreateEventErrors, CreateEventResponses, CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUserData, CreateOrgUserErrors, CreateOrgUserResponses, CreatePrizeData, CreatePrizeErrors, CreatePrizeResponses, CreateStaffInviteData, CreateStaffInviteErrors, CreateStaffInviteResponses, DeleteAttendeeData, DeleteAttendeeErrors, DeleteAttendeeResponses, DeletePrizeData, DeletePrizeErrors, DeletePrizeResponses, DisableOrgData, DisableOrgErrors, DisableOrgResponses, DisableOrgUserData, DisableOrgUserErrors, DisableOrgUserResponses, EnableOrgData, EnableOrgErrors, EnableOrgResponses, EnableOrgUserData, EnableOrgUserErrors, EnableOrgUserResponses, ExportAttendeesData, ExportAttendeesErrors, ExportAttendeesResponses, ExportCheckinAttemptsData, ExportCheckinAttemptsErrors, ExportCheckinAttemptsResponses, GetApiInfoData, GetApiInfoResponses, GetEventData, GetEventEntryData, GetEventEntryErrors, GetEventEntryResponses, GetEventErrors, GetEventQrCodeData, GetEventQrCodeErrors, GetEventQrCodeResponses, GetEventResponses, GetGuestStatusData, GetGuestStatusErrors, GetGuestStatusResponses, GetHealthzData, GetHealthzErrors, GetHealthzResponses, GetOpenApijsonData, GetOpenApijsonResponses, GetOpenApiYamlData, GetOpenApiYamlResponses, GetOrganizationMeData, GetOrganizationMeErrors, GetOrganizationMeResponses, GetOrgData, GetOrgErrors, GetOrgResponses, GetPlatformMeData, GetPlatformMeErrors, GetPlatformMeResponses, GetStaffSummaryData, GetStaffSummaryErrors, GetStaffSummaryResponses, GuestBindData, GuestBindErrors, GuestBindResponses, GuestCheckinData, GuestCheckinErrors, GuestCheckinResponses, GuestLoginData, GuestLoginErrors, GuestLoginResponses, ImportAttendeesData, ImportAttendeesErrors, ImportAttendeesResponses, JoinStaffData, JoinStaffErrors, JoinStaffResponses, ListAttendeesData, ListAttendeesErrors, ListAttendeesResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListEventStaffData, ListEventStaffErrors, ListEventStaffResponses, ListOrgEventsData, ListOrgEventsErrors, ListOrgEventsResponses, ListOrgsData, ListOrgsErrors, ListOrgsResponses, ListOrgUsersData, ListOrgUsersErrors, ListOrgUsersResponses, ListPendingRequestsData, ListPendingRequestsErrors, ListPendingRequestsResponses, ListPrizesData, ListPrizesErrors, ListPrizesResponses, OrganizationLoginData, OrganizationLoginErrors, OrganizationLoginResponses, OrganizationLogoutData, OrganizationLogoutErrors, OrganizationLogoutResponses, PlatformLoginData, PlatformLoginErrors, PlatformLoginResponses, PlatformLogoutData, PlatformLogoutErrors, PlatformLogoutResponses, ProxyCheckinData, ProxyCheckinErrors, ProxyCheckinResponses, RejectRequestData, RejectRequestErrors, RejectRequestResponses, RemoveEventStaffData, RemoveEventStaffErrors, RemoveEventStaffResponses, ResetLiveDataData, ResetLiveDataErrors, ResetLiveDataResponses, ResetOrgUserPasswordData, ResetOrgUserPasswordErrors, ResetOrgUserPasswordResponses, SearchStaffAttendeesData, SearchStaffAttendeesErrors, SearchStaffAttendeesResponses, SetEventMaxAttendeesData, SetEventMaxAttendeesErrors, SetEventMaxAttendeesResponses, SetOrgMaxAttendeesData, SetOrgMaxAttendeesErrors, SetOrgMaxAttendeesResponses, SubmitManualRequestData, SubmitManualRequestErrors, SubmitManualRequestResponses, UpdateAttendeeData, UpdateAttendeeErrors, UpdateAttendeeResponses, UpdateEventData, UpdateEventErrors, UpdateEventResponses, UpdatePrizeData, UpdatePrizeErrors, UpdatePrizeResponses, UpdateStaffSettingsData, UpdateStaffSettingsErrors, UpdateStaffSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -560,5 +560,306 @@ export const getEventQrCode = <ThrowOnError extends boolean = false>(options: Op
             type: 'http'
         }],
     url: '/api/organization/events/{eventId}/entry/qrcode',
+    ...options
+});
+
+/**
+ * Events of an organization, newest first
+ */
+export const listOrgEvents = <ThrowOnError extends boolean = false>(options: Options<ListOrgEventsData, ThrowOnError>): RequestResult<ListOrgEventsResponses, ListOrgEventsErrors, ThrowOnError> => (options.client ?? client).get<ListOrgEventsResponses, ListOrgEventsErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/events',
+    ...options
+});
+
+/**
+ * Raise or lower one event's attendee limit; never below its roster
+ */
+export const setEventMaxAttendees = <ThrowOnError extends boolean = false>(options: Options<SetEventMaxAttendeesData, ThrowOnError>): RequestResult<SetEventMaxAttendeesResponses, SetEventMaxAttendeesErrors, ThrowOnError> => (options.client ?? client).patch<SetEventMaxAttendeesResponses, SetEventMaxAttendeesErrors, ThrowOnError>({
+    security: [{
+            key: 'platformBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/platform/orgs/{orgId}/events/{eventId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sign in a guest for one event
+ *
+ * In wechat mode send the mini program login code; in web mode send a device id kept by the browser.
+ */
+export const guestLogin = <ThrowOnError extends boolean = false>(options: Options<GuestLoginData, ThrowOnError>): RequestResult<GuestLoginResponses, GuestLoginErrors, ThrowOnError> => (options.client ?? client).post<GuestLoginResponses, GuestLoginErrors, ThrowOnError>({
+    url: '/api/guest/session',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Bind the guest to a roster person
+ */
+export const guestBind = <ThrowOnError extends boolean = false>(options: Options<GuestBindData, ThrowOnError>): RequestResult<GuestBindResponses, GuestBindErrors, ThrowOnError> => (options.client ?? client).post<GuestBindResponses, GuestBindErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/bind',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Binding, check-in and help request status, with the current check-in mode
+ */
+export const getGuestStatus = <ThrowOnError extends boolean = false>(options?: Options<GetGuestStatusData, ThrowOnError>): RequestResult<GetGuestStatusResponses, GetGuestStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetGuestStatusResponses, GetGuestStatusErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/checkin',
+    ...options
+});
+
+/**
+ * Check in; geo mode needs coordinates, direct mode ignores them
+ */
+export const guestCheckin = <ThrowOnError extends boolean = false>(options: Options<GuestCheckinData, ThrowOnError>): RequestResult<GuestCheckinResponses, GuestCheckinErrors, ThrowOnError> => (options.client ?? client).post<GuestCheckinResponses, GuestCheckinErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/checkin',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ask on-site staff for help
+ */
+export const submitManualRequest = <ThrowOnError extends boolean = false>(options: Options<SubmitManualRequestData, ThrowOnError>): RequestResult<SubmitManualRequestResponses, SubmitManualRequestErrors, ThrowOnError> => (options.client ?? client).post<SubmitManualRequestResponses, SubmitManualRequestErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/manual-requests',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * On-site staff of an event
+ */
+export const listEventStaff = <ThrowOnError extends boolean = false>(options: Options<ListEventStaffData, ThrowOnError>): RequestResult<ListEventStaffResponses, ListEventStaffErrors, ThrowOnError> => (options.client ?? client).get<ListEventStaffResponses, ListEventStaffErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/staff',
+    ...options
+});
+
+/**
+ * Create a one-time invite for a role, valid 24 hours
+ */
+export const createStaffInvite = <ThrowOnError extends boolean = false>(options: Options<CreateStaffInviteData, ThrowOnError>): RequestResult<CreateStaffInviteResponses, CreateStaffInviteErrors, ThrowOnError> => (options.client ?? client).post<CreateStaffInviteResponses, CreateStaffInviteErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/staff',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke a staff member
+ */
+export const removeEventStaff = <ThrowOnError extends boolean = false>(options: Options<RemoveEventStaffData, ThrowOnError>): RequestResult<RemoveEventStaffResponses, RemoveEventStaffErrors, ThrowOnError> => (options.client ?? client).delete<RemoveEventStaffResponses, RemoveEventStaffErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/staff/{staffId}',
+    ...options
+});
+
+/**
+ * Become staff of the event with an invite code
+ */
+export const joinStaff = <ThrowOnError extends boolean = false>(options: Options<JoinStaffData, ThrowOnError>): RequestResult<JoinStaffResponses, JoinStaffErrors, ThrowOnError> => (options.client ?? client).post<JoinStaffResponses, JoinStaffErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/join',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Roster size, check-ins and open help requests
+ */
+export const getStaffSummary = <ThrowOnError extends boolean = false>(options?: Options<GetStaffSummaryData, ThrowOnError>): RequestResult<GetStaffSummaryResponses, GetStaffSummaryErrors, ThrowOnError> => (options?.client ?? client).get<GetStaffSummaryResponses, GetStaffSummaryErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/summary',
+    ...options
+});
+
+/**
+ * Open help requests, oldest first
+ */
+export const listPendingRequests = <ThrowOnError extends boolean = false>(options?: Options<ListPendingRequestsData, ThrowOnError>): RequestResult<ListPendingRequestsResponses, ListPendingRequestsErrors, ThrowOnError> => (options?.client ?? client).get<ListPendingRequestsResponses, ListPendingRequestsErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/manual-requests',
+    ...options
+});
+
+/**
+ * Bind when needed and check the person in
+ */
+export const approveRequest = <ThrowOnError extends boolean = false>(options: Options<ApproveRequestData, ThrowOnError>): RequestResult<ApproveRequestResponses, ApproveRequestErrors, ThrowOnError> => (options.client ?? client).post<ApproveRequestResponses, ApproveRequestErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/manual-requests/{requestId}/approve',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Close a help request
+ */
+export const rejectRequest = <ThrowOnError extends boolean = false>(options: Options<RejectRequestData, ThrowOnError>): RequestResult<RejectRequestResponses, RejectRequestErrors, ThrowOnError> => (options.client ?? client).post<RejectRequestResponses, RejectRequestErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/manual-requests/{requestId}/reject',
+    ...options
+});
+
+/**
+ * Check a roster person in on their behalf
+ */
+export const proxyCheckin = <ThrowOnError extends boolean = false>(options: Options<ProxyCheckinData, ThrowOnError>): RequestResult<ProxyCheckinResponses, ProxyCheckinErrors, ThrowOnError> => (options.client ?? client).post<ProxyCheckinResponses, ProxyCheckinErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/checkins/proxy',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Find roster people by name, at most 20
+ */
+export const searchStaffAttendees = <ThrowOnError extends boolean = false>(options?: Options<SearchStaffAttendeesData, ThrowOnError>): RequestResult<SearchStaffAttendeesResponses, SearchStaffAttendeesErrors, ThrowOnError> => (options?.client ?? client).get<SearchStaffAttendeesResponses, SearchStaffAttendeesErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/attendees',
+    ...options
+});
+
+/**
+ * Switch check-in mode or move the fence (admin role only)
+ */
+export const updateStaffSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateStaffSettingsData, ThrowOnError>): RequestResult<UpdateStaffSettingsResponses, UpdateStaffSettingsErrors, ThrowOnError> => (options.client ?? client).patch<UpdateStaffSettingsResponses, UpdateStaffSettingsErrors, ThrowOnError>({
+    security: [{
+            key: 'guestBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/guest/staff/checkin-settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Clear a trial run before check-in opens; the roster, prizes and staff stay
+ */
+export const resetLiveData = <ThrowOnError extends boolean = false>(options: Options<ResetLiveDataData, ThrowOnError>): RequestResult<ResetLiveDataResponses, ResetLiveDataErrors, ThrowOnError> => (options.client ?? client).post<ResetLiveDataResponses, ResetLiveDataErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/reset',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Every check-in tap with coordinates, as xlsx in Asia/Shanghai
+ */
+export const exportCheckinAttempts = <ThrowOnError extends boolean = false>(options: Options<ExportCheckinAttemptsData, ThrowOnError>): RequestResult<ExportCheckinAttemptsResponses, ExportCheckinAttemptsErrors, ThrowOnError> => (options.client ?? client).get<ExportCheckinAttemptsResponses, ExportCheckinAttemptsErrors, ThrowOnError>({
+    security: [{
+            key: 'consoleBearer',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/organization/events/{eventId}/exports/checkin-attempts',
     ...options
 });

@@ -15,11 +15,7 @@ export const STATUS_LABELS: Record<OrgStatus, string> = {
   disabled: '停用',
 }
 
-/** Reads `?page=` as a 1-based page number; anything invalid is page 1. */
-export function parsePage(raw: string | null): number {
-  const page = Number(raw)
-  return Number.isInteger(page) && page >= 1 ? page : 1
-}
+export { parsePage } from '#/lib/paging'
 
 export function pageOffset(page: number): number {
   return (page - 1) * PAGE_SIZE

@@ -18,8 +18,10 @@ const (
 	maxDeptLen = 100
 	maxGiftLen = 200
 
-	// AttendeePending is the only attendee status before check-in exists (phase 6).
+	// AttendeePending has not checked in yet.
 	AttendeePending = "pending"
+	// AttendeeCheckedIn is in the draw pool.
+	AttendeeCheckedIn = "checked_in"
 )
 
 // Attendee is one person on an event roster. Only the last four phone digits are kept.
@@ -32,6 +34,11 @@ type Attendee struct {
 	PhoneLast4 string    `gorm:"column:phone_last4;type:char(4);not null"`
 	Status     string    `gorm:"size:16;not null"`
 	CreatedAt  time.Time `gorm:"not null"`
+	// Set by check-in (phase 6): the bound guest and how the person checked in.
+	OpenID        *string `gorm:"column:openid;size:64"`
+	CheckinAt     *time.Time
+	CheckinMethod *string `gorm:"size:16"`
+	CheckinBy     *string `gorm:"size:64"`
 }
 
 // TableName returns the attendees table name.
@@ -133,30 +140,49 @@ func (s *Service) ListAttendees(ctx context.Context, orgID, eventID uuid.UUID, o
 
 // AddAttendee appends one person; the roster may not grow beyond the event limit.
 func (s *Service) AddAttendee(ctx context.Context, orgID, eventID uuid.UUID, in AttendeeInput) (Attendee, error) {
+	var row Attendee
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		row, err = AddAttendeeTx(ctx, tx, orgID, eventID, in, s.now().UTC())
+		return err
+	})
+	if err != nil {
+		return Attendee{}, err
+	}
+	return row, nil
+}
+
+// AddAttendeeTx adds one person inside tx with the same checks as AddAttendee, for callers
+// that must add and act on the person atomically (on-site staff adding a walk-in).
+func AddAttendeeTx(ctx context.Context, tx *gorm.DB, orgID, eventID uuid.UUID, in AttendeeInput, at time.Time) (Attendee, error) {
 	in, err := cleanAttendee(in)
 	if err != nil {
 		return Attendee{}, err
 	}
-	var row Attendee
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		ev, err := editableEvent(ctx, tx, orgID, eventID)
-		if err != nil {
-			return err
-		}
-		if err := checkRoom(ctx, tx, ev, 1); err != nil {
-			return err
-		}
-		row = Attendee{
-			ID: uuid.New(), OrgID: orgID, EventID: eventID,
-			Name: in.Name, Dept: in.Dept, PhoneLast4: in.Phone,
-			Status: AttendeePending, CreatedAt: s.now().UTC(),
-		}
-		return tx.Create(&row).Error
-	})
-	if isUniqueViolation(err) {
-		return Attendee{}, bizerr.New(bizerr.CodeConflict)
+	ev, err := editableEvent(ctx, tx, orgID, eventID)
+	if err != nil {
+		return Attendee{}, asBizErr(err)
 	}
-	return row, asBizErr(err)
+	if err := checkRoom(ctx, tx, ev, 1); err != nil {
+		return Attendee{}, asBizErr(err)
+	}
+	row := Attendee{
+		ID: uuid.New(), OrgID: orgID, EventID: eventID,
+		Name: in.Name, Dept: in.Dept, PhoneLast4: in.Phone,
+		Status: AttendeePending, CreatedAt: at,
+	}
+	// A savepoint keeps a duplicate from aborting the caller's transaction.
+	if err := tx.SavePoint("add_attendee").Error; err != nil {
+		return Attendee{}, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	if err := tx.Create(&row).Error; err != nil {
+		if isUniqueViolation(err) {
+			_ = tx.RollbackTo("add_attendee").Error
+			return Attendee{}, bizerr.New(bizerr.CodeConflict)
+		}
+		return Attendee{}, bizerr.Wrap(bizerr.CodeInternal, err)
+	}
+	return row, nil
 }
 
 // UpdateAttendee changes a roster row; a bound WeChat account stays bound.
@@ -192,20 +218,20 @@ func (s *Service) UpdateAttendee(ctx context.Context, orgID, eventID, attendeeID
 	return row, asBizErr(err)
 }
 
-// DeleteAttendee removes a person. Phases 6 and 7 add the bound, checked-in and winner checks.
+// DeleteAttendee removes a person who has not bound or checked in. Phase 7 adds the winner check.
 func (s *Service) DeleteAttendee(ctx context.Context, orgID, eventID, attendeeID uuid.UUID) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if _, err := editableEvent(ctx, tx, orgID, eventID); err != nil {
 			return err
 		}
-		res := tx.Where("id = ? AND event_id = ?", attendeeID, eventID).Delete(&Attendee{})
-		if res.Error != nil {
-			return res.Error
+		var row Attendee
+		if err := findIn(ctx, tx, &row, eventID, attendeeID); err != nil {
+			return err
 		}
-		if res.RowsAffected == 0 {
-			return bizerr.New(bizerr.CodeNotFound)
+		if row.OpenID != nil || row.Status != AttendeePending {
+			return bizerr.New(bizerr.CodeConflict)
 		}
-		return nil
+		return tx.Delete(&row).Error
 	})
 	return asBizErr(err)
 }

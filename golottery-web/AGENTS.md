@@ -32,8 +32,10 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 - 列表走后端 `offset`/`limit` 分页（默认 40），页码写在 URL；底栏用 `Pagination`
 - 动效只做 CSS 微交互：路由淡入写在对应壳的 CSS Module；弹层用 Mantine `Modal`（默认 portal 到 `body`）；尊重 `prefers-reduced-motion`
 - 加载用 `TableSkeleton`；空列表用 `EmptyState` 并带 CTA（二者在 `src/components/`）
+- 页码解析用 `src/lib/paging.ts` 的 `parsePage`；下载二进制用 SDK 的 `parseAs: 'blob'` 取回后交给 `src/lib/download.ts` 的 `saveBlob`
+- 时间输入与展示一律按 `Asia/Shanghai`：用原生 `datetime-local`，经 `organization/events.ts` 的 `toShanghaiInput` / `fromShanghaiInput` 换算，不依赖浏览器时区
 - toast 右下角
-- 运营后台在 `src/platform/`，路由前缀 `/platform`；组织端在 `src/organization/`，路由前缀 `/organization`；大屏在 `src/host/`，路由前缀 `/host`。三块都懒加载
+- 运营后台在 `src/platform/`，路由前缀 `/platform`；组织端在 `src/organization/`，路由前缀 `/organization`；大屏在 `src/host/`，路由前缀 `/host`；宾客与现场工作人员的手机网页在 `src/guest/`，路由前缀 `/m`。各块都懒加载
 - 分层：查询、变更与表单状态放各自目录的 `hooks/`，可复用视图块放 `components/`，页面只做装配；query key 集中在该目录的 `queryKeys.ts`
 - 筛选写入 URL
 - 不写视觉/UI 测试：不为 token、主题、CSS 变量、类名、内联样式或计算样式写 `*.test.tsx`；前端测试只覆盖纯函数与接口契约
@@ -45,8 +47,9 @@ bun run gen:api    # 读 ../golottery-api/api/openapi.yaml 生成 src/api-gen/
 - 配置：`openapi-ts.config.ts`
 - 源契约：`golottery-api/api/openapi.yaml`
 - 生成产物：`src/api-gen/`（勿手改）
-- 运行时：入口 `import '#/api'`。`src/api.ts` 把 `baseUrl` 覆写为空字符串，按请求路径前缀附加对应令牌：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`
+- 运行时：入口 `import '#/api'`。`src/api.ts` 把 `baseUrl` 覆写为空字符串，按请求路径前缀附加对应令牌：`/api/platform/*` 用 `gl.token.platform`，`/api/organization/*` 用 `gl.token.console`，`/api/host/*` 用 `gl.token.host`，`/api/guest/*` 用 `gl.token.guest`
 - `401` 删除对应令牌并只清该入口的查询缓存（`QUERY_ROOTS`）；当前页面仍在该入口内时跳到它的登录页：`/api/platform/*` → `/platform/login`，`/api/organization/*` → `/organization/login`，`/api/host/*` 在阶段 7 接入。跳转表与判断在 `src/api.ts`（`LOGIN_ROUTES`、`redirectAfterExpiry`），执行用 `router.navigate`，不直接改 `location.hash`；登录接口自身的 `401` 不跳转
+- 宾客调用一律经 `src/guest/session.ts` 的 `asGuest`：按活动登录、并发共用一次登录、`401` 后重登重试一次；宾客 `401` 不触发全局处理
 - 一次性口令（临时口令、重置口令）只放在组件状态里展示一次，拿到后立刻 `mutation.reset()`，不进查询缓存
 - SDK 调用用 `unwrap(...)` 取数据，失败抛 `ApiError`（`code` / `message` 来自接口错误体）
 

@@ -125,3 +125,46 @@ func TestEventsAreScopedToTheAdminsOrg(t *testing.T) {
 	}
 	expectError(t, env.do(t, http.MethodPost, "/api/organization/events", theirs, map[string]string{"name": "x"}), http.StatusUnauthorized, "E_UNAUTHORIZED")
 }
+
+func TestOperatorAdjustsEventLimit(t *testing.T) {
+	env := newPlatformEnv(t)
+	ops := env.mustLogin(t)
+	console, orgID := env.adminSession(t, ops, "a@example.com", 1)
+	ev := env.createEvent(t, console)
+	path := "/api/platform/orgs/" + orgID.String() + "/events/" + ev.ID.String()
+	adminBase := "/api/organization/events/" + ev.ID.String()
+
+	env.do(t, http.MethodPost, adminBase+"/attendees", console, map[string]any{"name": "李雷", "phone": "0001"})
+	env.do(t, http.MethodPost, adminBase+"/attendees", console, map[string]any{"name": "韩梅梅", "phone": "0002"})
+
+	list := decode[struct {
+		Items []eventBodyT `json:"items"`
+		Total int          `json:"total"`
+	}](t, env.do(t, http.MethodGet, "/api/platform/orgs/"+orgID.String()+"/events", ops, nil))
+	if list.Total != 1 || list.Items[0].AttendeeCount != 2 {
+		t.Fatalf("operator list = %+v", list)
+	}
+
+	expectError(t, env.do(t, http.MethodPatch, path, ops, map[string]any{"max_attendees": 1}), http.StatusConflict, "E_CONFLICT")
+	rec := env.do(t, http.MethodPatch, path, ops, map[string]any{"max_attendees": 2})
+	if rec.Code != http.StatusOK || decode[eventBodyT](t, rec).MaxAttendees != 2 {
+		t.Fatalf("set limit status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	expectError(t, env.do(t, http.MethodPost, adminBase+"/attendees", console, map[string]any{"name": "王五", "phone": "0003"}), http.StatusBadRequest, "E_ROSTER_FULL")
+	if rec := env.do(t, http.MethodPatch, path, ops, map[string]any{"max_attendees": 3}); rec.Code != http.StatusOK {
+		t.Fatalf("raise limit status = %d", rec.Code)
+	}
+	if rec := env.do(t, http.MethodPost, adminBase+"/attendees", console, map[string]any{"name": "王五", "phone": "0003"}); rec.Code != http.StatusCreated {
+		t.Fatalf("add after raise status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	me := decode[struct {
+		EventCredits int `json:"event_credits"`
+	}](t, env.do(t, http.MethodGet, "/api/organization/me", console, nil))
+	if me.EventCredits != 1 {
+		t.Fatalf("limit change touched credits: %d", me.EventCredits)
+	}
+
+	other := env.createOrg(t, ops, 1)
+	expectError(t, env.do(t, http.MethodPatch, "/api/platform/orgs/"+other.ID.String()+"/events/"+ev.ID.String(), ops, map[string]any{"max_attendees": 5}), http.StatusNotFound, "E_NOT_FOUND")
+	expectError(t, env.do(t, http.MethodPatch, path, console, map[string]any{"max_attendees": 5}), http.StatusUnauthorized, "E_UNAUTHORIZED")
+}
