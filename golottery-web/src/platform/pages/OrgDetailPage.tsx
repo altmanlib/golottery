@@ -8,6 +8,7 @@ import { AdjustCreditsForm } from '#/platform/components/AdjustCreditsForm'
 import { AdminSection } from '#/platform/components/AdminSection'
 import { LedgerTable } from '#/platform/components/LedgerTable'
 import { MaxAttendeesForm } from '#/platform/components/MaxAttendeesForm'
+import { OrgEventsSection } from '#/platform/components/OrgEventsSection'
 import { OrgStatusBadge } from '#/platform/components/OrgStatusBadge'
 import { OrgStatusControl } from '#/platform/components/OrgStatusControl'
 import { useOrg } from '#/platform/hooks/useOrgs'
@@ -86,6 +87,8 @@ export function OrgDetailPage() {
       </SimpleGrid>
 
       <AdminSection orgId={org.id} />
+
+      <OrgEventsSection orgId={org.id} />
 
       <Stack gap={8}>
         <Text fw={500} size="sm">

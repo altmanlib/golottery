@@ -365,7 +365,7 @@ Redis 约定：
 | `/platform/login` | 运营登录；已有令牌时直接进入 `/platform` |
 | `/platform` | 运营后台外壳；无令牌时去 `/platform/login`，有令牌时请求 `GET /api/platform/me`；首页重定向到 `/platform/orgs` |
 | `/platform/orgs` | 组织列表（页码写在 `?page=`）与开通弹窗 |
-| `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、人数上限、管理员（创建、重置口令、停用 / 启用）、最近 20 条流水 |
+| `/platform/orgs/:orgId` | 组织详情：停用 / 启用、调整场次、组织默认人数上限、该组织活动列表（含单场人数上限）、管理员（创建、重置口令、停用 / 启用）、最近 20 条流水；页头可改密 |
 | `/organization/login` | 组织管理员登录；已有令牌时直接进入 `/organization` |
 | `/organization` | 组织控制台外壳，页头显示本组织名称；无令牌时去 `/organization/login`；首页重定向到 `/organization/events` |
 | `/organization/events` | 活动列表（页码写在 `?page=`）、剩余场次与创建弹窗 |

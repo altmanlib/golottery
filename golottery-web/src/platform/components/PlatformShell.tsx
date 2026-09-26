@@ -1,7 +1,9 @@
 import { Anchor, AppShell, Box, Button, Group, Text } from '@mantine/core'
-import { IconLogout } from '@tabler/icons-react'
+import { IconKey, IconLogout } from '@tabler/icons-react'
+import { useState } from 'react'
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { getToken } from '#/api'
+import { ChangePasswordModal } from '#/platform/components/ChangePasswordModal'
 import { usePlatformLogout } from '#/platform/hooks/usePlatformLogout'
 import { usePlatformMe } from '#/platform/hooks/usePlatformMe'
 
@@ -19,6 +21,7 @@ export function PlatformShell() {
   const navigate = useNavigate()
   const me = usePlatformMe()
   const logout = usePlatformLogout(() => navigate('/platform/login', { replace: true }))
+  const [changingPassword, setChangingPassword] = useState(false)
 
   if (!getToken('platform')) {
     return <Navigate to="/platform/login" replace />
@@ -38,6 +41,9 @@ export function PlatformShell() {
                 {me.data.username}
               </Text>
             )}
+            <Button variant="subtle" size="xs" leftSection={<IconKey size={16} />} onClick={() => setChangingPassword(true)}>
+              修改口令
+            </Button>
             <Button variant="subtle" size="xs" leftSection={<IconLogout size={16} />} loading={logout.isPending} onClick={() => logout.mutate()}>
               退出登录
             </Button>
@@ -50,6 +56,7 @@ export function PlatformShell() {
           <Outlet />
         </Box>
       </AppShell.Main>
+      <ChangePasswordModal opened={changingPassword} onClose={() => setChangingPassword(false)} />
     </AppShell>
   )
 }
