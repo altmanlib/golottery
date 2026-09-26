@@ -67,8 +67,8 @@ updated: 2026-09-26
 
 | 编号 | 提交 | 范围 | 内容 |
 | --- | --- | --- | --- |
-| P-8 | — | api, web | 阶段 7 现场抽奖：主持人凭证、抽奖事务与作废重抽、SSE、大屏页、中奖/抽奖日志导出。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
-| P-24 | — | web | 运营后台补齐：页头改密；组织详情中的活动列表与单场人数上限。后端接口沿用阶段 2 / 5 |
+| P-8 | 1046191 | api, web | 阶段 7 现场抽奖：主持人凭证、抽奖事务与作废重抽、SSE、大屏页、中奖/抽奖日志导出。见 [phases/phase-7-draw.md](phases/phase-7-draw.md) |
+| P-24 | 1046191 | web | 运营后台补齐：页头改密；组织详情中的活动列表与单场人数上限。后端接口沿用阶段 2 / 5 |
 | P-3 | 997e54c | api, web | 阶段 6 现场签到：宾客登录（`GUEST_LOGIN_MODE=web` 首发）、名单绑定与限速、围栏 / 直接签到与签到流水、现场求助、工作人员邀请与代签、现场切换签到方式与移动围栏、重置现场数据、签到明细导出；网页宾客页 `/m/:publicId` 与现场工作台 `/m/:publicId/staff`。见 [phases/phase-6-checkin.md](phases/phase-6-checkin.md) |
 | P-7 | 997e54c | api, web | 阶段 5 活动配置：Redis、活动状态迁移与首次就绪扣场次、名单与奖项、Excel 导入导出、微信凭据与小程序码（替身验证）、运营调整活动上限、组织控制台活动页。见 [phases/phase-5-event-setup.md](phases/phase-5-event-setup.md) |
 | P-6 | d5b5dcf | api, web | 阶段 4 组织管理员认证：`org_users`，运营创建管理员（一次性临时口令）、重置口令、停用启用；管理员登录 / 登出 / me / 改密，`console` 令牌每次请求校验账号与组织状态；组织控制台入口与按入口隔离的 `401` 处理。见 [phases/phase-4-org-admin-auth.md](phases/phase-4-org-admin-auth.md) |
