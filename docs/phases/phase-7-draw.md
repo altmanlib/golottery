@@ -2,7 +2,7 @@
 title: 阶段 7：现场抽奖
 type: design
 status: published
-updated: 2026-09-24
+updated: 2026-09-26
 ---
 
 # 阶段 7：现场抽奖

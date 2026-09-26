@@ -9,6 +9,8 @@ import {
   deletePrize,
   exportAttendees,
   exportCheckinAttempts,
+  exportDrawLog,
+  exportWinners,
   getEvent,
   getEventQrCode,
   importAttendees,
@@ -21,6 +23,7 @@ import {
   updateAttendee,
   updateEvent,
   updatePrize,
+  upsertEventHost,
 } from '#/api-gen/sdk.gen'
 import type { AttendeeInput, AttendeeUpdate, PrizeInput, PrizeUpdate, StaffRole, UpdateEventRequest } from '#/api-gen/types.gen'
 import { saveBlob } from '#/lib/download'
@@ -142,6 +145,31 @@ export function useExportAttempts(eventId: string, eventName: string) {
       const blob = await unwrap<Blob>(exportCheckinAttempts({ path: { eventId }, parseAs: 'blob' }))
       saveBlob(blob, `${eventName}-签到明细.xlsx`)
     },
+  })
+}
+
+export function useExportWinners(eventId: string, eventName: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const blob = await unwrap<Blob>(exportWinners({ path: { eventId }, parseAs: 'blob' }))
+      saveBlob(blob, `${eventName}-中奖名单.xlsx`)
+    },
+  })
+}
+
+export function useExportDrawLog(eventId: string, eventName: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const blob = await unwrap<Blob>(exportDrawLog({ path: { eventId }, parseAs: 'blob' }))
+      saveBlob(blob, `${eventName}-抽奖日志.xlsx`)
+    },
+  })
+}
+
+/** The host password comes back once; the caller shows it and resets the mutation. */
+export function useUpsertHost(eventId: string) {
+  return useMutation({
+    mutationFn: () => unwrap(upsertEventHost({ path: { eventId } })),
   })
 }
 

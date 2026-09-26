@@ -19,6 +19,7 @@ const (
 	schemePlatform = "platformBearer"
 	schemeConsole  = "consoleBearer"
 	schemeGuest    = "guestBearer"
+	schemeHost     = "hostBearer"
 )
 
 // authenticator checks a bearer token for one scheme and returns the request context

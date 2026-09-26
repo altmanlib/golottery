@@ -8,6 +8,7 @@ import { CheckinSettingsForm } from '#/organization/components/CheckinSettingsFo
 import { EntrySection } from '#/organization/components/EntrySection'
 import { EventStatusBadge } from '#/organization/components/EventStatusBadge'
 import { EventStatusBar } from '#/organization/components/EventStatusBar'
+import { HostSection } from '#/organization/components/HostSection'
 import { LiveDataSection } from '#/organization/components/LiveDataSection'
 import { PrizeSection } from '#/organization/components/PrizeSection'
 import { StaffSection } from '#/organization/components/StaffSection'
@@ -91,10 +92,13 @@ export function EventDetailPage() {
         <Section title="现场工作人员">
           <StaffSection event={ev} />
         </Section>
-        <Section title="现场数据">
-          <LiveDataSection event={ev} />
+        <Section title="大屏主持人">
+          <HostSection event={ev} />
         </Section>
       </SimpleGrid>
+      <Section title="现场数据">
+        <LiveDataSection event={ev} />
+      </Section>
       <Paper withBorder radius="md" p={12}>
         <AttendeeSection event={ev} />
       </Paper>

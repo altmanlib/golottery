@@ -1,0 +1,101 @@
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--mantine-color-brand-9) 72%, transparent), color-mix(in srgb, var(--mantine-color-brand-9) 88%, black)),
+    radial-gradient(circle at top, color-mix(in srgb, var(--mantine-color-brand-4) 28%, transparent), transparent 55%);
+  color: var(--mantine-color-white);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 32px 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mantine-color-brand-4) 70%, white);
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  font-size: 14px;
+  opacity: 0.72;
+}
+
+.main {
+  padding: 12px 32px 28px;
+  min-height: 0;
+}
+
+.panel {
+  background: color-mix(in srgb, var(--mantine-color-black) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-white) 16%, transparent);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.stat {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.muted {
+  opacity: 0.72;
+}
+
+.winnerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.winnerCard {
+  padding: 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mantine-color-brand-6) 55%, black);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-white) 12%, transparent);
+}
+
+.winnerName {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.loginCard {
+  width: min(420px, 92vw);
+  margin: 12vh auto 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell {
+    background: var(--mantine-color-brand-9);
+  }
+}

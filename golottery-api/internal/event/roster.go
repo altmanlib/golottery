@@ -231,6 +231,13 @@ func (s *Service) DeleteAttendee(ctx context.Context, orgID, eventID, attendeeID
 		if row.OpenID != nil || row.Status != AttendeePending {
 			return bizerr.New(bizerr.CodeConflict)
 		}
+		var wins int64
+		if err := tx.Table("draw_results").Where("attendee_id = ?", attendeeID).Count(&wins).Error; err != nil {
+			return err
+		}
+		if wins > 0 {
+			return bizerr.New(bizerr.CodeConflict)
+		}
 		return tx.Delete(&row).Error
 	})
 	return asBizErr(err)
@@ -319,6 +326,15 @@ func (s *Service) UpdatePrize(ctx context.Context, orgID, eventID, prizeID uuid.
 		if err != nil {
 			return err
 		}
+		if clean.Quota < row.Quota {
+			var won int64
+			if err := tx.Table("draw_results").Where("prize_id = ? AND status = ?", prizeID, "valid").Count(&won).Error; err != nil {
+				return err
+			}
+			if int64(clean.Quota) < won {
+				return bizerr.New(bizerr.CodeConflict)
+			}
+		}
 		row.Name, row.Gift, row.Quota, row.SortNo = clean.Name, clean.Gift, clean.Quota, clean.SortNo
 		return tx.Save(&row).Error
 	})
@@ -333,6 +349,13 @@ func (s *Service) DeletePrize(ctx context.Context, orgID, eventID, prizeID uuid.
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if _, err := editableEvent(ctx, tx, orgID, eventID); err != nil {
 			return err
+		}
+		var wins int64
+		if err := tx.Table("draw_results").Where("prize_id = ?", prizeID).Count(&wins).Error; err != nil {
+			return err
+		}
+		if wins > 0 {
+			return bizerr.New(bizerr.CodeConflict)
 		}
 		res := tx.Where("id = ? AND event_id = ?", prizeID, eventID).Delete(&Prize{})
 		if res.Error != nil {

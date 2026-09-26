@@ -69,6 +69,24 @@ func (e CoordType) Valid() bool {
 	}
 }
 
+// Defines values for DrawResultStatus.
+const (
+	Valid DrawResultStatus = "valid"
+	Void  DrawResultStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the DrawResultStatus enum.
+func (e DrawResultStatus) Valid() bool {
+	switch e {
+	case Valid:
+		return true
+	case Void:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EventStatus.
 const (
 	Closed EventStatus = "closed"
@@ -281,6 +299,13 @@ type CheckinMode string
 // CoordType Browsers report wgs84; the mini program reports gcj02
 type CoordType string
 
+// CreateDrawRequest defines model for CreateDrawRequest.
+type CreateDrawRequest struct {
+	Count     int                `json:"count"`
+	PrizeId   openapi_types.UUID `json:"prize_id"`
+	RequestId openapi_types.UUID `json:"request_id"`
+}
+
 // CreateEventRequest defines model for CreateEventRequest.
 type CreateEventRequest struct {
 	Name string `json:"name"`
@@ -299,6 +324,30 @@ type CreateOrgUserRequest struct {
 	Email string `json:"email"`
 	Name  string `json:"name"`
 }
+
+// DrawBatch defines model for DrawBatch.
+type DrawBatch struct {
+	DrawVersion int64              `json:"draw_version"`
+	RequestId   openapi_types.UUID `json:"request_id"`
+	Results     []DrawResult       `json:"results"`
+}
+
+// DrawResult defines model for DrawResult.
+type DrawResult struct {
+	AttendeeDept string             `json:"attendee_dept"`
+	AttendeeId   openapi_types.UUID `json:"attendee_id"`
+	AttendeeName string             `json:"attendee_name"`
+	CreatedAt    time.Time          `json:"created_at"`
+	Id           openapi_types.UUID `json:"id"`
+	PrizeId      openapi_types.UUID `json:"prize_id"`
+	PrizeName    string             `json:"prize_name"`
+	Status       DrawResultStatus   `json:"status"`
+	VoidReason   *string            `json:"void_reason,omitempty"`
+	VoidedAt     *time.Time         `json:"voided_at,omitempty"`
+}
+
+// DrawResultStatus defines model for DrawResultStatus.
+type DrawResultStatus string
 
 // Error defines model for Error.
 type Error struct {
@@ -431,6 +480,55 @@ type HealthzDb string
 
 // HealthzRedis Redis status; informational, it does not change ok
 type HealthzRedis string
+
+// HostCredential defines model for HostCredential.
+type HostCredential struct {
+	// Password Temporary host password; returned only once
+	Password string `json:"password"`
+
+	// Path Web path of the host screen, relative to the site root
+	Path     string `json:"path"`
+	PublicId string `json:"public_id"`
+}
+
+// HostLoginRequest defines model for HostLoginRequest.
+type HostLoginRequest struct {
+	EventPublicId string `json:"event_public_id"`
+	Password      string `json:"password"`
+}
+
+// HostPool defines model for HostPool.
+type HostPool struct {
+	Items []HostPoolPerson `json:"items"`
+}
+
+// HostPoolPerson defines model for HostPoolPerson.
+type HostPoolPerson struct {
+	Dept string             `json:"dept"`
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
+// HostPrize defines model for HostPrize.
+type HostPrize struct {
+	Gift      string             `json:"gift"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	Quota     int                `json:"quota"`
+	Remaining int                `json:"remaining"`
+	SortNo    int                `json:"sort_no"`
+}
+
+// HostSnapshot defines model for HostSnapshot.
+type HostSnapshot struct {
+	CheckedIn   int          `json:"checked_in"`
+	DrawVersion int64        `json:"draw_version"`
+	EventName   string       `json:"event_name"`
+	Prizes      []HostPrize  `json:"prizes"`
+	PublicId    string       `json:"public_id"`
+	Status      EventStatus  `json:"status"`
+	Winners     []DrawResult `json:"winners"`
+}
 
 // ImportError defines model for ImportError.
 type ImportError struct {
@@ -623,7 +721,13 @@ type ResetRequest struct {
 // ResetResult defines model for ResetResult.
 type ResetResult struct {
 	Attempts int `json:"attempts"`
+
+	// Logs Draw log rows cleared
+	Logs     int `json:"logs"`
 	Requests int `json:"requests"`
+
+	// Results Draw result rows cleared
+	Results  int `json:"results"`
 	Sessions int `json:"sessions"`
 
 	// Unbound Roster people whose binding or check-in was cleared
@@ -713,6 +817,11 @@ type UpdateEventRequest struct {
 	Status        *EventStatus `json:"status,omitempty"`
 }
 
+// VoidResultRequest defines model for VoidResultRequest.
+type VoidResultRequest struct {
+	Reason string `json:"reason"`
+}
+
 // AttendeeId defines model for AttendeeId.
 type AttendeeId = openapi_types.UUID
 
@@ -736,6 +845,9 @@ type Query = string
 
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
+
+// ResultId defines model for ResultId.
+type ResultId = openapi_types.UUID
 
 // StaffId defines model for StaffId.
 type StaffId = openapi_types.UUID
@@ -800,6 +912,15 @@ type JoinStaffJSONRequestBody = JoinStaffRequest
 
 // ApproveRequestJSONRequestBody defines body for ApproveRequest for application/json ContentType.
 type ApproveRequestJSONRequestBody = ApproveRequest
+
+// CreateDrawJSONRequestBody defines body for CreateDraw for application/json ContentType.
+type CreateDrawJSONRequestBody = CreateDrawRequest
+
+// HostLoginJSONRequestBody defines body for HostLogin for application/json ContentType.
+type HostLoginJSONRequestBody = HostLoginRequest
+
+// VoidDrawResultJSONRequestBody defines body for VoidDrawResult for application/json ContentType.
+type VoidDrawResultJSONRequestBody = VoidResultRequest
 
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody = CreateEventRequest
